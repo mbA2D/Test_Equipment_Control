@@ -27,9 +27,9 @@ class BK8600:
 		print("Connected to %s\n" % self.inst.query("*IDN?"))
 		#resets to Constant Current Mode
 		self.inst.write("*RST")
-		set_current(0)
+		self.set_current(0)
 		#set to remote mode (disable front panel)
-		lock_front_panel(True)
+		self.lock_front_panel(True)
 		
 	# To Set E-Load in Amps 
 	def set_current(self, current_setpoint_A):		
@@ -60,6 +60,6 @@ class BK8600:
 		return float(self.inst.query("MEAS:CURR:DC?"))
 		
 	def __del__(self):
-		toggle_output(False)
-		lock_front_panel(False)
+		self.toggle_output(False)
+		self.lock_front_panel(False)
 		self.inst.close()

@@ -2,7 +2,7 @@
 
 import pyvisa
 import time
-import easygui
+import easygui as eg
 
 # Power Supply
 class SPD1000:
@@ -16,7 +16,7 @@ class SPD1000:
 			########### EASYGUI VERSION #############
 			msg = "Select a visa resource for the Power Supply:"
 			title = "Power Supply Selection"
-			resource_id = choicebox(msg, title, resources)
+			resource_id = eg.choicebox(msg, title, resources)
 			
 			########### COMMAND LINE VERSION ########
 			#print('{}\n'.format(resources))
@@ -29,9 +29,9 @@ class SPD1000:
 		#Choose channel 1
 		self.inst.write("INST CH1")
 		#lock front panel
-		lock_front_panel(True)
-		set_current(0)
-		set_voltage(0)
+		self.lock_front_panel(True)
+		self.set_current(0)
+		self.set_voltage(0)
 		
 	# To Set E-Load in Amps 
 	def set_current(self, current_setpoint_A):		
@@ -52,7 +52,7 @@ class SPD1000:
 		else:
 			self.inst.write("MODE:SET 2W")
 	
-	def lock_front_panel(self, state)
+	def lock_front_panel(self, state):
 		if state:
 			self.inst.write("*LOCK")
 		else:
@@ -68,6 +68,6 @@ class SPD1000:
 		return float(self.inst.query("MEAS:POWE?"))
 		
 	def __del__(self):
-		toggle_output(False)
-		lock_front_panel(False)
+		self.toggle_output(False)
+		self.lock_front_panel(False)
 		self.inst.close()
