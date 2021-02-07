@@ -20,16 +20,19 @@ class SPD1000:
 			
 			########### COMMAND LINE VERSION ########
 			#print('{}\n'.format(resources))
-			#id_index = input('Select resource list index\n')
+			#id_index = int(input('Select resource list index\n'))
 			#resource_id = resources[id_index]
 		
 		self.inst = rm.open_resource(resource_id)
+		self.inst.read_termination = '\n'
+		self.inst.write_termination = '\n'
+		self.inst.query_delay = 0.1
+		
 		print("Connected to %s\n" % self.inst.query("*IDN?"))
-		self.inst.write("*RST") #resets to Constant Current Mode
+		self.inst.write("*RST")
 		#Choose channel 1
 		self.inst.write("INST CH1")
-		#lock front panel
-		self.lock_front_panel(True)
+		self.lock_commands(False)
 		self.set_current(0)
 		self.set_voltage(0)
 		
@@ -40,11 +43,11 @@ class SPD1000:
 	def set_voltage(self, voltage_setpoint_V):
 		self.inst.write("VOLT {}".format(voltage_setpoint_V))
 
-	def toggle_output(self, state):
+	def toggle_output(self, state, ch = 1):
 		if state:
-			self.inst.write("OUTP ON")
+			self.inst.write("OUTP CH{},ON".format(ch))
 		else:
-			self.inst.write("OUTP OFF")
+			self.inst.write("OUTP CH{},OFF".format(ch))
 	
 	def remote_sense(self, state):
 		if state:
@@ -52,7 +55,7 @@ class SPD1000:
 		else:
 			self.inst.write("MODE:SET 2W")
 	
-	def lock_front_panel(self, state):
+	def lock_commands(self, state):
 		if state:
 			self.inst.write("*LOCK")
 		else:
@@ -69,5 +72,5 @@ class SPD1000:
 		
 	def __del__(self):
 		self.toggle_output(False)
-		self.lock_front_panel(False)
+		self.lock_commands(False)
 		self.inst.close()

@@ -7,7 +7,7 @@ import pandas as pd
 from datetime import datetime
 import os
 import time
-import easygui
+import easygui as eg
 
 def get_directory():
 	root = tk.Tk()
@@ -76,7 +76,7 @@ lb = 1
 ub = 60
 msg = 'Enter logging interval in seconds (from {} to {}):'.format(lb, ub)
 title = 'Logging Interval'
-interval_temp = integerbox(msg, title, default = 0, lowerbound = lb, upperbound = ub)
+interval_temp = eg.integerbox(msg, title, default = 5, lowerbound = lb, upperbound = ub)
 
 dir = get_directory()
 path = start_file(dir)

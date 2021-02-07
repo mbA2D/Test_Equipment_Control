@@ -2,7 +2,7 @@
 
 import pyvisa
 import time
-import easygui
+import easygui as eg
 
 # E-Load
 class BK8600:
@@ -16,11 +16,11 @@ class BK8600:
 			########### EASYGUI VERSION #############
 			msg = "Select a visa resource for the E-Load:"
 			title = "E-Load Selection"
-			resource_id = choicebox(msg, title, resources)
+			resource_id = eg.choicebox(msg, title, resources)
 			
 			########### COMMAND LINE VERSION ########
 			#print('{}\n'.format(resources))
-			#id_index = input('Select resource list index\n')
+			#id_index = int(input('Select resource list index\n'))
 			#resource_id = resources[id_index]
 		
 		self.inst = rm.open_resource(resource_id)

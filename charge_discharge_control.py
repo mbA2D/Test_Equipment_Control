@@ -3,7 +3,7 @@
 
 import Eload_BK8600
 import PSU_SPD1000
-from datatime import datetime
+from datetime import datetime
 import time
 import pandas as pd
 
@@ -44,7 +44,7 @@ def measure_charge():
 
 def measure_discharge():
 	#return current from eload (as negative), voltage from eload
-	return (eload.measure_voltage(), eload.measure_current())
+	return (eload.measure_voltage(), eload.measure_current()*-1)
 
 ####################### FILE IO ###########################
 
@@ -232,7 +232,7 @@ while valid_entries == False:
 
 #Get a directory to save the file
 directory = get_directory()
-
+init_instruments()
 
 for cycle in range(entries[8]):
 	try:
