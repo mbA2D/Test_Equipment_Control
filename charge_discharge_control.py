@@ -21,13 +21,17 @@ def init_instruments():
 
 def start_charge(end_voltage, constant_current):
 	eload.toggle_output(False)
+	print('Setting to {}V {}A'.format(end_voltage, constant_current))
 	psu.set_voltage(end_voltage)
+	time.sleep(0.1)
 	psu.set_current(constant_current)
+	time.sleep(0.1)
 	psu.toggle_output(True)
-
+	
 def start_discharge(constant_current):
 	psu.toggle_output(False)
 	eload.set_current(constant_current)
+	time.sleep(0.1)
 	eload.toggle_output(True)
 
 def start_rest():
@@ -42,7 +46,7 @@ def measure_rest():
 
 def measure_charge():
 	#return current from power supply, voltage from eload`
-	return (eload.measure_voltage, psu.measure_current())
+	return (eload.measure_voltage(), psu.measure_current())
 
 def measure_discharge():
 	#return current from eload (as negative), voltage from eload
@@ -89,7 +93,8 @@ def gather_and_write_data(filepath, iv_data, printout=False):
 	
 	#add timestamp
 	data.append(time.time())
-	data.append(iv_data)
+	data.append(iv_data[0])
+	data.append(iv_data[1])
 	
 	if(printout):
 		print(data)
@@ -109,6 +114,8 @@ def cycle_cell(dir, cell_name, cycle_num,
 	#start a new file for the cycle
 	filepath = start_file(dir, cell_name, cycle_num)
 	
+	rest_after_charge_s = rest_after_charge_mins * 60
+	rest_after_discharge_s = rest_after_discharge_mins * 60
 	
 	print('Starting a cycle with the following settings:\n' +
 			'Cell Name: {}\n'.format(cell_name) + 
@@ -129,27 +136,27 @@ def cycle_cell(dir, cell_name, cycle_num,
 	charge_start_time = time.time()
 	print('Starting Charge\n')
 	while (data[1] > end_A_charge):
+		time.sleep(log_interval_s - ((time.time() - charge_start_time) % log_interval_s))
 		data = measure_charge()
 		gather_and_write_data(filepath, data)
-		time.sleep(log_interval_s - ((time.time() - charge_start_time) % log_interval_s))
 	
 	#rest
 	start_rest()
 	rest_start_time = time.time()
 	print('Starting Rest After Charge\n')
 	while (time.time() - rest_start_time) < rest_after_charge_s:
+		time.sleep(log_interval_s - ((time.time() - rest_start_time) % log_interval_s))
 		data = measure_rest()
 		gather_and_write_data(filepath, data)
-		time.sleep(log_interval_s - ((time.time() - rest_start_time) % log_interval_s))
 	
 	#start discharge
 	start_discharge(cc_discharge)
 	discharge_start_time = time.time()
 	print('Starting Discharge\n')
 	while (data[0] > end_V_discharge):
+		time.sleep(log_interval_s - ((time.time() - discharge_start_time) % log_interval_s))
 		data = measure_discharge()
 		gather_and_write_data(filepath, data)
-		time.sleep(log_interval_s - ((time.time() - discharge_start_time) % log_interval_s))
 	
 	
 	
@@ -157,10 +164,10 @@ def cycle_cell(dir, cell_name, cycle_num,
 	start_rest()
 	rest_start_time = time.time()
 	print('Starting Rest After Discharge\n')
-	while (time.time() - start_rest_time) < rest_after_charge_mins:
+	while (time.time() - start_rest_time) < rest_after_discharge_s:
+		time.sleep(log_interval_s - ((time.time() - rest_start_time) % log_interval_s))
 		data = measure_rest()
 		gather_and_write_data(filepath, data)
-		time.sleep(log_interval_s - ((time.time() - rest_start_time) % log_interval_s))
 	
 	print('Cycle Completed')
 	
@@ -229,7 +236,7 @@ valid_entries = False
 msg = "Confirm these values are correct"
 
 while valid_entries == False:
-	entries = eg.multenterbox(msg, title, field_names, default_text)
+	entries = eg.multenterbox(msg, title, field_names, entries)
 	valid_entries = check_user_entry(entries)
 
 #Get a directory to save the file
