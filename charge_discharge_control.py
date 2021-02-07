@@ -117,7 +117,8 @@ def cycle_cell(dir, cell_name, cycle_num,
 	rest_after_charge_s = rest_after_charge_mins * 60
 	rest_after_discharge_s = rest_after_discharge_mins * 60
 	
-	print('Starting a cycle with the following settings:\n' +
+	print('Starting a cycle: {}\n'.format(time.ctime()) + 
+			'Settings:\n' +
 			'Cell Name: {}\n'.format(cell_name) + 
 			'Cycle Number: {}\n'.format(cycle_num) + 
 			'Charge End Voltage: {}\n'.format(end_V_charge) +
@@ -134,7 +135,7 @@ def cycle_cell(dir, cell_name, cycle_num,
 	start_charge(end_V_charge, cc_charge)
 	data = (end_V_charge, cc_charge)
 	charge_start_time = time.time()
-	print('Starting Charge\n')
+	print('Starting Charge: {}\n'.format(time.ctime()))
 	while (data[1] > end_A_charge):
 		time.sleep(log_interval_s - ((time.time() - charge_start_time) % log_interval_s))
 		data = measure_charge()
@@ -143,7 +144,7 @@ def cycle_cell(dir, cell_name, cycle_num,
 	#rest
 	start_rest()
 	rest_start_time = time.time()
-	print('Starting Rest After Charge\n')
+	print('Starting Rest After Charge: {}\n'.format(time.ctime()))
 	while (time.time() - rest_start_time) < rest_after_charge_s:
 		time.sleep(log_interval_s - ((time.time() - rest_start_time) % log_interval_s))
 		data = measure_rest()
@@ -152,7 +153,7 @@ def cycle_cell(dir, cell_name, cycle_num,
 	#start discharge
 	start_discharge(cc_discharge)
 	discharge_start_time = time.time()
-	print('Starting Discharge\n')
+	print('Starting Discharge: {}\n'.format(time.ctime()))
 	while (data[0] > end_V_discharge):
 		time.sleep(log_interval_s - ((time.time() - discharge_start_time) % log_interval_s))
 		data = measure_discharge()
@@ -163,13 +164,13 @@ def cycle_cell(dir, cell_name, cycle_num,
 	#rest
 	start_rest()
 	rest_start_time = time.time()
-	print('Starting Rest After Discharge\n')
-	while (time.time() - start_rest_time) < rest_after_discharge_s:
+	print('Starting Rest After Discharge: {}\n'.format(time.ctime()))
+	while (time.time() - rest_start_time) < rest_after_discharge_s:
 		time.sleep(log_interval_s - ((time.time() - rest_start_time) % log_interval_s))
 		data = measure_rest()
 		gather_and_write_data(filepath, data)
 	
-	print('Cycle Completed')
+	print('Cycle Completed: {}\n'.format(time.ctime()))
 	
 	return
 
