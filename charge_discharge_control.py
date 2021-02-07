@@ -6,7 +6,9 @@ import PSU_SPD1000
 from datetime import datetime
 import time
 import pandas as pd
-
+import easygui as eg
+import tkinter as tk
+import os
 
 eload = Eload_BK8600.BK8600()
 psu = PSU_SPD1000.SPD1000()
@@ -135,7 +137,7 @@ def cycle_cell(dir, cell_name, cycle_num,
 	start_rest()
 	rest_start_time = time.time()
 	print('Starting Rest After Charge\n')
-	while (time.time() - start_rest_time) < rest_after_charge_s:
+	while (time.time() - rest_start_time) < rest_after_charge_s:
 		data = measure_rest()
 		gather_and_write_data(filepath, data)
 		time.sleep(log_interval_s - ((time.time() - rest_start_time) % log_interval_s))
@@ -219,7 +221,7 @@ default_text = ["CELL_NAME",
 valid_entries = False
 
 while valid_entries == False:
-	entries = multenterbox(msg, title, field_names, default_text)
+	entries = eg.multenterbox(msg, title, field_names, default_text)
 	valid_entries = check_user_entry(entries)
 
 #Ask user to double check the entries
@@ -227,19 +229,19 @@ valid_entries = False
 msg = "Confirm these values are correct"
 
 while valid_entries == False:
-	entries = multenterbox(msg, title, field_names, default_text)
+	entries = eg.multenterbox(msg, title, field_names, default_text)
 	valid_entries = check_user_entry(entries)
 
 #Get a directory to save the file
 directory = get_directory()
 init_instruments()
 
-for cycle in range(entries[8]):
+for cycle in range(int(entries[8])):
 	try:
-		cycle_cell(diretory, entries[0], cycle,
-				entries[1], entries[2], entries[3],
-				entries[4], entries[5], entries[6],
-				entries[7], log_interval_s = entries[9])
+		cycle_cell(directory, entries[0], cycle,
+				float(entries[1]), float(entries[2]), float(entries[3]),
+				float(entries[4]), float(entries[5]), float(entries[6]),
+				float(entries[7]), log_interval_s = float(entries[9]))
 	except KeyboardInterrupt:
 		eload.toggle_output(False)
 		psu.toggle_output(False)

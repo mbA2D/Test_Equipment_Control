@@ -8,7 +8,7 @@ import easygui as eg
 class SPD1000:
 	# Initialize the SPD1000 Power Supply
 	def __init__(self, resource_id = ""):
-		rm = pyvisa.ResourceManager()
+		rm = pyvisa.ResourceManager('@ivi')
 		
 		if(resource_id == ""):
 			resources = rm.list_resources()

@@ -10,7 +10,7 @@ class A2D_DAQ:
 	def __init__(self, resource_id = ""):
 		self.num_channels = 64
 		
-		rm = pyvisa.ResourceManager('@py')
+		rm = pyvisa.ResourceManager('@ivi')
 		
 		if(resource_id == ""):
 			resources = rm.list_resources()

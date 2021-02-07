@@ -8,7 +8,7 @@ import easygui as eg
 class BK8600:
 	# Initialize the BK8600 E-Load
 	def __init__(self, resource_id = ""):
-		rm = pyvisa.ResourceManager()
+		rm = pyvisa.ResourceManager('@ivi')
 		
 		if(resource_id == ""):
 			resources = rm.list_resources()
