@@ -1,7 +1,7 @@
 #python library for controlling the A2D DAQ
 
 import pyvisa
-import time
+from time import sleep
 import easygui as eg
 
 #Data Acquisition Unit
@@ -10,33 +10,41 @@ class A2D_DAQ:
 	def __init__(self, resource_id = ""):
 		self.num_channels = 64
 		
-		rm = pyvisa.ResourceManager('@ivi')
+		rm = pyvisa.ResourceManager()
 		
 		if(resource_id == ""):
-			resources = rm.list_resources()
-			
+			resources = list(rm.list_resources()) #RM returns a tuple so cast to a list to append
+		
 			########### EASYGUI VERSION #############
-			msg = "Select a visa resource for the DAQ:"
+			#choicebox needs 2 resources, so if we only have 1 device then add another.
 			title = "DAQ Selection"
-			resource_id = eg.choicebox(msg, title, resources)
-			
-			########### COMMAND LINE VERSION ########
-			#print('{}\n'.format(resources))
-			#id_index = int(input('Select resource list index\n'))
-			#resource_id = resources[id_index]
+			if(len(resources) == 0):
+				resource_id = 0
+			elif(len(resources) == 1):
+				msg = "There is only 1 visa resource available.\nWould you like to use it?\n{}".format(resources[0])
+				if(eg.ynbox(msg, title)):
+					resource_id = resources[0]
+				else:
+					resource_id = 0
+			else:
+				msg = "Select a visa resource for the DAQ:"
+				resource_id = eg.choicebox(msg, title, resources)
 		
 		self.inst = rm.open_resource(resource_id)
 		
 		time.sleep(2) #wait for arduino reset
 		
 		self.inst.baud_rate = 57600
-		self.inst.read_termination = '\n'
+		self.inst.read_termination = '\r\n'
 		self.inst.write_termination = '\n'
 		
 		print('Connected to:\n{name}'.format(name = self.inst.query('*IDN?')))
 	
 	def __del__(self):
-		self.inst.close()
+		try:
+			self.inst.close()
+		except AttributeError:
+			pass
 	
 	def reset(self):
 		self.inst.write('*RST')
