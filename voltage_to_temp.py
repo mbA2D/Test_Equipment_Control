@@ -47,7 +47,7 @@ def wire_resistance(length_m = 1, awg = 26, material = 'copper'):
 
 def resistance_to_temp(resistance, sh_dict = NXRT15XV103FA1B_SH_CONSTANTS):
 	#Convert resistance to temperature (C)
-	return (1/(sh_dict['SH_A'] + sh_dict['SH_B'] * math.log(resistance) + sh_dict['SH_C'] * (math.log(resistance)**3))) - 273.15
+	return (1/(sh_dict['SH_A'] + sh_dict['SH_B'] * log(resistance) + sh_dict['SH_C'] * (log(resistance)**3))) - 273.15
 
 def voltage_to_C(v_meas, r_pullup, v_pullup, sh_constants = NXRT15XV103FA1B_SH_CONSTANTS):
 	if(v_meas >= v_pullup):
