@@ -32,7 +32,7 @@ class A2D_DAQ:
 		
 		self.inst = rm.open_resource(resource_id)
 		
-		time.sleep(2) #wait for arduino reset
+		sleep(2) #wait for arduino reset
 		
 		self.inst.baud_rate = 57600
 		self.inst.read_termination = '\r\n'
