@@ -41,13 +41,13 @@ AWG_TO_MM2 = {30: 0.057,
 			 0: 53.5}
 	   
 
-def wire_resistance(length_m = 1, awg = 26, material = 'copper'):
+def wire_resistance(length_m = 1.0, awg = 26.0, material = 'copper'):
 	#ohms = p * l / A
-	return RESISTIVITY[material] * length_m / (AWG_TO_MM2[awg]/1000/1000)
+	return RESISTIVITY[material] * length_m / (AWG_TO_MM2[awg]/1000.0/1000.0)
 
 def resistance_to_temp(resistance, sh_dict = NXRT15XV103FA1B_SH_CONSTANTS):
 	#Convert resistance to temperature (C)
-	return (1/(sh_dict['SH_A'] + sh_dict['SH_B'] * log(resistance) + sh_dict['SH_C'] * (log(resistance)**3))) - 273.15
+	return (1.0/(sh_dict['SH_A'] + sh_dict['SH_B'] * log(resistance) + sh_dict['SH_C'] * (log(resistance)**3.0))) - 273.15
 
 def voltage_to_C(v_meas, r_pullup, v_pullup, sh_constants = NXRT15XV103FA1B_SH_CONSTANTS):
 	if(v_meas >= v_pullup):
@@ -57,13 +57,13 @@ def voltage_to_C(v_meas, r_pullup, v_pullup, sh_constants = NXRT15XV103FA1B_SH_C
 	resistance = (float(v_meas) * float(r_pullup)) / (float(v_pullup) - float(v_meas))
 	
 	#compensate for the wire length
-	resistance = resistance - wire_resistance(length_m = 3, awg = 26)
+	resistance = resistance - wire_resistance(length_m = 3.0, awg = 26.0)
 	
 	#compensate for the switch resistance of the IO expander
 	#TODO - measure this
 	
 	#calculate temperature in Celcius
-	temp_C = resistance_to_temp(resistance, sh_dict = sh_constants)
+	temp_C = float(resistance_to_temp(resistance, sh_dict = sh_constants))
 	
 	return temp_C
 	
