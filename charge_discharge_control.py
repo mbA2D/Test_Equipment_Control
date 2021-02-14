@@ -21,7 +21,6 @@ def init_instruments():
 
 def start_charge(end_voltage, constant_current):
 	eload.toggle_output(False)
-	print('Setting to {}V {}A'.format(end_voltage, constant_current))
 	psu.set_voltage(end_voltage)
 	time.sleep(0.1)
 	psu.set_current(constant_current)
