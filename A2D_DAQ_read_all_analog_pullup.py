@@ -1,20 +1,21 @@
 #python script for reading analog values from A2D DAQ
 
 import A2D_DAQ_control as AD_control
-import tkinter as tk
-from tkinter import filedialog
 import pandas as pd
 from datetime import datetime
 import os
 import time
 import easygui as eg
+import voltage_to_temp as V2T
+
+
+pull_up_v = 3.3
+pull_up_r = 3300
+
 
 def get_directory():
-	root = tk.Tk()
-	root.withdraw()
-	dir = tk.filedialog.askdirectory(
+	dir = eg.diropenbox(
 		title='Select location to save DAQ data file')
-	root.destroy()
 	return dir
 
 def write_line(filepath, list_line):
@@ -37,6 +38,8 @@ def start_file(directory):
 	headers.append('Timestamp')
 	for ch in range(daq.num_channels):
 		headers.append('Channel_{}'.format(ch))
+		#adding a spot to store temps
+		headers.append('Channel_C_{}'.format(ch))
 	
 	write_line(filepath, headers)
 	
@@ -57,7 +60,9 @@ def gather_and_write_data(filepath, time, printout=False):
 	
 	#read all analog values
 	for ch in range(daq.num_channels):
-		data.append(daq.get_analog_mv(ch))
+		mv = float(daq.get_analog_mv(ch))
+		data.append(mv)
+		data.append(V2T.voltage_to_C(mv*1000, pull_up_r, pull_up_v))
 	
 	if(printout):
 		print(data)
