@@ -4,7 +4,7 @@ import A2D_DAQ_control as AD_control
 import pandas as pd
 from datetime import datetime
 import os
-import time
+from time import sleep
 import easygui as eg
 import voltage_to_temp as V2T
 
@@ -91,7 +91,7 @@ starttime = time.time()
 while True:
 	try:
 		gather_and_write_data(path, time=time.time())
-		time.sleep(interval_temp - ((time.time() - starttime) % interval_temp))
+		sleep(interval_temp - ((time.time() - starttime) % interval_temp))
 	except KeyboardInterrupt:
 		#make sure all outputs are off before quiting
 		daq.reset()

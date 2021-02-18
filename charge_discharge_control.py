@@ -21,7 +21,6 @@ def init_instruments():
 
 def start_charge(end_voltage, constant_current):
 	eload.toggle_output(False)
-	print('Setting to {}V {}A'.format(end_voltage, constant_current))
 	psu.set_voltage(end_voltage)
 	time.sleep(0.1)
 	psu.set_current(constant_current)
@@ -72,7 +71,7 @@ def write_line(filepath, list_line):
 
 def start_file(directory, name, cycle):
 	dt = datetime.now().strftime("%Y-%m-%d %H-%M-%S")
-	filename = '{cell_name} {cell_cycle} {date}.csv'.format(\
+	filename = '{cell_name} {date}.csv'.format(\
 				cell_name = name, cell_cycle = cycle, date = dt)
 	
 	filepath = os.path.join(directory, filename)
