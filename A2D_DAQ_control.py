@@ -37,6 +37,8 @@ class A2D_DAQ:
 		self.inst.baud_rate = 57600
 		self.inst.read_termination = '\r\n'
 		self.inst.write_termination = '\n'
+		self.inst.query_delay = 0.02
+		self.inst.chunk_size = 102400
 		
 		print('Connected to:\n{name}'.format(name = self.inst.query('*IDN?')))
 	
