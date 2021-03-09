@@ -63,8 +63,8 @@ def gather_and_write_data(filepath, time, printout=False):
 		mv = float(daq.get_analog_mv(ch))
 		data.append(mv)
 		
-		if(mv > pull_up_v):
-			mv = pull_up_v
+		if(mv/1000 > pull_up_v):
+			mv = pull_up_v*1000
 		
 		data.append(V2T.voltage_to_C(mv/1000, pull_up_r, pull_up_v))
 	
