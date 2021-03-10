@@ -108,6 +108,7 @@ def cycle_cell(dir, cell_name, cycle_num,
 				rest_after_charge_mins, 
 				end_V_discharge, cc_discharge,
 				rest_after_discharge_mins,
+				storage_charge_V,
 				log_interval_s = 1):
 	
 	#start a new file for the cycle
@@ -127,12 +128,14 @@ def cycle_cell(dir, cell_name, cycle_num,
 			'Discharge End Voltage: {}\n'.format(end_V_discharge) + 
 			'Discharge Current: {}\n'.format(cc_discharge) + 
 			'Rest After Discharge (Minutes): {}\n'.format(rest_after_discharge_mins) + 
+			'Storage Charge Voltage: {}\n'.format(storage_charge_V) +
 			'Log Interval (Seconds): {}\n'.format(log_interval_s) + 
 			'\n\n')
 	
+	data = (end_V_charge, cc_charge)
+	
 	#start the charging
 	start_charge(end_V_charge, cc_charge)
-	data = (end_V_charge, cc_charge)
 	charge_start_time = time.time()
 	print('Starting Charge: {}\n'.format(time.ctime()))
 	while (data[1] > end_A_charge):
@@ -167,6 +170,15 @@ def cycle_cell(dir, cell_name, cycle_num,
 	while (time.time() - rest_start_time) < rest_after_discharge_s:
 		time.sleep(log_interval_s - ((time.time() - rest_start_time) % log_interval_s))
 		data = measure_rest()
+		gather_and_write_data(filepath, data)
+	
+	#start the charging
+	start_charge(storage_charge_V, cc_charge)
+	charge_start_time = time.time()
+	print('Starting Storage Charge: {}\n'.format(time.ctime()))
+	while (data[1] > end_A_charge):
+		time.sleep(log_interval_s - ((time.time() - charge_start_time) % log_interval_s))
+		data = measure_charge()
 		gather_and_write_data(filepath, data)
 	
 	print('Cycle Completed: {}\n'.format(time.ctime()))
@@ -213,6 +225,7 @@ field_names = ["Unique Cell Name",
 				"Discharge Current",
 				"Rest After Discharge (Minutes)",
 				"Number of cycles",
+				"End Storage Charge",
 				"Measurement Logging Interval (Seconds)"]
 default_text = ["CELL_NAME",
 				"4.2",
@@ -223,6 +236,7 @@ default_text = ["CELL_NAME",
 				"30",
 				"20",
 				"1",
+				"3.7",
 				"1"]
 
 valid_entries = False
@@ -248,7 +262,7 @@ for cycle in range(int(entries[8])):
 		cycle_cell(directory, entries[0], cycle,
 				float(entries[1]), float(entries[2]), float(entries[3]),
 				float(entries[4]), float(entries[5]), float(entries[6]),
-				float(entries[7]), log_interval_s = float(entries[9]))
+				float(entries[7]), float(entries[9]), log_interval_s = float(entries[10]))
 	except KeyboardInterrupt:
 		eload.toggle_output(False)
 		psu.toggle_output(False)
