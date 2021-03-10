@@ -73,4 +73,7 @@ class SPD1000:
 	def __del__(self):
 		self.toggle_output(False)
 		self.lock_commands(False)
-		self.inst.close()
+		try:
+			self.inst.close()
+		except AttributeError:
+			pass
