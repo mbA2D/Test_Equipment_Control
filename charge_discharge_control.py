@@ -224,7 +224,7 @@ field_names = ["Unique Cell Name",
 				"Discharge End Voltage",
 				"Discharge Current",
 				"Rest After Discharge (Minutes)",
-				"Number of cycles",
+				"Number of Cycles",
 				"End Storage Charge",
 				"Measurement Logging Interval (Seconds)"]
 default_text = ["CELL_NAME",
@@ -266,5 +266,6 @@ for cycle in range(int(entries[8])):
 	except KeyboardInterrupt:
 		eload.toggle_output(False)
 		psu.toggle_output(False)
+		
 		exit()
 		
