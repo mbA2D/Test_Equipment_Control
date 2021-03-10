@@ -53,6 +53,8 @@ def init_all_channels():
 		daq.set_dig(ch, value)
 
 def gather_and_write_data(filepath, time, printout=False):
+	daq.set_led(1)
+	
 	data = list()
 	
 	#add timestamp
@@ -72,6 +74,8 @@ def gather_and_write_data(filepath, time, printout=False):
 		print(data)
 	
 	write_line(filepath, data)
+	
+	daq.set_led(0)
 
 
 ######################### Program ########################

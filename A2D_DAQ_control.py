@@ -13,7 +13,7 @@ class A2D_DAQ:
 		rm = pyvisa.ResourceManager()
 		
 		if(resource_id == ""):
-			resources = list(rm.list_resources()) #RM returns a tuple so cast to a list to append
+			resources = list(rm.list_resources('@py')) #RM returns a tuple so cast to a list to append
 		
 			########### EASYGUI VERSION #############
 			#choicebox needs 2 resources, so if we only have 1 device then add another.
@@ -66,7 +66,14 @@ class A2D_DAQ:
 		return self.inst.query('INSTR:READ:DIG? (@{ch})'.format(ch = channel))
 		
 	def set_dig(self, channel = 0, value = 0):
+		if(value > 1):
+			value = 1
 		self.inst.write('INSTR:DAQ:SET:OUTP (@{ch}),{val}'.format(ch = channel, val = value))
+		
+	def set_led(self, value = 0):
+		if(value > 1):
+			value = 1
+		self.inst.write('INSTR:DAQ:SET:LED {val}'.format(val = value))
 		
 if __name__ == "__main__":
 	#connect to the daq
