@@ -92,11 +92,10 @@ def gather_and_write_data(filepath, time, print_all=False, print_max = True):
 		print(data)
 	
 	if(print_max):
-		print('Max Temps (C)\tCH0-15: {}'.format(max_temp_c_groups[0]) + 
-				'\tCH16-31: {}'.format(max_temp_c_groups[1]) + 
-				'\tCH32-47: {}'.format(max_temp_c_groups[2]) +
-				'\tCH48-63: {}'.format(max_temp_c_groups[3]) +
-				'\n')
+		print('Max Temps (C)\tCH0-15: {:.1f}'.format(max_temp_c_groups[0]) + 
+				'\tCH16-31: {:.1f}'.format(max_temp_c_groups[1]) + 
+				'\tCH32-47: {:.1f}'.format(max_temp_c_groups[2]) +
+				'\tCH48-63: {:.1f}'.format(max_temp_c_groups[3]))
 	
 	write_line(filepath, data)
 	
