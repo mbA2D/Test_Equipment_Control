@@ -164,8 +164,6 @@ def cycle_cell(dir, cell_name, cycle_num,
 		data = measure_discharge()
 		gather_and_write_data(filepath, data)
 	
-	
-	
 	#rest
 	start_rest()
 	rest_start_time = time.time()
@@ -174,6 +172,9 @@ def cycle_cell(dir, cell_name, cycle_num,
 		time.sleep(log_interval_s - ((time.time() - rest_start_time) % log_interval_s))
 		data = measure_rest()
 		gather_and_write_data(filepath, data)
+	
+	#set data to not immediately close the program
+	data = (end_V_charge, cc_charge)
 	
 	#start the charging
 	start_charge(storage_charge_V, cc_charge)
