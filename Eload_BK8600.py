@@ -62,4 +62,7 @@ class BK8600:
 	def __del__(self):
 		self.toggle_output(False)
 		self.lock_front_panel(False)
-		self.inst.close()
+		try:
+			self.inst.close()
+		except AttributeError:
+			pass

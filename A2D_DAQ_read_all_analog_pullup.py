@@ -52,11 +52,16 @@ def init_all_channels():
 		daq.conf_io(ch, dir)
 		daq.set_dig(ch, value)
 
-def gather_and_write_data(filepath, time, printout=False):
+def gather_and_write_data(filepath, time, print_all=False, print_max = True):
+	daq.set_led(1)
+	
 	data = list()
 	
 	#add timestamp
 	data.append(time)
+	
+	max_temp_c = -273.15
+	max_temp_c_groups = [-273.15, -273.15, -273.15, -273.15]
 	
 	#read all analog values
 	for ch in range(daq.num_channels):
@@ -66,12 +71,36 @@ def gather_and_write_data(filepath, time, printout=False):
 		if(mv/1000 > pull_up_v):
 			mv = pull_up_v*1000
 		
-		data.append(V2T.voltage_to_C(mv/1000, pull_up_r, pull_up_v))
+		temp_c = V2T.voltage_to_C(mv/1000, pull_up_r, pull_up_v)
+		
+		if(ch/16 < 1):
+			if(temp_c > max_temp_c_groups[0]):
+				max_temp_c_groups[0] = temp_c
+		elif(ch/32 < 1):
+			if(temp_c > max_temp_c_groups[1]):
+				max_temp_c_groups[1] = temp_c
+		elif(ch/48 < 1):
+			if(temp_c > max_temp_c_groups[2]):
+				max_temp_c_groups[2] = temp_c
+		else:
+			if(temp_c > max_temp_c_groups[3]):
+				max_temp_c_groups[3] = temp_c
+		
+		data.append(temp_c)
 	
-	if(printout):
+	if(print_all):
 		print(data)
 	
+	if(print_max):
+		print('Max Temps (C)\tCH0-15: {}'.format(max_temp_c_groups[0]) + 
+				'\tCH16-31: {}'.format(max_temp_c_groups[1]) + 
+				'\tCH32-47: {}'.format(max_temp_c_groups[2]) +
+				'\tCH48-63: {}'.format(max_temp_c_groups[3]) +
+				'\n')
+	
 	write_line(filepath, data)
+	
+	daq.set_led(0)
 
 
 ######################### Program ########################
