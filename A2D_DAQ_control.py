@@ -73,7 +73,8 @@ class A2D_DAQ:
 	def set_led(self, value = 0):
 		if(value > 1):
 			value = 1
-		self.inst.write('INSTR:DAQ:SET:LED {val}'.format(val = value))
+		#x is a character that we parse but do nothing with (channel must be first)
+		self.inst.write('INSTR:DAQ:SET:LED x {val}'.format(val = value))
 		
 if __name__ == "__main__":
 	#connect to the daq
