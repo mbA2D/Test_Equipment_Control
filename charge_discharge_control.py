@@ -21,6 +21,7 @@ def init_instruments():
 
 def start_charge(end_voltage, constant_current):
 	eload.toggle_output(False)
+	time.sleep(0.1)
 	psu.set_voltage(end_voltage)
 	time.sleep(0.1)
 	psu.set_current(constant_current)
@@ -29,12 +30,14 @@ def start_charge(end_voltage, constant_current):
 	
 def start_discharge(constant_current):
 	psu.toggle_output(False)
+	time.sleep(0.1)
 	eload.set_current(constant_current)
 	time.sleep(0.1)
 	eload.toggle_output(True)
 
 def start_rest():
 	psu.toggle_output(False)
+	time.sleep(0.1)
 	eload.toggle_output(False)
 
 ######################### MEASURING ######################

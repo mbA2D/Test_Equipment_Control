@@ -30,11 +30,17 @@ class SPD1000:
 		
 		print("Connected to %s\n" % self.inst.query("*IDN?"))
 		self.inst.write("*RST")
+		time.sleep(0.1)
+		
 		#Choose channel 1
 		self.inst.write("INST CH1")
+		time.sleep(0.1)
 		self.lock_commands(False)
+		time.sleep(0.1)
 		self.set_current(0)
+		time.sleep(0.1)
 		self.set_voltage(0)
+		time.sleep(0.1)
 		
 	# To Set E-Load in Amps 
 	def set_current(self, current_setpoint_A):		
