@@ -10,10 +10,10 @@ class A2D_DAQ:
 	def __init__(self, resource_id = ""):
 		self.num_channels = 64
 		
-		rm = pyvisa.ResourceManager()
+		rm = pyvisa.ResourceManager('@py')
 		
 		if(resource_id == ""):
-			resources = list(rm.list_resources('@py')) #RM returns a tuple so cast to a list to append
+			resources = list(rm.list_resources()) #RM returns a tuple so cast to a list to append
 		
 			########### EASYGUI VERSION #############
 			#choicebox needs 2 resources, so if we only have 1 device then add another.
