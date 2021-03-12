@@ -185,6 +185,9 @@ def cycle_cell(dir, cell_name, cycle_num,
 		data = measure_charge()
 		gather_and_write_data(filepath, data)
 	
+	#shut off power supply
+	start_rest()
+	
 	print('Cycle Completed: {}\n'.format(time.ctime()))
 	
 	return
