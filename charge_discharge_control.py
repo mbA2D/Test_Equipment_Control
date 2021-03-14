@@ -111,7 +111,6 @@ def cycle_cell(dir, cell_name, cycle_num,
 				rest_after_charge_mins, 
 				end_V_discharge, cc_discharge,
 				rest_after_discharge_mins,
-				storage_charge_V,
 				log_interval_s = 1):
 	
 	#start a new file for the cycle
@@ -173,10 +172,16 @@ def cycle_cell(dir, cell_name, cycle_num,
 		data = measure_rest()
 		gather_and_write_data(filepath, data)
 	
+	print('Cycle Completed: {}\n'.format(time.ctime()))
+	
+	return
+
+def storage_charge(end_V_charge, cc_charge):
+
 	#set data to not immediately close the program
 	data = (end_V_charge, cc_charge)
 	
-	#start the charging
+	#start the storage charging
 	start_charge(storage_charge_V, cc_charge)
 	charge_start_time = time.time()
 	print('Starting Storage Charge: {}\n'.format(time.ctime()))
@@ -187,11 +192,6 @@ def cycle_cell(dir, cell_name, cycle_num,
 	
 	#shut off power supply
 	start_rest()
-	
-	print('Cycle Completed: {}\n'.format(time.ctime()))
-	
-	return
-
 
 ##################### Checking User Input ##############
 def check_user_entry(entry):
@@ -264,15 +264,23 @@ while valid_entries == False:
 directory = get_directory()
 init_instruments()
 
+#cycle x times
 for cycle in range(int(entries[8])):
 	try:
 		cycle_cell(directory, entries[0], cycle,
 				float(entries[1]), float(entries[2]), float(entries[3]),
 				float(entries[4]), float(entries[5]), float(entries[6]),
-				float(entries[7]), float(entries[9]), log_interval_s = float(entries[10]))
+				float(entries[7]), log_interval_s = float(entries[10]))
 	except KeyboardInterrupt:
 		eload.toggle_output(False)
 		psu.toggle_output(False)
-		
 		exit()
 		
+#storage charge
+try:
+	storage_charge(float(entries([9])), float(entries[2]))
+except KeyboardInterrupt:
+	eload.toggle_output(False)
+	psu.toggle_output(False)
+	exit()
+	
