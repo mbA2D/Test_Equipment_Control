@@ -90,6 +90,10 @@ class Arduino_IO:
 			self.set_pwm(channel, pwm)
 			sleep(s_per_step) #not fully accurate, but works for now
 	
+	#make a pin give a high or low pulse
+	def pulse_pin(self, channel = 2, pulse_val = 1):
+		self.inst.write('INSTR:IO:PULSE (@{ch}),{val}'.format(ch = channel, val = pulse_val))
+	
 	def set_led(self, value = 0):
 		if(value > 1):
 			value = 1
