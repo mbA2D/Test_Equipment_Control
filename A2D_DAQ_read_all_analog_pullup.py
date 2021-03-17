@@ -9,9 +9,9 @@ import easygui as eg
 import voltage_to_temp as V2T
 
 
-pull_up_v = 3.263
+pull_up_v = 3.3
 pull_up_r = 3300
-
+pull_up_cal_ch = 63
 
 def get_directory():
 	dir = eg.diropenbox(
@@ -51,9 +51,14 @@ def init_all_channels():
 	for ch in range(daq.num_channels):
 		daq.conf_io(ch, dir)
 		daq.set_dig(ch, value)
+	daq.calibrate_pullup_v(pull_up_cal_ch)
+	pull_up_v = daq.pullup_voltage
 
 def gather_and_write_data(filepath, time, print_all=False, print_max = True):
 	daq.set_led(1)
+	#recalibrate pullup voltage
+	daq.calibrate_pullup_v(pull_up_cal_ch)
+	pull_up_v = daq.pullup_voltage
 	
 	data = list()
 	
