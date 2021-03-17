@@ -9,6 +9,7 @@ class A2D_DAQ:
 	#initialize
 	def __init__(self, resource_id = ""):
 		self.num_channels = 64
+		self.pullup_voltage = 3.3
 		
 		rm = pyvisa.ResourceManager('@py')
 		
@@ -34,6 +35,7 @@ class A2D_DAQ:
 		
 		sleep(2) #wait for arduino reset
 		
+		#pyvisa configuration
 		self.inst.baud_rate = 57600
 		self.inst.read_termination = '\r\n'
 		self.inst.write_termination = '\n'
@@ -58,6 +60,18 @@ class A2D_DAQ:
 		#0 means input - pin high impedance
 		elif not dir:
 			self.inst.write('CONF:DAQ:INP (@{ch})'.format(ch = channel))
+	
+	def get_pullup_v(self):
+		return self.pullup_voltage
+	
+	def calibrate_pullup_v(self, cal_ch = 63):
+		#choose a channel to read from - this channel should have nothing on it
+		
+		#ensure channel is set to output and pullued high
+		self.conf_io(channel = cal_ch, dir = 1)
+		self.set_dig(channel = cal_ch, value = 1)
+		
+		self.pullup_voltage = float(self.get_analog_mv(channel = cal_ch))/1000.0
 	
 	def get_analog_mv(self, channel = 0):
 		return self.inst.query('INSTR:READ:ANA? (@{ch})'.format(ch = channel))
