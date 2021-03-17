@@ -130,7 +130,6 @@ def cycle_cell(dir, cell_name, cycle_num,
 			'Discharge End Voltage: {}\n'.format(end_V_discharge) + 
 			'Discharge Current: {}\n'.format(cc_discharge) + 
 			'Rest After Discharge (Minutes): {}\n'.format(rest_after_discharge_mins) + 
-			'Storage Charge Voltage: {}\n'.format(storage_charge_V) +
 			'Log Interval (Seconds): {}\n'.format(log_interval_s) + 
 			'\n\n')
 	
@@ -176,10 +175,13 @@ def cycle_cell(dir, cell_name, cycle_num,
 	
 	return
 
-def storage_charge(end_V_charge, cc_charge):
-
+def storage_charge(storage_charge_V, cc_charge, end_A_charge, log_interval_s):
+	
+	#start a new file for the cycle
+	filepath = start_file(dir, cell_name, cycle_num)
+	
 	#set data to not immediately close the program
-	data = (end_V_charge, cc_charge)
+	data = (storage_charge_V, cc_charge)
 	
 	#start the storage charging
 	start_charge(storage_charge_V, cc_charge)
@@ -278,7 +280,7 @@ for cycle in range(int(entries[8])):
 		
 #storage charge
 try:
-	storage_charge(float(entries([9])), float(entries[2]))
+	storage_charge(float(entries[9]), float(entries[2]), float(entries[3]), log_interval_s = float(entries[10]))
 except KeyboardInterrupt:
 	eload.toggle_output(False)
 	psu.toggle_output(False)
