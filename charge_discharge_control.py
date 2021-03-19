@@ -175,7 +175,7 @@ def cycle_cell(dir, cell_name, cycle_num,
 	
 	return
 
-def storage_charge(dir, cell_name, cycle_num, storage_charge_V, cc_charge, end_A_charge, log_interval_s):
+def storage_charge(storage_charge_V, cc_charge, end_A_charge, log_interval_s):
 	
 	#start a new file for the cycle
 	filepath = start_file(dir, cell_name, cycle_num)
@@ -280,9 +280,7 @@ for cycle in range(int(entries[8])):
 		
 #storage charge
 try:
-	storage_charge(directory, entries[0], cycle, 
-					float(entries[9]), float(entries[2]),
-					float(entries[3]), log_interval_s = float(entries[10]))
+	storage_charge(float(entries[9]), float(entries[2]), float(entries[3]), log_interval_s = float(entries[10]))
 except KeyboardInterrupt:
 	eload.toggle_output(False)
 	psu.toggle_output(False)
