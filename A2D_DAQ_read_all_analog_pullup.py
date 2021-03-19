@@ -4,7 +4,7 @@ import A2D_DAQ_control as AD_control
 import pandas as pd
 from datetime import datetime
 import os
-from time import sleep
+import time
 import easygui as eg
 import voltage_to_temp as V2T
 
