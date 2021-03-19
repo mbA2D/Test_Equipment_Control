@@ -21,6 +21,7 @@ class A2D_DAQ:
 			title = "DAQ Selection"
 			if(len(resources) == 0):
 				resource_id = 0
+				print("No Resources Available. Connection attempt will exit with errors")
 			elif(len(resources) == 1):
 				msg = "There is only 1 visa resource available.\nWould you like to use it?\n{}".format(resources[0])
 				if(eg.ynbox(msg, title)):
