@@ -72,10 +72,10 @@ def write_line(filepath, list_line):
 	#save to csv - append, no index, no header
 	df.to_csv(filepath, header=False, mode='a', index=False)
 
-def start_file(directory, name, cycle):
+def start_file(directory, name):
 	dt = datetime.now().strftime("%Y-%m-%d %H-%M-%S")
 	filename = '{cell_name} {date}.csv'.format(\
-				cell_name = name, cell_cycle = cycle, date = dt)
+				cell_name = name, date = dt)
 	
 	filepath = os.path.join(directory, filename)
 	
@@ -106,41 +106,35 @@ def gather_and_write_data(filepath, iv_data, printout=False):
 ########################## CYCLE #############################
 
 #run a single cycle on a cell while logging data
-def cycle_cell(dir, cell_name, cycle_num,
-				end_V_charge, cc_charge, end_A_charge,
-				rest_after_charge_mins, 
-				end_V_discharge, cc_discharge,
-				rest_after_discharge_mins,
-				log_interval_s = 1):
+def cycle_cell(dir, cycle_settings):
 	
 	#start a new file for the cycle
-	filepath = start_file(dir, cell_name, cycle_num)
+	filepath = start_file(dir, cycle_settings["cell_name"])
 	
-	rest_after_charge_s = rest_after_charge_mins * 60
-	rest_after_discharge_s = rest_after_discharge_mins * 60
+	rest_after_charge_s = cycle_settings["rest_after_charge_min"] * 60
+	rest_after_discharge_s = cycle_settings["rest_after_discharge_min"] * 60
 	
 	print('Starting a cycle: {}\n'.format(time.ctime()) + 
 			'Settings:\n' +
-			'Cell Name: {}\n'.format(cell_name) + 
-			'Cycle Number: {}\n'.format(cycle_num) + 
-			'Charge End Voltage: {}\n'.format(end_V_charge) +
-			'Charge Current: {}\n'.format(cc_charge) + 
-			'Charge End Current: {}\n'.format(end_A_charge) + 
-			'Rest After Charge (Minutes): {}\n'.format(rest_after_charge_mins) + 
-			'Discharge End Voltage: {}\n'.format(end_V_discharge) + 
-			'Discharge Current: {}\n'.format(cc_discharge) + 
-			'Rest After Discharge (Minutes): {}\n'.format(rest_after_discharge_mins) + 
-			'Log Interval (Seconds): {}\n'.format(log_interval_s) + 
+			'Cell Name: {}\n'.format(cycle_settings["cell_name"]) + 
+			'Charge End Voltage: {}\n'.format(cycle_settings["charge_end_v"]) +
+			'Charge Current: {}\n'.format(cycle_settings["charge_a"]) + 
+			'Charge End Current: {}\n'.format(cycle_settings["charge_end_a"]) + 
+			'Rest After Charge (Minutes): {}\n'.format(cycle_settings["rest_after_charge_min"]) + 
+			'Discharge End Voltage: {}\n'.format(cycle_settings["discharge_end_v"]) + 
+			'Discharge Current: {}\n'.format(cycle_settings["discharge_a"]) + 
+			'Rest After Discharge (Minutes): {}\n'.format(cycle_settings["rest_after_discharge_min"]) + 
+			'Log Interval (Seconds): {}\n'.format(cycle_settings["meas_log_int_s"]) + 
 			'\n\n')
 	
-	data = (end_V_charge, cc_charge)
+	data = (cycle_settings["charge_end_v"], cycle_settings["charge_a"])
 	
 	#start the charging
-	start_charge(end_V_charge, cc_charge)
+	start_charge(cycle_settings["charge_end_v"], cycle_settings["charge_a"])
 	charge_start_time = time.time()
 	print('Starting Charge: {}\n'.format(time.ctime()))
-	while (data[1] > end_A_charge):
-		time.sleep(log_interval_s - ((time.time() - charge_start_time) % log_interval_s))
+	while (data[1] > cycle_settings["charge_end_a"]):
+		time.sleep(cycle_settings["meas_log_int_s"] - ((time.time() - charge_start_time) % cycle_settings["meas_log_int_s"]))
 		data = measure_charge()
 		gather_and_write_data(filepath, data)
 	
@@ -149,16 +143,16 @@ def cycle_cell(dir, cell_name, cycle_num,
 	rest_start_time = time.time()
 	print('Starting Rest After Charge: {}\n'.format(time.ctime()))
 	while (time.time() - rest_start_time) < rest_after_charge_s:
-		time.sleep(log_interval_s - ((time.time() - rest_start_time) % log_interval_s))
+		time.sleep(cycle_settings["meas_log_int_s"] - ((time.time() - rest_start_time) % cycle_settings["meas_log_int_s"]))
 		data = measure_rest()
 		gather_and_write_data(filepath, data)
 	
 	#start discharge
-	start_discharge(cc_discharge)
+	start_discharge(cycle_settings["discharge_a"])
 	discharge_start_time = time.time()
 	print('Starting Discharge: {}\n'.format(time.ctime()))
-	while (data[0] > end_V_discharge):
-		time.sleep(log_interval_s - ((time.time() - discharge_start_time) % log_interval_s))
+	while (data[0] > cycle_settings["discharge_end_v"]):
+		time.sleep(cycle_settings["meas_log_int_s"] - ((time.time() - discharge_start_time) % cycle_settings["meas_log_int_s"]))
 		data = measure_discharge()
 		gather_and_write_data(filepath, data)
 	
@@ -167,7 +161,7 @@ def cycle_cell(dir, cell_name, cycle_num,
 	rest_start_time = time.time()
 	print('Starting Rest After Discharge: {}\n'.format(time.ctime()))
 	while (time.time() - rest_start_time) < rest_after_discharge_s:
-		time.sleep(log_interval_s - ((time.time() - rest_start_time) % log_interval_s))
+		time.sleep(cycle_settings["meas_log_int_s"] - ((time.time() - rest_start_time) % cycle_settings["meas_log_int_s"]))
 		data = measure_rest()
 		gather_and_write_data(filepath, data)
 	
@@ -175,104 +169,114 @@ def cycle_cell(dir, cell_name, cycle_num,
 	
 	return
 
-def storage_charge(dir, cell_name, cycle_num, storage_charge_V, cc_charge, end_A_charge, log_interval_s):
+def storage_charge(dir, charge_settings):
 	
 	#start a new file for the cycle
-	filepath = start_file(dir, cell_name, cycle_num)
+	filepath = start_file(dir, charge_settings["cell_name"])
 	
 	#set data to not immediately close the program
-	data = (storage_charge_V, cc_charge)
+	data = (charge_settings["charge_end_v"], charge_settings["charge_a"])
 	
 	#start the storage charging
-	start_charge(storage_charge_V, cc_charge)
+	start_charge(charge_settings["charge_end_v"], charge_settings["charge_a"])
 	charge_start_time = time.time()
 	print('Starting Storage Charge: {}\n'.format(time.ctime()))
-	while (data[1] > end_A_charge):
-		time.sleep(log_interval_s - ((time.time() - charge_start_time) % log_interval_s))
+	while (data[1] > charge_settings["charge_end_a"]):
+		time.sleep(charge_settings["meas_log_int_s"] - ((time.time() - charge_start_time) % charge_settings["meas_log_int_s"]))
 		data = measure_charge()
 		gather_and_write_data(filepath, data)
 	
 	#shut off power supply
 	start_rest()
 
-##################### Checking User Input ##############
-def check_user_entry(entry):
-	if(entry == None):
-		return False
-	
-	valid = True
-	
-	for val in entry:
-		if(val == entry[0]):
-			if("." in val):
-				return False
-		else:	
-			if not is_number_float(val):
-				return False
-	
-	return valid
-	
-def is_number_float(string):
-	try:
-		float(string)
-		return True
-	except ValueError:
-		return False
+
 
 
 ####################### Program #########################
 
 #get all the info for the test in a multenterbox
-msg = "Enter test info"
-title = "Battery Test Setup"
-field_names = ["Unique Cell Name", 
-				"Charge end voltage",
-				"Charge Current",
-				"Charge End Current",
-				"Rest After Charge (Minutes)", 
-				"Discharge End Voltage",
-				"Discharge Current",
-				"Rest After Discharge (Minutes)",
-				"Number of Cycles",
-				"End Storage Charge",
-				"Measurement Logging Interval (Seconds)"]
-default_text = ["CELL_NAME",
-				"4.2",
-				"7.5",
-				"0.3",
-				"20",
-				"2.5",
-				"30",
-				"20",
-				"1",
-				"3.7",
-				"1"]
+#msg = "Enter test info"
+#title = "Battery Test Setup"
+#field_names = ["Unique Cell Name", 
+#				"Charge end voltage",
+#				"Charge Current",
+#				"Charge End Current",
+#				"Rest After Charge (Minutes)", 
+#				"Discharge End Voltage",
+#				"Discharge Current",
+#				"Rest After Discharge (Minutes)",
+#				"Number of Cycles",
+#				"End Storage Charge",
+#				"Measurement Logging Interval (Seconds)"]
+#default_text = ["CELL_NAME",
+#				"4.2",
+#				"7.5",
+#				"0.3",
+#				"20",
+#				"2.5",
+#				"30",
+#				"20",
+#				"1",
+#				"3.7",
+#				"1"]
 
-valid_entries = False
 
-while valid_entries == False:
-	entries = eg.multenterbox(msg, title, field_names, default_text)
-	valid_entries = check_user_entry(entries)
+#degradation cycles
+#get user to enter number of cycles
+degradation_cycle_settings = Templates.CycleSettings()
+degradation_cycle_settings.get_cycle_settings(title = "Degradation Settings")
+num_degradation_cycles = eg.integerbox(msg = "How Many Degradation Cycles?",
+										title = "Degradation Cycle", default = 1,
+										lowerbound = 0, upperbound = 99)
 
-#Ask user to double check the entries
-valid_entries = False
-msg = "Confirm these values are correct"
+#capacity measurement cycles
+#only 1 cycle
+capacity_cycle_settings = Templates.CycleSettings()
+capacity_cycle_settings.get_cycle_settings(title = "Capacity Measurement Settings")
+num_capacity_cycles = 1
 
-while valid_entries == False:
-	entries = eg.multenterbox(msg, title, field_names, entries)
-	valid_entries = check_user_entry(entries)
+#test cycles - X discharge, Y charge, how many times?
+num_test_cycles = eg.integerbox(msg = "How Many Test Cycles?",
+										title = "Test Cycles", default = 1,
+										lowerbound = 0, upperbound = 99)
+
+#storage charge settings
+storage_charge_settings = Templates.ChargeSettings()
+storage_charge_settings.get_cycle_settings(title = "Storage Charge Settings")
+
+
+cycle_settings_list = list()
+
+for j in range(num_test_cycles):
+	for i in range(num_degradation_cycles):
+		cycle_settings_list.append(degradation_cycle_settings)
+	for i in range(num_capacity_cycles):
+		cycle_settings_list.append(capacity_cycle_settings)
+
+
+#valid_entries = False
+#
+#while valid_entries == False:
+#	entries = eg.multenterbox(msg, title, field_names, default_text)
+#	valid_entries = check_user_entry(entries)
+
+#Ask user to double check the entries - reset validity
+#valid_entries = False
+#msg = "Confirm these values are correct"
+
+#while valid_entries == False:
+#	entries = eg.multenterbox(msg, title, field_names, entries)
+#	valid_entries = check_user_entry(entries)
+
 
 #Get a directory to save the file
 directory = get_directory()
 init_instruments()
 
 #cycle x times
-for cycle in range(int(entries[8])):
+for cycle_settings in cycle_settings_list:
 	try:
-		cycle_cell(directory, entries[0], cycle,
-				float(entries[1]), float(entries[2]), float(entries[3]),
-				float(entries[4]), float(entries[5]), float(entries[6]),
-				float(entries[7]), log_interval_s = float(entries[10]))
+		cycle_cell(directory, cycle_settings.settings)
 	except KeyboardInterrupt:
 		eload.toggle_output(False)
 		psu.toggle_output(False)
@@ -280,9 +284,7 @@ for cycle in range(int(entries[8])):
 		
 #storage charge
 try:
-	storage_charge(directory, entries[0], cycle, 
-					float(entries[9]), float(entries[2]),
-					float(entries[3]), log_interval_s = float(entries[10]))
+	storage_charge(directory, storage_charge_settings.settings)
 except KeyboardInterrupt:
 	eload.toggle_output(False)
 	psu.toggle_output(False)

@@ -4,7 +4,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import easygui as eg
 import os
-import CycleStats
+import Templates
 
 def plot_iv(log_data, save_filepath = '', show_graph=False):
 	#plot time(in seconds) as x
@@ -114,7 +114,7 @@ if __name__ == '__main__':
 	df['Timestamp'] = df['Timestamp'] - start_time
 	
 	#calculate stats and export
-	cycle_stats = CycleStats.CycleStats()
+	cycle_stats = Templates.CycleStats()
 	calc_capacity(df, cycle_stats, charge=True)
 	calc_capacity(df, cycle_stats, charge=False)
 	dict_to_csv(cycle_stats.stats, filepath_stats)
