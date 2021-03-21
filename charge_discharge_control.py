@@ -224,7 +224,7 @@ def storage_charge(dir, charge_settings):
 #degradation cycles
 #get user to enter number of cycles
 degradation_cycle_settings = Templates.CycleSettings()
-degradation_cycle_settings.get_cycle_settings(title = "Degradation Settings")
+degradation_cycle_settings.get_cycle_settings()
 num_degradation_cycles = eg.integerbox(msg = "How Many Degradation Cycles?",
 										title = "Degradation Cycle", default = 1,
 										lowerbound = 0, upperbound = 99)
@@ -232,7 +232,7 @@ num_degradation_cycles = eg.integerbox(msg = "How Many Degradation Cycles?",
 #capacity measurement cycles
 #only 1 cycle
 capacity_cycle_settings = Templates.CycleSettings()
-capacity_cycle_settings.get_cycle_settings(title = "Capacity Measurement Settings")
+capacity_cycle_settings.get_cycle_settings()
 num_capacity_cycles = 1
 
 #test cycles - X discharge, Y charge, how many times?
@@ -242,7 +242,7 @@ num_test_cycles = eg.integerbox(msg = "How Many Test Cycles?",
 
 #storage charge settings
 storage_charge_settings = Templates.ChargeSettings()
-storage_charge_settings.get_cycle_settings(title = "Storage Charge Settings")
+storage_charge_settings.get_cycle_settings()
 
 
 cycle_settings_list = list()
