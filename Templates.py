@@ -3,6 +3,7 @@
 
 import easygui as eg
 import json
+import os
 
 class CycleStats:
 	
@@ -84,7 +85,11 @@ class CycleSettings:
 	def export_cycle_settings(self):
 		#get the file to export to
 		file_name = eg.filesavebox(msg = "Choose a File to export the settings",
-									title = "Cycle Settings", filetypes = ("*.json"))
+									title = "Cycle Settings", filetypes = ['*.json', 'JSON files'])
+		
+		#Checking the file type
+		file_name = self.force_extension(file_name, '.json')
+		
 		#export the file
 		if(file_name != None):
 			with open(file_name, "w") as write_file:
@@ -93,11 +98,20 @@ class CycleSettings:
 	def import_cycle_settings(self):
 		#get the file to import from
 		file_name = eg.fileopenbox(msg = "Choose a File to import settings from",
-									title = "Cycle Settings", filetypes = ("*.json"))
+									title = "Cycle Settings", filetypes = ['*.json', 'JSON files'])
+		
 		#import the file
 		if(file_name != None):
 			with open(file_name, "r") as read_file:
 				json.load(self.settings, read_file)
+				
+	def force_extension(self, filename, extension):
+		#Checking the file type
+		file_root, file_extension = os.path.splitext(filename)
+		if(file_extension != extension):
+			file_extension = extension
+			file_name = file_root + file_extension
+		return file_name
 
 ###############  CHARGE  #####################
 class ChargeSettings(CycleSettings):
