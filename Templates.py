@@ -25,12 +25,8 @@ def check_user_entry(entry):
 	valid = True
 	
 	for val in entry:
-		if(val == entry[0]):
-			if("." in val):
-				return False
-		else:	
-			if not is_number_float(val):
-				return False
+		if not is_number_float(val):
+			return False
 	
 	return valid
 
@@ -45,8 +41,7 @@ def is_number_float(string):
 class CycleSettings:
 
 	def __init__(self):
-		self.settings = {
-			"cell_name": 				"CELL_NAME", 
+		self.settings = { 
 			"charge_end_v": 			4.2,
 			"charge_a": 				7.5,
 			"charge_end_a": 			0.3,
@@ -57,15 +52,20 @@ class CycleSettings:
 			"meas_log_int_s": 			1
 		}
 	
-	def get_cycle_settings(self):
+	def get_cycle_settings(self, cycle_name = "TEST"):
 		
-		response = easygui.buttonbox(msg = "Would you like to import settings for this cycle or create new settings?",
-										title = "Get Settings", choices = ("New Settings", "Import Settings"))
+		response = eg.buttonbox(msg = "Would you like to import settings for {} cycle or create new settings?".format(cycle_name),
+										title = "Settings for {} cycle".format(cycle_name), choices = ("New Settings", "Import Settings"))
 		if(response == "New Settings"):
 			valid_entries = False
 			while valid_entries == False:
-				self.settings = eg.multenterbox(msg = "Enter Cycle Info", title, self.settings.keys(), self.settings.values())
-				valid_entries = self.check_user_entry(self.settings)
+				response_list = eg.multenterbox(msg = "Enter Cycle Info for {}".format(cycle_name), title = response,
+												fields = list(self.settings.keys()), values = list(self.settings.values()))
+				valid_entries = check_user_entry(response_list)
+			
+			#update dict entries with the response
+			self.update_settings(response_list)
+			
 			if (eg.ynbox(msg = "Would you like to save these settings for future use?", title = "Save Settings")):
 				self.export_cycle_settings()
 		elif (response == "Import Settings"):
@@ -75,11 +75,19 @@ class CycleSettings:
 			
 	def convert_to_float(self):
 		#if possible, convert items to floats
-		for key in self.settings:
+		for key in self.settings.keys():
 			try:
 				self.settings[key] = float(self.settings[key])
 			except ValueError:
 				pass
+	
+	def update_settings(self, new_value_list):
+		#assuming an ordered response list
+		#a bit hacky but it should work
+		index = 0
+		for key in self.settings.keys():
+			self.settings.update({key: new_value_list[index]})
+			index += 1
 	
 	def export_cycle_settings(self):
 		#get the file to export to
@@ -97,14 +105,13 @@ class CycleSettings:
 		#import the file
 		if(file_name != None):
 			with open(file_name, "r") as read_file:
-				json.load(self.settings, read_file)
+				self.settings = json.load(read_file)
 
 ###############  CHARGE  #####################
 class ChargeSettings(CycleSettings):
 
 	def __init__(self):
-		self.settings = {
-			"cell_name": 				"CELL_NAME", 
+		self.settings = { 
 			"charge_end_v": 			4.2,
 			"charge_a": 				7.5,
 			"charge_end_a": 			0.3,
