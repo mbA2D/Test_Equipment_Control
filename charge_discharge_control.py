@@ -275,14 +275,16 @@ directory = get_directory()
 init_instruments()
 
 #cycle x times
+cycle_num = 0
 for cycle_settings in cycle_settings_list:
+	print("Cycle {} Starting".format(cycle_num))
 	try:
 		cycle_cell(directory, cell_name, cycle_settings.settings)
 	except KeyboardInterrupt:
 		eload.toggle_output(False)
 		psu.toggle_output(False)
 		exit()
-		
+	cycle_num += 1
 #storage charge
 try:
 	storage_charge(directory, cell_name, storage_charge_settings.settings)
