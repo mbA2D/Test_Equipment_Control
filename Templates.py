@@ -66,9 +66,9 @@ class CycleSettings:
 			self.update_settings(response_list)
 			
 			if (eg.ynbox(msg = "Would you like to save these settings for future use?", title = "Save Settings")):
-				self.export_cycle_settings()
+				self.export_cycle_settings(cycle_name)
 		elif (response == "Import Settings"):
-			self.import_cycle_settings()
+			self.import_cycle_settings(cycle_name)
 		
 		self.convert_to_float()
 			
