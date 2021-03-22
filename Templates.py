@@ -111,7 +111,7 @@ class CycleSettings:
 		#import the file
 		if(file_name != None):
 			with open(file_name, "r") as read_file:
-				json.load(self.settings, read_file)
+				self.settings = json.load(read_file)
 				
 	def force_extension(self, filename, extension):
 		#Checking the file type
