@@ -23,13 +23,11 @@ def check_user_entry(entry):
 	if(entry == None):
 		return False
 	
-	valid = True
-	
 	for val in entry:
 		if not is_number_float(val):
 			return False
 	
-	return valid
+	return True
 
 def is_number_float(string):
 	try:
