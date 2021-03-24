@@ -90,7 +90,7 @@ class CycleSettings:
 	
 	def export_cycle_settings(self, cycle_name = ""):
 		#add extra space to get formatting correct
-		if (cycle_name != "")
+		if (cycle_name != ""):
 			cycle_name += " "
 		
 		#get the file to export to
@@ -107,7 +107,7 @@ class CycleSettings:
 	
 	def import_cycle_settings(self, cycle_name = ""):
 		#add extra space to get formatting correct
-		if (cycle_name != "")
+		if (cycle_name != ""):
 			cycle_name += " "
 		
 		#get the file to import from
