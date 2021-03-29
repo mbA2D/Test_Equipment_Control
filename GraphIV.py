@@ -63,6 +63,7 @@ def calc_capacity(log_data, stats, charge=True):
 		
 	capacity_ah = dsc_data['Capacity_Ah'].sum()
 	capacity_wh = dsc_data['Capacity_wh'].sum()
+	discharge_a = dsc_data['Current'].median()
 	
 	#Calculate time required for cycle
 	start_time = dsc_data.loc[dsc_data.index[0], 'Timestamp']
@@ -75,14 +76,17 @@ def calc_capacity(log_data, stats, charge=True):
 		stats.stats['charge_capacity_ah'] = capacity_ah
 		stats.stats['charge_capacity_wh'] = capacity_wh
 		stats.stats['charge_time_h'] = total_time
+		stats.stats['charge_current_a'] = discharge_a
 	else:
 		print("Discharge:")
 		stats.stats['discharge_capacity_ah'] = capacity_ah
 		stats.stats['discharge_capacity_wh'] = capacity_wh
 		stats.stats['discharge_time_h'] = total_time
+		stats.stats['discharge_current_a'] = discharge_a
 	print('Ah: {}'.format(capacity_ah))
 	print('wh: {}'.format(capacity_wh))
 	print('Time(h): {}'.format(total_time))
+	print('Current(A): {}'.format(discharge_a))
 
 def dict_to_csv(dict, filepath):
 	dict_dataframe = pd.DataFrame(dict, index = [0])
