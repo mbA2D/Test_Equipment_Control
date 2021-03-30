@@ -17,13 +17,15 @@ class CycleStats:
 			"charge_max_temp_c":		0,
 			"charge_start_time":		0,
 			"charge_end_time":			0,
+			"charge_end_v":				0,
 			"discharge_capacity_ah": 	0,
 			"discharge_capacity_wh": 	0,
 			"discharge_time_h": 		0,
 			"discharge_current_a":		0,
 			"discharge_max_temp_c":		0,
 			"discharge_start_time":		0,
-			"discharge_end_time":		0
+			"discharge_end_time":		0,
+			"discharge_end_v":			0
 		}
 
 

@@ -69,6 +69,7 @@ def calc_capacity(log_data, stats, charge=True):
 	#Calculate time required for cycle
 	start_time = dsc_data.loc[dsc_data.index[0], 'Timestamp']
 	end_time = dsc_data.loc[dsc_data.index[-1], 'Timestamp']
+	end_v = dsc_data.loc[dsc_data.index[-1], 'Voltage']
 	total_time = (end_time - start_time)/3600
 	
 	if (charge):
@@ -84,6 +85,7 @@ def calc_capacity(log_data, stats, charge=True):
 	stats.stats['{}_current_a'.format(prefix)] = charge_a
 	stats.stats['{}_start_time'.format(prefix)] = start_time
 	stats.stats['{}_end_time'.format(prefix)] = end_time
+	stats.stats['{}_end_v'.format(prefix)] = end_v
 	
 	print('Ah: {}'.format(capacity_ah))
 	print('wh: {}'.format(capacity_wh))
