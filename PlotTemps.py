@@ -7,6 +7,7 @@ import os
 import TempChannels
 
 tc = TempChannels.TempChannels()
+temp_log_dir = eg.diropenbox(title = "Choose the directory that contains the temp logs")
 
 #parameters
 #timestamp - the timestampt to look for
@@ -14,10 +15,10 @@ tc = TempChannels.TempChannels()
 #before - look for a timestamp before or after the given one
 #tolerance - the tolerance around the timestamp to accept
 #returns the filename and timestamp in the temp log file that is closest
-def find_timestamp(timestamp, dir, file = None, before = True, tolerance = 5):
+def find_timestamp(stats, prefix, dir, file = None, tolerance = 10):
 	
-	check_time_low = timestamp - before*tolerance
-	check_time_high = timestamp + (!before)*tolerance
+	check_time_low = stats['{}_start_time'.format(prefix)] - tolerance
+	check_time_high = stats['{}_end_time'.format(prefix)] + tolerance
 	
 	#better way - apply upper and lower masks, check size.
 	
@@ -27,12 +28,15 @@ def find_timestamp(timestamp, dir, file = None, before = True, tolerance = 5):
 			if os.path.isdir(file_path):
 				#ignore other subdirectories
 				continue
-			df = check_file(file_path)
+			df = check_file(file_path, check_time_high, check_time_low)
 			#exit for loop once a file with the correct timestamps is found
-			if df.size() != 0:
+			if df.size != 0:
 				break
 	else:
 		df = check_file(file)
+	
+	if df.size == 0:
+		print("No File Found")
 	
 	return file, df
 
@@ -41,33 +45,31 @@ def check_file(file_path, check_high, check_low):
 	df = pd.read_csv(file_path)
 	
 	#apply mask
-	df = df[df['Timestamp'] >= check_low & df['Timestamp'] <= check_high]
-	print('Dataframe Size: {}'.format(df.size()	))
+	df = df[(df['Timestamp'] >= check_low) & (df['Timestamp'] <= check_high)]
+	print('Dataframe Size: {}'.format(df.size))
 	
 	return df
 
 #return a dictionary with the temperature log for the discharge log
-#timestamp_start - the timestamp at the start of the discharge
-#timestamp_end - the timestamp at the end of the discahrge
-#cell_name - the name of the cell - e.g. "EMS_SC_EPOXY", must match an entry in TempChannels.py
-def get_temps(timestamp_start, timestamp_end, cell_name):
-	
-	temp_log_dir = eg.opendirbox(title = "Choose the directory that contains the temp logs")
+#uses start and end timestamps to get the data from the temp logs
+#channels for each device found with the TempChannels.py cell names
+def get_temps(stats, prefix):
 	
 	#get the file and the filtered data from while charging or discharging
-	file, df = find_timestamp(timestamp_start, temp_log_dir, before = True)
+	file, df = find_timestamp(stats, prefix, temp_log_dir)
 	
 	#get the channels that were used for this test
-	channels = tc.channels[cell_name]
+	channels = tc.channels[stats['cell_name']]
 	
 	channel_list = list()
-	
 	#get each channel number
 	for label in channels:
 		for channel_num in channels[label]:
-			channel_list.append('Channel_{}_C'.format(channel_num))
+			channel_list.append('Channel_C_{}'.format(channel_num))
 	
-	df = df[[channel_list]]
+	df = df[channel_list]
+	max_temp = df.max().max()
+	print("Max Temp: {}".format(max_temp))
 	
 	#now we should have just the filtered temperatures for this cell
-	return df
+	return df, max_temp

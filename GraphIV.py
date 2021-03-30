@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import easygui as eg
 import os
 import Templates
+import PlotTemps
 
 def plot_iv(log_data, save_filepath = '', show_graph=False):
 	#plot time(in seconds) as x
@@ -63,30 +64,39 @@ def calc_capacity(log_data, stats, charge=True):
 		
 	capacity_ah = dsc_data['Capacity_Ah'].sum()
 	capacity_wh = dsc_data['Capacity_wh'].sum()
-	discharge_a = dsc_data['Current'].median()
+	charge_a = dsc_data['Current'].median()
 	
 	#Calculate time required for cycle
 	start_time = dsc_data.loc[dsc_data.index[0], 'Timestamp']
 	end_time = dsc_data.loc[dsc_data.index[-1], 'Timestamp']
 	total_time = (end_time - start_time)/3600
 	
-	
-	if(charge):
-		print("Charge:")
-		stats.stats['charge_capacity_ah'] = capacity_ah
-		stats.stats['charge_capacity_wh'] = capacity_wh
-		stats.stats['charge_time_h'] = total_time
-		stats.stats['charge_current_a'] = discharge_a
+	if (charge):
+		prefix = 'charge'
 	else:
-		print("Discharge:")
-		stats.stats['discharge_capacity_ah'] = capacity_ah
-		stats.stats['discharge_capacity_wh'] = capacity_wh
-		stats.stats['discharge_time_h'] = total_time
-		stats.stats['discharge_current_a'] = discharge_a
+		prefix = 'discharge'
+	
+	print("{}:".format(prefix))
+	
+	stats.stats['{}_capacity_ah'.format(prefix)] = capacity_ah
+	stats.stats['{}_capacity_wh'.format(prefix)] = capacity_wh
+	stats.stats['{}_time_h'.format(prefix)] = total_time
+	stats.stats['{}_current_a'.format(prefix)] = charge_a
+	stats.stats['{}_start_time'.format(prefix)] = start_time
+	stats.stats['{}_end_time'.format(prefix)] = end_time
+	
 	print('Ah: {}'.format(capacity_ah))
 	print('wh: {}'.format(capacity_wh))
 	print('Time(h): {}'.format(total_time))
-	print('Current(A): {}'.format(discharge_a))
+	print('Current(A): {}'.format(charge_a))
+	print('Start Time: {}'.format(start_time))
+	print('End Time: {}'.format(end_time))
+	
+	#now add some temperature data
+	temp_data, max_temp = PlotTemps.get_temps(stats.stats, prefix)
+	stats.stats['{}_max_temp_c'.format(prefix)] = max_temp
+	
+	
 
 def dict_to_csv(dict, filepath):
 	dict_dataframe = pd.DataFrame(dict, index = [0])
@@ -105,23 +115,23 @@ if __name__ == '__main__':
 	log_date = filename_parts[1]
 	log_time = filename_parts[2]
 
-
 	#add graph to the filename
 	filename_graph = 'GraphIV_' + filename
 	filename_stats = 'Stats_' + filename
 	
 	filepath_graph = os.path.join(filedir, filename_graph)
 	filepath_stats = os.path.join(filedir, filename_stats)
-
-	#Change timestamp to be seconds from cycle start instead of epoch
-	start_time = df['Timestamp'].iloc[0]
-	df['Timestamp'] = df['Timestamp'] - start_time
 	
 	#calculate stats and export
 	cycle_stats = Templates.CycleStats()
+	cycle_stats.stats['cell_name'] = cell_name
 	calc_capacity(df, cycle_stats, charge=True)
 	calc_capacity(df, cycle_stats, charge=False)
 	dict_to_csv(cycle_stats.stats, filepath_stats)
+	
+	#Change timestamp to be seconds from cycle start instead of epoch
+	start_time = df['Timestamp'].iloc[0]
+	df['Timestamp'] = df['Timestamp'] - start_time
 	
 	#Show plot
 	plot_iv(df, save_filepath=filepath_graph, show_graph=True)
