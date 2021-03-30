@@ -102,7 +102,13 @@ def calc_capacity(log_data, stats, charge=True):
 
 def dict_to_csv(dict, filepath):
 	dict_dataframe = pd.DataFrame(dict, index = [0])
-	dict_dataframe.to_csv(filepath, header=True, index=False)
+	
+	write_mode = 'w'
+	write_header = True
+	if(os.path.exists(filepath)):
+		write_mode = 'a'
+		write_header = False
+	dict_dataframe.to_csv(filepath, mode=write_mode, header=write_header, index=False)
 
 if __name__ == '__main__':
 	filepath = eg.fileopenbox(title = "Select the Log to Graph", filetypes = [['*.csv', 'CSV Files']])
@@ -119,10 +125,11 @@ if __name__ == '__main__':
 
 	#add graph to the filename
 	filename_graph = 'GraphIV_' + filename
-	filename_stats = 'Stats_' + filename
+	#filename_stats = 'Stats_' + filename
+	filename_stats = 'Cycle_Statistics.csv'
 	
-	filepath_graph = os.path.join(filedir, filename_graph)
-	filepath_stats = os.path.join(filedir, filename_stats)
+	filepath_graph = os.path.join(filedir, 'Graphs', filename_graph)
+	filepath_stats = os.path.join(filedir, 'Stats', filename_stats)
 	
 	#calculate stats and export
 	cycle_stats = Templates.CycleStats()

@@ -5,6 +5,7 @@ import easygui as eg
 import json
 import os
 
+###################### Statistics to gather for each cycle ###############
 class CycleStats:
 	
 	def __init__(self):

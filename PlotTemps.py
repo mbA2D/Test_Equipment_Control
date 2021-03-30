@@ -50,7 +50,7 @@ def check_file(file_path, check_high, check_low):
 	
 	return df
 
-#return a dictionary with the temperature log for the discharge log
+#return a dataframe with the temperature log for the discharge log
 #uses start and end timestamps to get the data from the temp logs
 #channels for each device found with the TempChannels.py cell names
 def get_temps(stats, prefix):
