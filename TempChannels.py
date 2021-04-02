@@ -3,12 +3,12 @@
 class TempChannels:
 	def __init__(self):
 		self.channels = {
-			'EMS_SC_1' : {
+			'EMS_SC1' : {
 				'pos' : [56,57,58,59,60,61,62],
 				'neg' : [48,49,50,51,52,53,54],
 				'side' : [55]
 			},
-			'EMS_NI_1' : {
+			'EMS_NI1' : {
 				'pos' : [0,1,2,3,4,5,6],
 				'neg' : [7,8,9,11,13,14],
 				'side' : [12]

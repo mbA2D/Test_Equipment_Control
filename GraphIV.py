@@ -33,14 +33,23 @@ def plot_iv(log_data, save_filepath = '', show_graph=False):
 	
 	if(show_graph):
 		plt.show()
+	else:
+		plt.close()
 
 def calc_capacity(log_data, stats, charge=True):
 	#create a mask to get only the discharge data
-	if(charge):	
+	if (charge):
+		prefix = 'charge'
 		mask = log_data['Current'] > 0
 	else:
+		prefix = 'discharge'
 		mask = log_data['Current'] < 0
+
 	dsc_data = log_data[mask]
+	
+	if(dsc_data.size == 0):
+		print("Data for {} does not exist in log".format(prefix))
+		return
 	
 	#add 3 columns to the dataset
 	dsc_data = dsc_data.assign(SecsFromLastTimestamp=0)
@@ -71,11 +80,6 @@ def calc_capacity(log_data, stats, charge=True):
 	end_time = dsc_data.loc[dsc_data.index[-1], 'Timestamp']
 	end_v = dsc_data.loc[dsc_data.index[-1], 'Voltage']
 	total_time = (end_time - start_time)/3600
-	
-	if (charge):
-		prefix = 'charge'
-	else:
-		prefix = 'discharge'
 	
 	print("{}:".format(prefix))
 	
@@ -111,37 +115,40 @@ def dict_to_csv(dict, filepath):
 	dict_dataframe.to_csv(filepath, mode=write_mode, header=write_header, index=False)
 
 if __name__ == '__main__':
-	filepath = eg.fileopenbox(title = "Select the Log to Graph", filetypes = [['*.csv', 'CSV Files']])
-	filedir = os.path.dirname(filepath)
-	filename = os.path.split(filepath)[-1]
-	
-	df = pd.read_csv(filepath)
-	
-	filename_parts = filename.split()
+	filepaths = eg.fileopenbox(title = "Select the Log(s) to Graph", filetypes = [['*.csv', 'CSV Files']], multiple = True)
+		
+	for filepath in filepaths:
+		print("Voltage Log File: {}".format(os.path.split(filepath)[-1]))
+		filedir = os.path.dirname(filepath)
+		filename = os.path.split(filepath)[-1]
+		
+		df = pd.read_csv(filepath)
+		
+		filename_parts = filename.split()
 
-	cell_name = filename_parts[0]
-	log_date = filename_parts[1]
-	log_time = filename_parts[2]
+		cell_name = filename_parts[0]
+		log_date = filename_parts[1]
+		log_time = filename_parts[2]
 
-	#add graph to the filename
-	filename_graph = 'GraphIV_' + filename
-	#filename_stats = 'Stats_' + filename
-	filename_stats = 'Cycle_Statistics.csv'
-	
-	filepath_graph = os.path.join(filedir, 'Graphs', filename_graph)
-	filepath_stats = os.path.join(filedir, 'Stats', filename_stats)
-	
-	#calculate stats and export
-	cycle_stats = Templates.CycleStats()
-	cycle_stats.stats['cell_name'] = cell_name
-	calc_capacity(df, cycle_stats, charge=True)
-	calc_capacity(df, cycle_stats, charge=False)
-	dict_to_csv(cycle_stats.stats, filepath_stats)
-	
-	#Change timestamp to be seconds from cycle start instead of epoch
-	start_time = df['Timestamp'].iloc[0]
-	df['Timestamp'] = df['Timestamp'] - start_time
-	
-	#Show plot
-	plot_iv(df, save_filepath=filepath_graph, show_graph=True)
+		#add graph to the filename
+		filename_graph = 'GraphIV_' + filename
+		#filename_stats = 'Stats_' + filename
+		filename_stats = 'Cycle_Statistics.csv'
+		
+		filepath_graph = os.path.join(filedir, 'Graphs', filename_graph)
+		filepath_stats = os.path.join(filedir, 'Stats', filename_stats)
+		
+		#calculate stats and export
+		cycle_stats = Templates.CycleStats()
+		cycle_stats.stats['cell_name'] = cell_name
+		calc_capacity(df, cycle_stats, charge=True)
+		calc_capacity(df, cycle_stats, charge=False)
+		dict_to_csv(cycle_stats.stats, filepath_stats)
+		
+		#Change timestamp to be seconds from cycle start instead of epoch
+		start_time = df['Timestamp'].iloc[0]
+		df['Timestamp'] = df['Timestamp'] - start_time
+		
+		#Show plot
+		plot_iv(df, save_filepath=filepath_graph, show_graph=False)
 

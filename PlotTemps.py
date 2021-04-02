@@ -23,40 +23,60 @@ def find_timestamp(stats, prefix, dir, file = None, tolerance = 10):
 	#better way - apply upper and lower masks, check size.
 	
 	if(file is None):
+		num_data_files_used = 0
 		for file_name in os.listdir(dir):
+			data_added = False
 			file_path = os.path.join(dir, file_name)
 			if os.path.isdir(file_path):
 				#ignore other subdirectories
 				continue
-			df = check_file(file_path, check_time_high, check_time_low)
-			#exit for loop once a file with the correct timestamps is found
-			if df.size != 0:
+			if(num_data_files_used == 0):
+				valid, df = check_file(file_path, check_time_high, check_time_low)
+			else:
+				valid, df_file = check_file(file_path, check_time_high, check_time_low)
+			
+			#add to the dataframe if we have already started one
+			if valid:
+				data_added = True
+				if(num_data_files_used > 0):
+					df = df.append(df_file)
+				num_data_files_used += 1
+			
+			if((valid == False) and (num_data_files_used > 0)):
+				#break when no new data was added and we already have data
 				break
+			
 	else:
-		df = check_file(file)
+		file_path = os.path.join(dir, file_name)
+		df = check_file(file_path, check_time_high, check_time_low)
 	
 	if df.size == 0:
 		print("No File Found")
 	
-	return file, df
+	return df
 
 #check file
 def check_file(file_path, check_high, check_low):
 	df = pd.read_csv(file_path)
 	
+	valid_data = False
+	
 	#apply mask
 	df = df[(df['Timestamp'] >= check_low) & (df['Timestamp'] <= check_high)]
-	print('Dataframe Size: {}'.format(df.size))
+	print('File Name: {}\tDataframe Size: {}'.format(os.path.split(file_path)[-1], df.size))
 	
-	return df
+	if(df.size > 0):
+		valid_data = True
+	
+	return valid_data, df
 
 #return a dataframe with the temperature log for the discharge log
 #uses start and end timestamps to get the data from the temp logs
 #channels for each device found with the TempChannels.py cell names
 def get_temps(stats, prefix):
 	
-	#get the file and the filtered data from while charging or discharging
-	file, df = find_timestamp(stats, prefix, temp_log_dir)
+	#get the filtered data from while charging or discharging
+	df = find_timestamp(stats, prefix, temp_log_dir)
 	
 	#get the channels that were used for this test
 	channels = tc.channels[stats['cell_name']]
