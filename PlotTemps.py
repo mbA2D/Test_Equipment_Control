@@ -95,6 +95,9 @@ def get_temps(stats, prefix):
 
 #plot a dataframe that has all the temperatures in it
 def plot_temps(df, cell_name, save_filepath = '', show_graph=True, prefix = ''):
+	if df.size == 0:
+		return
+	
 	fig, ax_temps = plt.subplots()
 	fig.set_size_inches(12,10)
 	
