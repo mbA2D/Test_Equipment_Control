@@ -9,12 +9,8 @@ import TempChannels
 tc = TempChannels.TempChannels()
 temp_log_dir = eg.diropenbox(title = "Choose the directory that contains the temp logs")
 
-#parameters
-#timestamp - the timestampt to look for
-#directory - the directory with the temperature log files to look in
-#before - look for a timestamp before or after the given one
-#tolerance - the tolerance around the timestamp to accept
-#returns the filename and timestamp in the temp log file that is closest
+#returns a dataframe with all entried in the directory that   
+#fall within the start and end times in the stats directory
 def find_timestamp(stats, prefix, dir, file = None, tolerance = 10):
 	
 	check_time_low = stats['{}_start_time'.format(prefix)] - tolerance
@@ -55,7 +51,7 @@ def find_timestamp(stats, prefix, dir, file = None, tolerance = 10):
 	
 	return df
 
-#check file
+#check to see if the file has any measurements with valid timestamps in them
 def check_file(file_path, check_high, check_low):
 	df = pd.read_csv(file_path)
 	
@@ -63,9 +59,9 @@ def check_file(file_path, check_high, check_low):
 	
 	#apply mask
 	df = df[(df['Timestamp'] >= check_low) & (df['Timestamp'] <= check_high)]
-	print('File Name: {}\tDataframe Size: {}'.format(os.path.split(file_path)[-1], df.size))
 	
 	if(df.size > 0):
+		print('File Name: {}\tDataframe Size: {}'.format(os.path.split(file_path)[-1], df.size))
 		valid_data = True
 	
 	return valid_data, df
@@ -87,9 +83,56 @@ def get_temps(stats, prefix):
 		for channel_num in channels[label]:
 			channel_list.append('Channel_C_{}'.format(channel_num))
 	
+	max_temp = df[channel_list].max().max()
+	
+	channel_list.append('Timestamp')
 	df = df[channel_list]
-	max_temp = df.max().max()
+	
 	print("Max Temp: {}".format(max_temp))
 	
 	#now we should have just the filtered temperatures for this cell
 	return df, max_temp
+
+#plot a dataframe that has all the temperatures in it
+def plot_temps(df, cell_name, save_filepath = '', show_graph=True, prefix = ''):
+	if df.size == 0:
+		return
+	
+	fig, ax_temps = plt.subplots()
+	fig.set_size_inches(12,10)
+	
+	num_colors = len(df.columns.values.tolist())-1
+	cm = plt.get_cmap('tab20') #this colormap has 20 different colors in it
+	ax_temps.set_prop_cycle('color', [cm(1.*i/num_colors) for i in range(num_colors)])
+
+	
+	#plot all of the temps
+	for temp_name in df.columns.values.tolist():
+		if temp_name == 'Timestamp':
+			continue
+		channel_num = temp_name.split('_')[-1]		
+		#find the correct location
+		location = tc.find_location(cell_name, channel_num)
+		#plot
+		ax_temps.plot('Timestamp', temp_name, data = df, label = location)
+	
+	title = 'Temperature log'
+	if prefix != '':
+		title += ' {}'.format(prefix)
+	
+	fig.suptitle(title)
+	ax_temps.set_ylabel('Temperature (Celsius)')
+	ax_temps.set_xlabel('Seconds from Start of Test (S)')
+		
+	fig.legend(loc='upper right')
+	ax_temps.grid(b=True, axis='both')
+	
+	#save the file if specified
+	if(save_filepath != ''):
+		plt.savefig(os.path.splitext(save_filepath)[0])
+	
+	if(show_graph):
+		plt.show()
+	else:
+		plt.close()
+	

@@ -2,6 +2,7 @@
 
 class TempChannels:
 	def __init__(self):
+		#organized into Cell_Name and Location
 		self.channels = {
 			'EMS_SC1' : {
 				'pos' : [56,57,58,59,60,61,62],
@@ -24,3 +25,11 @@ class TempChannels:
 				'side' : [23]
 			}
 		}
+	
+	#returns the location of the given channel on a cell
+	def find_location(self, cell_name, channel_num):
+		for location in list(self.channels[cell_name].keys()):
+			if int(channel_num) in self.channels[cell_name][location]:
+				return location + str(self.channels[cell_name][location].index(int(channel_num)))
+		return 'Location Not Found'
+	

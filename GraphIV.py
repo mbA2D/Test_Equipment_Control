@@ -6,6 +6,7 @@ import easygui as eg
 import os
 import Templates
 import PlotTemps
+from stat import S_IREAD, S_IWUSR
 
 def plot_iv(log_data, save_filepath = '', show_graph=False):
 	#plot time(in seconds) as x
@@ -49,7 +50,13 @@ def calc_capacity(log_data, stats, charge=True):
 	
 	if(dsc_data.size == 0):
 		print("Data for {} does not exist in log".format(prefix))
-		return
+		return dsc_data
+	
+	#Calculate time required for cycle
+	start_time = dsc_data.loc[dsc_data.index[0], 'Timestamp']
+	end_time = dsc_data.loc[dsc_data.index[-1], 'Timestamp']
+	end_v = dsc_data.loc[dsc_data.index[-1], 'Voltage']
+	total_time = (end_time - start_time)/3600
 	
 	#add 3 columns to the dataset
 	dsc_data = dsc_data.assign(SecsFromLastTimestamp=0)
@@ -73,13 +80,8 @@ def calc_capacity(log_data, stats, charge=True):
 		
 	capacity_ah = dsc_data['Capacity_Ah'].sum()
 	capacity_wh = dsc_data['Capacity_wh'].sum()
-	charge_a = dsc_data['Current'].median()
-	
-	#Calculate time required for cycle
-	start_time = dsc_data.loc[dsc_data.index[0], 'Timestamp']
-	end_time = dsc_data.loc[dsc_data.index[-1], 'Timestamp']
-	end_v = dsc_data.loc[dsc_data.index[-1], 'Voltage']
-	total_time = (end_time - start_time)/3600
+	#round current to 1 decimal point
+	charge_a = round(dsc_data['Current'].median(),1)
 	
 	print("{}:".format(prefix))
 	
@@ -102,17 +104,90 @@ def calc_capacity(log_data, stats, charge=True):
 	temp_data, max_temp = PlotTemps.get_temps(stats.stats, prefix)
 	stats.stats['{}_max_temp_c'.format(prefix)] = max_temp
 	
+	return temp_data
 	
 
+def set_read_only(filepath):
+	#make the file read-only so we don't lose decimal places if the CSV is opened in excel
+	os.chmod(filepath, S_IREAD)
+
+def allow_write(filepath):
+	#make the file writable 
+	#https://stackoverflow.com/questions/28492685/change-file-to-read-only-mode-in-python
+	os.chmod(filepath, S_IWUSR|S_IREAD)
+
+#adds a CycleStatistic dictionary to a CSV without duplicating results in the csv
 def dict_to_csv(dict, filepath):
 	dict_dataframe = pd.DataFrame(dict, index = [0])
-	
-	write_mode = 'w'
-	write_header = True
+
 	if(os.path.exists(filepath)):
-		write_mode = 'a'
 		write_header = False
-	dict_dataframe.to_csv(filepath, mode=write_mode, header=write_header, index=False)
+		
+		allow_write(filepath)
+		
+		dataframe_csv = pd.read_csv(filepath)
+		
+		dataframe_csv = dataframe_csv.set_index('charge_start_time')
+		try:
+			dataframe_csv.drop(dict['charge_start_time'], axis=0, inplace=True)
+		except KeyError:
+			pass
+		dataframe_csv.reset_index(inplace=True)
+		dataframe_csv.rename(columns={'index': 'charge_start_time'})
+		
+		#Alternate removal method
+		#check if the data is already there. If so, replace it
+		#if(dict['charge_start_time'] in dataframe_csv.charge_start_time):
+			#dataframe_csv.drop(dataframe_csv[dataframe_csv.charge_start_time == dict['charge_start_time']].index, inplace=True)
+		#	print("Found in dataframe")
+		
+		dict_dataframe = dataframe_csv.append(dict_dataframe)
+		
+	dict_dataframe.to_csv(filepath, mode='w', header=True, index=False)
+	
+	set_read_only(filepath)
+
+def add_cycle_numbers(stats_filepath):
+	pass
+	#stats_df = pd.read_csv(stats_filepath)
+	#stats_df.sort_values(by=['charge_start_time'])
+	
+	#assume that every entry is a charge and discharge cycle
+	#split into each cell name
+	#cell_names = stats_df.cell_name.unique()
+	
+	#add a new row in the dataframe to store the cycle number
+	#stats_df = 
+	
+	#sort by charge_start_time
+	#for cell_name in cell_names:
+		#add mask to dataframe
+		#cell_stats_df = stats_df[stats_df[cell_name]]
+		
+		#go through each row
+		
+		
+		#number each of the cycles
+		
+		#if a number already there, then use that number
+		
+		
+def dataframe_to_csv(df, filepath):
+	#if the file exists, make sure it is write-able.
+	if(os.path.exists(filepath)):
+		allow_write(filepath)
+	df.to_csv(filepath, mode='w', header=True, index=False)
+	set_read_only(filepath)
+	
+
+#changes all timestamps in the dataframe to show seconds from
+#cycle start instead python's time.time
+def timestamp_to_cycle_start(df):
+	if df.size > 0:
+		start_time = df['Timestamp'].iloc[0]
+		df['Timestamp'] = df['Timestamp'] - start_time
+	return df
+
 
 if __name__ == '__main__':
 	filepaths = eg.fileopenbox(title = "Select the Log(s) to Graph", filetypes = [['*.csv', 'CSV Files']], multiple = True)
@@ -120,7 +195,7 @@ if __name__ == '__main__':
 	for filepath in filepaths:
 		print("Voltage Log File: {}".format(os.path.split(filepath)[-1]))
 		filedir = os.path.dirname(filepath)
-		filename = os.path.split(filepath)[-1]
+		filename = os.path.split(filepath)[-1]  
 		
 		df = pd.read_csv(filepath)
 		
@@ -131,24 +206,37 @@ if __name__ == '__main__':
 		log_time = filename_parts[2]
 
 		#add graph to the filename
-		filename_graph = 'GraphIV_' + filename
-		#filename_stats = 'Stats_' + filename
+		filename_graph = 'GraphIV ' + filename
 		filename_stats = 'Cycle_Statistics.csv'
+		filename_temp_charge = 'Temps_Charge ' + filename
+		filename_temp_discharge = 'Temps_Discharge ' + filename
 		
 		filepath_graph = os.path.join(filedir, 'Graphs', filename_graph)
-		filepath_stats = os.path.join(filedir, 'Stats', filename_stats)
+		filepath_stats = os.path.join(filedir, 'Stats', filename_stats)		
+		filepath_graph_temps_charge = os.path.join(filedir, 'Temperature Graphs', filename_temp_charge)
+		filepath_graph_temps_discharge = os.path.join(filedir, 'Temperature Graphs', filename_temp_discharge)
+		filepath_logs_temps_charge = os.path.join(filedir, 'Split Temperature Logs', filename_temp_charge)
+		filepath_logs_temps_discharge = os.path.join(filedir, 'Split Temperature Logs', filename_temp_discharge)
 		
 		#calculate stats and export
 		cycle_stats = Templates.CycleStats()
 		cycle_stats.stats['cell_name'] = cell_name
-		calc_capacity(df, cycle_stats, charge=True)
-		calc_capacity(df, cycle_stats, charge=False)
+		
+		temps_charge = calc_capacity(df, cycle_stats, charge=True)
+		temps_discharge = calc_capacity(df, cycle_stats, charge=False)
 		dict_to_csv(cycle_stats.stats, filepath_stats)
 		
 		#Change timestamp to be seconds from cycle start instead of epoch
-		start_time = df['Timestamp'].iloc[0]
-		df['Timestamp'] = df['Timestamp'] - start_time
+		df = timestamp_to_cycle_start(df)
+		temps_charge = timestamp_to_cycle_start(temps_charge)
+		temps_discharge = timestamp_to_cycle_start(temps_discharge)
+		#export to csv
+		dataframe_to_csv(temps_charge, filepath_logs_temps_charge)
+		dataframe_to_csv(temps_discharge, filepath_logs_temps_discharge)
 		
 		#Show plot
 		plot_iv(df, save_filepath=filepath_graph, show_graph=False)
-
+		PlotTemps.plot_temps(temps_charge, cycle_stats.stats['cell_name'], \
+				save_filepath=filepath_graph_temps_charge, show_graph=False, prefix = 'charge')
+		PlotTemps.plot_temps(temps_discharge, cycle_stats.stats['cell_name'], \
+				save_filepath=filepath_graph_temps_discharge, show_graph=False, prefix = 'discharge')
