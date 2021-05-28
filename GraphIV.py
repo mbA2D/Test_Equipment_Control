@@ -148,23 +148,30 @@ def dict_to_csv(dict, filepath):
 	set_read_only(filepath)
 
 def add_cycle_numbers(stats_filepath):
-	stats_df = pd.read_csv(stats_filepath)
-	stats_df.sort_values(by=['charge_start_time'])
+	pass
+	#stats_df = pd.read_csv(stats_filepath)
+	#stats_df.sort_values(by=['charge_start_time'])
 	
 	#assume that every entry is a charge and discharge cycle
 	#split into each cell name
-	cell_names = stats_df.cell_name.unique()
+	#cell_names = stats_df.cell_name.unique()
+	
+	#add a new row in the dataframe to store the cycle number
+	#stats_df = 
 	
 	#sort by charge_start_time
-	for cell_name in cell_names:
+	#for cell_name in cell_names:
 		#add mask to dataframe
-		cell_stats_df = stats_df
-		
+		#cell_stats_df = stats_df[stats_df[cell_name]]
 		
 		#go through each row
 		
+		
 		#number each of the cycles
-
+		
+		#if a number already there, then use that number
+		
+		
 def dataframe_to_csv(df, filepath):
 	#if the file exists, make sure it is write-able.
 	if(os.path.exists(filepath)):
@@ -188,7 +195,7 @@ if __name__ == '__main__':
 	for filepath in filepaths:
 		print("Voltage Log File: {}".format(os.path.split(filepath)[-1]))
 		filedir = os.path.dirname(filepath)
-		filename = os.path.split(filepath)[-1]
+		filename = os.path.split(filepath)[-1]  
 		
 		df = pd.read_csv(filepath)
 		

@@ -102,7 +102,7 @@ def plot_temps(df, cell_name, save_filepath = '', show_graph=True, prefix = ''):
 	fig.set_size_inches(12,10)
 	
 	num_colors = len(df.columns.values.tolist())-1
-	cm = plt.get_cmap('tab20')
+	cm = plt.get_cmap('tab20') #this colormap has 20 different colors in it
 	ax_temps.set_prop_cycle('color', [cm(1.*i/num_colors) for i in range(num_colors)])
 
 	
