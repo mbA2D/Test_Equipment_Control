@@ -37,7 +37,7 @@ def plot_iv(log_data, save_filepath = '', show_graph=False):
 	else:
 		plt.close()
 
-def calc_capacity(log_data, stats, charge=True):
+def calc_capacity(log_data, stats, charge=True, temp_log_dir = ""):
 	#create a mask to get only the discharge data
 	if (charge):
 		prefix = 'charge'
@@ -65,7 +65,6 @@ def calc_capacity(log_data, stats, charge=True):
 	
 	#requires indexes to be the default numeric ones
 	for data_index in dsc_data.index:
-		
 		try:
 			dsc_data.loc[data_index, 'SecsFromLastTimestamp'] = \
 			dsc_data.loc[data_index, 'Timestamp'] - dsc_data.loc[data_index-1, 'Timestamp']
@@ -99,13 +98,14 @@ def calc_capacity(log_data, stats, charge=True):
 	print('Current(A): {}'.format(charge_a))
 	print('Start Time: {}'.format(start_time))
 	print('End Time: {}'.format(end_time))
-	
-	#now add some temperature data
-	temp_data, max_temp = PlotTemps.get_temps(stats.stats, prefix)
-	stats.stats['{}_max_temp_c'.format(prefix)] = max_temp
-	
-	return temp_data
-	
+
+	if(temps):
+		#now add some temperature data
+		temp_data, max_temp = PlotTemps.get_temps(stats.stats, prefix, temp_log_dir)
+		stats.stats['{}_max_temp_c'.format(prefix)] = max_temp
+		
+		return temp_data
+	return dsc_data
 
 def set_read_only(filepath):
 	#make the file read-only so we don't lose decimal places if the CSV is opened in excel
@@ -135,12 +135,6 @@ def dict_to_csv(dict, filepath):
 		dataframe_csv.reset_index(inplace=True)
 		dataframe_csv.rename(columns={'index': 'charge_start_time'})
 		
-		#Alternate removal method
-		#check if the data is already there. If so, replace it
-		#if(dict['charge_start_time'] in dataframe_csv.charge_start_time):
-			#dataframe_csv.drop(dataframe_csv[dataframe_csv.charge_start_time == dict['charge_start_time']].index, inplace=True)
-		#	print("Found in dataframe")
-		
 		dict_dataframe = dataframe_csv.append(dict_dataframe)
 		
 	dict_dataframe.to_csv(filepath, mode='w', header=True, index=False)
@@ -148,7 +142,6 @@ def dict_to_csv(dict, filepath):
 	set_read_only(filepath)
 
 def add_cycle_numbers(stats_filepath):
-	pass
 	#stats_df = pd.read_csv(stats_filepath)
 	#stats_df.sort_values(by=['charge_start_time'])
 	
@@ -170,7 +163,7 @@ def add_cycle_numbers(stats_filepath):
 		#number each of the cycles
 		
 		#if a number already there, then use that number
-		
+	pass
 		
 def dataframe_to_csv(df, filepath):
 	#if the file exists, make sure it is write-able.
@@ -189,9 +182,28 @@ def timestamp_to_cycle_start(df):
 	return df
 
 
+
 if __name__ == '__main__':
 	filepaths = eg.fileopenbox(title = "Select the Log(s) to Graph", filetypes = [['*.csv', 'CSV Files']], multiple = True)
-		
+	
+	#Are there temperature logs associated?
+	temp_log_dir = ""
+	temps = eg.ynbox(title = "Are there temperature logs associated with these discharge logs\ncreated by the A2D Electronics 64CH DAQ?")):
+	if(temps):
+		#get the temps file location
+		temp_log_dir = eg.diropenbox(title = "Choose the directory that contains the temp logs")
+	
+	#ensure that all directories exist
+	filedir = os.path.dirname(filepaths[0])
+	sub_dirs = ['Graphs','Stats']
+	if(temps):
+		sub_dirs.append('Temperature Graphs')
+		sub_dirs.append('Split Temperature Logs')
+	for sub_dir in sub_dirs:
+		if not os.path.exists(os.path.join(filedir, sub_dir)):
+			os.makedirs(os.path.join(filedir, sub_dir))
+	
+	#go through each voltage log and check it
 	for filepath in filepaths:
 		print("Voltage Log File: {}".format(os.path.split(filepath)[-1]))
 		filedir = os.path.dirname(filepath)
@@ -205,38 +217,43 @@ if __name__ == '__main__':
 		log_date = filename_parts[1]
 		log_time = filename_parts[2]
 
-		#add graph to the filename
+		#modify file names for savings graphs and other files
 		filename_graph = 'GraphIV ' + filename
 		filename_stats = 'Cycle_Statistics.csv'
-		filename_temp_charge = 'Temps_Charge ' + filename
-		filename_temp_discharge = 'Temps_Discharge ' + filename
+		if(temps):
+			filename_temp_charge = 'Temps_Charge ' + filename
+			filename_temp_discharge = 'Temps_Discharge ' + filename
 		
-		filepath_graph = os.path.join(filedir, 'Graphs', filename_graph)
-		filepath_stats = os.path.join(filedir, 'Stats', filename_stats)		
-		filepath_graph_temps_charge = os.path.join(filedir, 'Temperature Graphs', filename_temp_charge)
-		filepath_graph_temps_discharge = os.path.join(filedir, 'Temperature Graphs', filename_temp_discharge)
-		filepath_logs_temps_charge = os.path.join(filedir, 'Split Temperature Logs', filename_temp_charge)
-		filepath_logs_temps_discharge = os.path.join(filedir, 'Split Temperature Logs', filename_temp_discharge)
-		
+		#Create directory names to store graphs etc.
+		filepath_graph = os.path.join(filedir, sub_dirs[0], filename_graph)
+		filepath_stats = os.path.join(filedir, sub_dirs[1], filename_stats)		
+		if(temps):
+			filepath_graph_temps_charge = os.path.join(filedir, sub_dirs[2], filename_temp_charge)
+			filepath_graph_temps_discharge = os.path.join(filedir, sub_dirs[2], filename_temp_discharge)
+			filepath_logs_temps_charge = os.path.join(filedir, sub_dirs[3], filename_temp_charge)
+			filepath_logs_temps_discharge = os.path.join(filedir, sub_dirs[3], filename_temp_discharge)
+			
 		#calculate stats and export
 		cycle_stats = Templates.CycleStats()
 		cycle_stats.stats['cell_name'] = cell_name
 		
-		temps_charge = calc_capacity(df, cycle_stats, charge=True)
-		temps_discharge = calc_capacity(df, cycle_stats, charge=False)
+		temps_charge = calc_capacity(df, cycle_stats, charge=True, temp_log_dir)
+		temps_discharge = calc_capacity(df, cycle_stats, charge=False, temp_log_dir)
 		dict_to_csv(cycle_stats.stats, filepath_stats)
 		
 		#Change timestamp to be seconds from cycle start instead of epoch
 		df = timestamp_to_cycle_start(df)
-		temps_charge = timestamp_to_cycle_start(temps_charge)
-		temps_discharge = timestamp_to_cycle_start(temps_discharge)
-		#export to csv
-		dataframe_to_csv(temps_charge, filepath_logs_temps_charge)
-		dataframe_to_csv(temps_discharge, filepath_logs_temps_discharge)
+		if(temps):
+			temps_charge = timestamp_to_cycle_start(temps_charge)
+			temps_discharge = timestamp_to_cycle_start(temps_discharge)
+			#export temps for this cell directly to csv
+			dataframe_to_csv(temps_charge, filepath_logs_temps_charge)
+			dataframe_to_csv(temps_discharge, filepath_logs_temps_discharge)
 		
 		#Show plot
 		plot_iv(df, save_filepath=filepath_graph, show_graph=False)
-		PlotTemps.plot_temps(temps_charge, cycle_stats.stats['cell_name'], \
-				save_filepath=filepath_graph_temps_charge, show_graph=False, prefix = 'charge')
-		PlotTemps.plot_temps(temps_discharge, cycle_stats.stats['cell_name'], \
-				save_filepath=filepath_graph_temps_discharge, show_graph=False, prefix = 'discharge')
+		if(temps):
+			PlotTemps.plot_temps(temps_charge, cycle_stats.stats['cell_name'], \
+					save_filepath=filepath_graph_temps_charge, show_graph=False, prefix = 'charge')
+			PlotTemps.plot_temps(temps_discharge, cycle_stats.stats['cell_name'], \
+					save_filepath=filepath_graph_temps_discharge, show_graph=False, prefix = 'discharge')

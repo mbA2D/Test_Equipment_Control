@@ -7,7 +7,6 @@ import os
 import TempChannels
 
 tc = TempChannels.TempChannels()
-temp_log_dir = eg.diropenbox(title = "Choose the directory that contains the temp logs")
 
 #returns a dataframe with all entried in the directory that   
 #fall within the start and end times in the stats directory
@@ -69,10 +68,10 @@ def check_file(file_path, check_high, check_low):
 #return a dataframe with the temperature log for the discharge log
 #uses start and end timestamps to get the data from the temp logs
 #channels for each device found with the TempChannels.py cell names
-def get_temps(stats, prefix):
+def get_temps(stats, prefix, log_dir):
 	
 	#get the filtered data from while charging or discharging
-	df = find_timestamp(stats, prefix, temp_log_dir)
+	df = find_timestamp(stats, prefix, log_dir)
 	
 	#get the channels that were used for this test
 	channels = tc.channels[stats['cell_name']]
