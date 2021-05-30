@@ -142,6 +142,8 @@ def dict_to_csv(dict, filepath):
 	set_read_only(filepath)
 
 def add_cycle_numbers(stats_filepath):
+	#only want to add on discharge?
+	
 	#stats_df = pd.read_csv(stats_filepath)
 	#stats_df.sort_values(by=['charge_start_time'])
 	
