@@ -1,8 +1,7 @@
 #Python Script for controlling the charge and discharge
 #tests of a battery with Eload and Power supply
 
-import Eload_BK8600
-import PSU_SPD1000
+import equipment as eq
 from datetime import datetime
 import time
 import pandas as pd
@@ -11,9 +10,14 @@ import tkinter as tk
 import os
 import Templates
 
-eload = Eload_BK8600.BK8600()
-psu = PSU_SPD1000.SPD1000()
 
+#eload = Eload_BK8600.BK8600()
+eloads = eq.eLoads()
+eload = eloads.choose_eload()
+#psu = PSU_SPD1000.SPD1000()
+psus = eq.powerSupplies()
+psu = psus.choose_psu()
+ 
 def init_instruments():
 	eload.remote_sense(True)
 	psu.remote_sense(True)
@@ -191,105 +195,78 @@ def storage_charge(dir, cell_name, charge_settings):
 	start_rest()
 
 
+####################################### PROGRAM ######################################
+if __name__ == '__main__':
+	#get the cell name
+	cell_name = eg.enterbox(title = "Test Setup", msg = "Enter the Cell Name\n(Spaces will be replaced with underscores)",
+							default = "CELL_NAME", strip = True)
+	#replace the spaces to keep file names consistent
+	cell_name = cell_name.replace(" ", "_")
+
+	#degradation cycles
+	#get user to enter number of cycles
+	degradation_cycle_settings = Templates.CycleSettings()
+	degradation_cycle_settings.get_cycle_settings("Degradation")
+	num_degradation_cycles = eg.integerbox(msg = "How Many Degradation Cycles?",
+											title = "Degradation Cycle", default = 1,
+											lowerbound = 0, upperbound = 99)
+
+	#capacity measurement cycles
+	#only 1 cycle
+	capacity_cycle_settings = Templates.CycleSettings()
+	capacity_cycle_settings.get_cycle_settings("Capacity")
+	num_capacity_cycles = eg.integerbox(msg = "How Many Capacity Cycles?",
+											title = "Capacity Cycle", default = 1,
+											lowerbound = 0, upperbound = 99)
+
+	#test cycles - X discharge, Y charge, how many times?
+	num_test_cycles = eg.integerbox(msg = "How Many Test Cycles?",
+											title = "Test Cycles", default = 1,
+											lowerbound = 0, upperbound = 99)
+
+	cycle_types = ("Degradation", "Capacity")
+	first_cycle = eg.buttonbox(msg = "Which cycle type should be completed first?", title = "First Cycle",
+								choices = cycle_types, default_choice = cycle_types[0])
+
+	#storage charge settings
+	storage_charge_settings = Templates.ChargeSettings()
+	storage_charge_settings.get_cycle_settings("Storage Charge")
+
+	cycle_settings_list = list()
+
+	for j in range(num_test_cycles):
+		if(first_cycle == "Degradation"):
+			for i in range(num_degradation_cycles):
+				cycle_settings_list.append(degradation_cycle_settings)
+			for i in range(num_capacity_cycles):
+				cycle_settings_list.append(capacity_cycle_settings)
+		elif(first_cycle == "Capacity"):
+			for i in range(num_degradation_cycles):
+				cycle_settings_list.append(capacity_cycle_settings)
+			for i in range(num_capacity_cycles):
+				cycle_settings_list.append(degradation_cycle_settings)
 
 
-####################### Program #########################
+	#Get a directory to save the file
+	directory = get_directory()
+	init_instruments()
 
-#get all the info for the test
-#field_names = ["Unique Cell Name", 
-#				"Charge end voltage",
-#				"Charge Current",
-#				"Charge End Current",
-#				"Rest After Charge (Minutes)", 
-#				"Discharge End Voltage",
-#				"Discharge Current",
-#				"Rest After Discharge (Minutes)",
-#				"Number of Cycles",
-#				"End Storage Charge",
-#				"Measurement Logging Interval (Seconds)"]
-#default_text = ["CELL_NAME",
-#				"4.2",
-#				"7.5",
-#				"0.3",
-#				"20",
-#				"2.5",
-#				"30",
-#				"20",
-#				"1",
-#				"3.7",
-#				"1"]
-
-#get the cell name
-cell_name = eg.enterbox(title = "Test Setup", msg = "Enter the Cell Name\n(Spaces will be replaced with underscores)",
-						default = "CELL_NAME", strip = True)
-#replace the spaces to keep file names consistent
-cell_name = cell_name.replace(" ", "_")
-
-#degradation cycles
-#get user to enter number of cycles
-degradation_cycle_settings = Templates.CycleSettings()
-degradation_cycle_settings.get_cycle_settings("Degradation")
-num_degradation_cycles = eg.integerbox(msg = "How Many Degradation Cycles?",
-										title = "Degradation Cycle", default = 1,
-										lowerbound = 0, upperbound = 99)
-
-#capacity measurement cycles
-#only 1 cycle
-capacity_cycle_settings = Templates.CycleSettings()
-capacity_cycle_settings.get_cycle_settings("Capacity")
-num_capacity_cycles = eg.integerbox(msg = "How Many Capacity Cycles?",
-										title = "Capacity Cycle", default = 1,
-										lowerbound = 0, upperbound = 99)
-
-#test cycles - X discharge, Y charge, how many times?
-num_test_cycles = eg.integerbox(msg = "How Many Test Cycles?",
-										title = "Test Cycles", default = 1,
-										lowerbound = 0, upperbound = 99)
-
-cycle_types = ("Degradation", "Capacity")
-first_cycle = eg.buttonbox(msg = "Which cycle type should be completed first?", title = "First Cycle",
-							choices = cycle_types, default_choice = cycle_types[0])
-
-#storage charge settings
-storage_charge_settings = Templates.ChargeSettings()
-storage_charge_settings.get_cycle_settings("Storage Charge")
-
-
-cycle_settings_list = list()
-
-for j in range(num_test_cycles):
-	if(first_cycle == "Degradation"):
-		for i in range(num_degradation_cycles):
-			cycle_settings_list.append(degradation_cycle_settings)
-		for i in range(num_capacity_cycles):
-			cycle_settings_list.append(capacity_cycle_settings)
-	elif(first_cycle == "Capacity"):
-		for i in range(num_degradation_cycles):
-			cycle_settings_list.append(capacity_cycle_settings)
-		for i in range(num_capacity_cycles):
-			cycle_settings_list.append(degradation_cycle_settings)
-
-
-#Get a directory to save the file
-directory = get_directory()
-init_instruments()
-
-#cycle x times
-cycle_num = 0
-for cycle_settings in cycle_settings_list:
-	print("Cycle {} Starting".format(cycle_num))
+	#cycle x times
+	cycle_num = 0
+	for cycle_settings in cycle_settings_list:
+		print("Cycle {} Starting".format(cycle_num))
+		try:
+			cycle_cell(directory, cell_name, cycle_settings.settings)
+		except KeyboardInterrupt:
+			eload.toggle_output(False)
+			psu.toggle_output(False)
+			exit()
+		cycle_num += 1
+	#storage charge
 	try:
-		cycle_cell(directory, cell_name, cycle_settings.settings)
+		storage_charge(directory, cell_name, storage_charge_settings.settings)
 	except KeyboardInterrupt:
 		eload.toggle_output(False)
 		psu.toggle_output(False)
 		exit()
-	cycle_num += 1
-#storage charge
-try:
-	storage_charge(directory, cell_name, storage_charge_settings.settings)
-except KeyboardInterrupt:
-	eload.toggle_output(False)
-	psu.toggle_output(False)
-	exit()
 	

@@ -108,28 +108,28 @@ def gather_and_write_data(filepath, time, print_all=False, print_max = True):
 
 
 ######################### Program ########################
+if __name__ == '__main__':
+	#declare and initialize the daq
+	daq = AD_control.A2D_DAQ()
+	init_all_channels()
 
-#declare and initialize the daq
-daq = AD_control.A2D_DAQ()
-init_all_channels()
+	#Gather the test settings
+	lb = 1
+	ub = 60
+	msg = 'Enter logging interval in seconds (from {} to {}):'.format(lb, ub)
+	title = 'Logging Interval'
+	interval_temp = eg.integerbox(msg, title, default = 5, lowerbound = lb, upperbound = ub)
 
-#Gather the test settings
-lb = 1
-ub = 60
-msg = 'Enter logging interval in seconds (from {} to {}):'.format(lb, ub)
-title = 'Logging Interval'
-interval_temp = eg.integerbox(msg, title, default = 5, lowerbound = lb, upperbound = ub)
+	dir = get_directory()
+	path = start_file(dir)
 
-dir = get_directory()
-path = start_file(dir)
-
-#read all analog channels once every 5 seconds
-starttime = time.time()
-while True:
-	try:
-		gather_and_write_data(path, time=time.time())
-		time.sleep(interval_temp - ((time.time() - starttime) % interval_temp))
-	except KeyboardInterrupt:
-		#make sure all outputs are off before quiting
-		daq.reset()
-		exit()
+	#read all analog channels once every 5 seconds
+	starttime = time.time()
+	while True:
+		try:
+			gather_and_write_data(path, time=time.time())
+			time.sleep(interval_temp - ((time.time() - starttime) % interval_temp))
+		except KeyboardInterrupt:
+			#make sure all outputs are off before quiting
+			daq.reset()
+			exit()
