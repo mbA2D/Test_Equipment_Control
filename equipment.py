@@ -3,12 +3,12 @@
 import easygui as eg
 
 #Eloads
-import Eload_BK8600
-import Eload_DL3000
+from lab_equipment import Eload_BK8600
+from lab_equipment import Eload_DL3000
 
 #Power Supplies
-import PSU_DP800
-import PSU_SPD1000
+from lab_equipment import PSU_DP800
+from lab_equipment import PSU_SPD1000
 
 #Digital Multimeters
 #import DM3068
