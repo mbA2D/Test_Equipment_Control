@@ -301,9 +301,10 @@ if __name__ == '__main__':
 	elif(cycle_type == available_cycle_types[2]):
 		cycle_settings_list = two_level_continuous_cycles_with_rest()
 	
+	#Ask to do a storage charge
 	do_a_storage_charge = eg.ynbox(title = "Storage Charge",
 									msg = "Do you want to do a storage charge?\n\
-											(Recommended to do one. Leaving a cell discharged increases\n\
+											Recommended to do one. Leaving a cell discharged increases\n\
 											risk of latent failures due to dendrite growth.")
 	
 	if(do_a_storage_charge)
