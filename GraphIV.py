@@ -190,15 +190,17 @@ if __name__ == '__main__':
 	
 	#Are there temperature logs associated?
 	temp_log_dir = ""
-	temps = eg.ynbox(title = "Are there temperature logs associated with these discharge logs\ncreated by the A2D Electronics 64CH DAQ?")):
-	if(temps):
+	temps_available = eg.ynbox(title = "Temperature Logs",
+								msg = "Are there temperature logs associated with these discharge logs\n\
+								created by the A2D Electronics 64CH DAQ?")
+	if(temps_available):
 		#get the temps file location
 		temp_log_dir = eg.diropenbox(title = "Choose the directory that contains the temp logs")
 	
 	#ensure that all directories exist
 	filedir = os.path.dirname(filepaths[0])
 	sub_dirs = ['Graphs','Stats']
-	if(temps):
+	if(temps_available):
 		sub_dirs.append('Temperature Graphs')
 		sub_dirs.append('Split Temperature Logs')
 	for sub_dir in sub_dirs:
@@ -222,14 +224,14 @@ if __name__ == '__main__':
 		#modify file names for savings graphs and other files
 		filename_graph = 'GraphIV ' + filename
 		filename_stats = 'Cycle_Statistics.csv'
-		if(temps):
+		if(temps_available):
 			filename_temp_charge = 'Temps_Charge ' + filename
 			filename_temp_discharge = 'Temps_Discharge ' + filename
 		
 		#Create directory names to store graphs etc.
 		filepath_graph = os.path.join(filedir, sub_dirs[0], filename_graph)
 		filepath_stats = os.path.join(filedir, sub_dirs[1], filename_stats)		
-		if(temps):
+		if(temps_available):
 			filepath_graph_temps_charge = os.path.join(filedir, sub_dirs[2], filename_temp_charge)
 			filepath_graph_temps_discharge = os.path.join(filedir, sub_dirs[2], filename_temp_discharge)
 			filepath_logs_temps_charge = os.path.join(filedir, sub_dirs[3], filename_temp_charge)
@@ -245,7 +247,7 @@ if __name__ == '__main__':
 		
 		#Change timestamp to be seconds from cycle start instead of epoch
 		df = timestamp_to_cycle_start(df)
-		if(temps):
+		if(temps_available):
 			temps_charge = timestamp_to_cycle_start(temps_charge)
 			temps_discharge = timestamp_to_cycle_start(temps_discharge)
 			#export temps for this cell directly to csv
@@ -254,7 +256,7 @@ if __name__ == '__main__':
 		
 		#Show plot
 		plot_iv(df, save_filepath=filepath_graph, show_graph=False)
-		if(temps):
+		if(temps_available):
 			PlotTemps.plot_temps(temps_charge, cycle_stats.stats['cell_name'], \
 					save_filepath=filepath_graph_temps_charge, show_graph=False, prefix = 'charge')
 			PlotTemps.plot_temps(temps_discharge, cycle_stats.stats['cell_name'], \
