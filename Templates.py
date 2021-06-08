@@ -115,7 +115,7 @@ class CycleSettings:
 		#export the file
 		if(file_name != None):
 			with open(file_name, "w") as write_file:
-				json.dump(self.settings, write_file)
+				json.dump(self.settings, write_file, indent = 4)
 	
 	def import_cycle_settings(self, cycle_name = ""):
 		#add extra space to get formatting correct
