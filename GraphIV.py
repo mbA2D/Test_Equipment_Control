@@ -46,6 +46,10 @@ def calc_capacity(log_data, stats, charge=True, temp_log_dir = ""):
 		prefix = 'discharge'
 		mask = log_data['Current'] < 0
 
+	temps_available = False
+	if(temp_log_dir != ""):
+		temps_available = True
+
 	dsc_data = log_data[mask]
 	
 	if(dsc_data.size == 0):
@@ -99,7 +103,7 @@ def calc_capacity(log_data, stats, charge=True, temp_log_dir = ""):
 	print('Start Time: {}'.format(start_time))
 	print('End Time: {}'.format(end_time))
 
-	if(temps):
+	if(temps_available):
 		#now add some temperature data
 		temp_data, max_temp = PlotTemps.get_temps(stats.stats, prefix, temp_log_dir)
 		stats.stats['{}_max_temp_c'.format(prefix)] = max_temp
@@ -241,8 +245,8 @@ if __name__ == '__main__':
 		cycle_stats = Templates.CycleStats()
 		cycle_stats.stats['cell_name'] = cell_name
 		
-		temps_charge = calc_capacity(df, cycle_stats, charge=True, temp_log_dir)
-		temps_discharge = calc_capacity(df, cycle_stats, charge=False, temp_log_dir)
+		temps_charge = calc_capacity(df, cycle_stats, charge=True, temp_log_dir = temp_log_dir)
+		temps_discharge = calc_capacity(df, cycle_stats, charge=False, temp_log_dir = temp_log_dir)
 		dict_to_csv(cycle_stats.stats, filepath_stats)
 		
 		#Change timestamp to be seconds from cycle start instead of epoch
