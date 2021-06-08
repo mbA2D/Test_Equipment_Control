@@ -63,14 +63,17 @@ class CycleSettings:
 			"meas_log_int_s": 			1
 		}
 	
-	def get_cycle_settings(self, cycle_name = "TEST"):
+	def get_cycle_settings(self, cycle_name = ""):
 		
-		response = eg.buttonbox(msg = "Would you like to import settings for {} cycle or create new settings?".format(cycle_name),
-										title = "Settings for {} cycle".format(cycle_name), choices = ("New Settings", "Import Settings"))
+		if(cycle_name != ""):
+			cycle_name += " "
+		
+		response = eg.buttonbox(msg = "Would you like to import settings for {}cycle or create new settings?".format(cycle_name),
+										title = "Settings for {}cycle".format(cycle_name), choices = ("New Settings", "Import Settings"))
 		if(response == "New Settings"):
 			valid_entries = False
 			while valid_entries == False:
-				response_list = eg.multenterbox(msg = "Enter Cycle Info for {}".format(cycle_name), title = response,
+				response_list = eg.multenterbox(msg = "Enter Info for {}cycle".format(cycle_name), title = response,
 												fields = list(self.settings.keys()), values = list(self.settings.values()))
 				valid_entries = check_user_entry(response_list)
 			

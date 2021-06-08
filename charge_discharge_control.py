@@ -200,7 +200,7 @@ def storage_charge(dir, cell_name, charge_settings):
 def single_cycle():
 	#charge then discharge
 	cycle_settings = Templates.CycleSettings()
-	cycle_settings.get_cycle_settings("Cycle")
+	cycle_settings.get_cycle_settings()
 	
 	cycle_settings_list = list()
 	cycle_settings_list.append(cycle_settings)
@@ -211,7 +211,7 @@ def one_level_continuous_cycles_with_rest():
 	#cycles - e.g. charge at 1A, rest, discharge at 5A, rest, repeat X times.
 	#get user to enter number of cycles
 	cycle_settings = Templates.CycleSettings()
-	cycle_settings.get_cycle_settings("Cycle")
+	cycle_settings.get_cycle_settings()
 	num_cycles = eg.integerbox(msg = "How Many Cycles?",
 								title = "Degradation Cycle", default = 1,
 								lowerbound = 0, upperbound = 999)
@@ -219,7 +219,7 @@ def one_level_continuous_cycles_with_rest():
 	cycle_settings_list = list()
 
 	for i in range(num_cycles):
-		cycle_settings_list.append(capacity_cycle_settings)
+		cycle_settings_list.append(cycle_settings)
 	
 	return cycle_settings_list
 
