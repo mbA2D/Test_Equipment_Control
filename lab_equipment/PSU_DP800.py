@@ -53,10 +53,12 @@ class DP800:
 			self.inst.write(":OUTP OFF")
 	
 	def remote_sense(self, state):
-		if state:
-			self.inst.write(":OUTP:SENS ON")
-		else:
-			self.inst.write(":OUTP:SENS OFF")
+		pass
+		#only for DP811A
+		#if state:
+		#	self.inst.write(":OUTP:SENS ON")
+		#else:
+		#	self.inst.write(":OUTP:SENS OFF")
 	
 	def lock_front_panel(self, state):
 		if state:
