@@ -40,9 +40,9 @@ class DP800:
 		if(channel <= 3) and (channel >= 0):
 			self.inst.write(":INST:NSEL {}".format(channel))
 	
-	def set_current(self, current_setpoint_A):		
+	def set_current(self, current_setpoint_A):
 		self.inst.write(":CURR {}".format(current_setpoint_A))
-
+	
 	def set_voltage(self, voltage_setpoint_V):
 		self.inst.write(":VOLT {}".format(voltage_setpoint_V))
 

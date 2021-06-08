@@ -307,7 +307,7 @@ if __name__ == '__main__':
 											Recommended to do one. Leaving a cell discharged increases\n\
 											risk of latent failures due to dendrite growth.")
 	
-	if(do_a_storage_charge)
+	if(do_a_storage_charge):
 		#storage charge settings
 		#always do a storage charge for cell safety!
 		storage_charge_settings = Templates.ChargeSettings()
