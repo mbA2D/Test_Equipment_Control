@@ -40,9 +40,9 @@ class DP800:
 		if(channel <= 3) and (channel >= 0):
 			self.inst.write(":INST:NSEL {}".format(channel))
 	
-	def set_current(self, current_setpoint_A):		
+	def set_current(self, current_setpoint_A):
 		self.inst.write(":CURR {}".format(current_setpoint_A))
-
+	
 	def set_voltage(self, voltage_setpoint_V):
 		self.inst.write(":VOLT {}".format(voltage_setpoint_V))
 
@@ -53,10 +53,12 @@ class DP800:
 			self.inst.write(":OUTP OFF")
 	
 	def remote_sense(self, state):
-		if state:
-			self.inst.write(":OUTP:SENS ON")
-		else:
-			self.inst.write(":OUTP:SENS OFF")
+		pass
+		#only for DP811A
+		#if state:
+		#	self.inst.write(":OUTP:SENS ON")
+		#else:
+		#	self.inst.write(":OUTP:SENS OFF")
 	
 	def lock_front_panel(self, state):
 		if state:

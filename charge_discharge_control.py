@@ -61,11 +61,11 @@ def measure_discharge():
 
 ####################### FILE IO ###########################
 
-def get_directory():
+def get_directory(type):
 	root = tk.Tk()
 	root.withdraw()
 	dir = tk.filedialog.askdirectory(
-		title='Select location to save Discharge data files')
+		title='Select location to save {} data files'.format(type))
 	root.destroy()
 	return dir
 
@@ -193,26 +193,50 @@ def storage_charge(dir, cell_name, charge_settings):
 	
 	#shut off power supply
 	start_rest()
+	
+	
+################################## CYCLE SETTINGS TYPES ################################
 
+def single_cycle():
+	#charge then discharge
+	cycle_settings = Templates.CycleSettings()
+	cycle_settings.get_cycle_settings()
+	
+	cycle_settings_list = list()
+	cycle_settings_list.append(cycle_settings)
+	
+	return cycle_settings_list
 
-####################################### PROGRAM ######################################
-if __name__ == '__main__':
-	#get the cell name
-	cell_name = eg.enterbox(title = "Test Setup", msg = "Enter the Cell Name\n(Spaces will be replaced with underscores)",
-							default = "CELL_NAME", strip = True)
-	#replace the spaces to keep file names consistent
-	cell_name = cell_name.replace(" ", "_")
+def one_level_continuous_cycles_with_rest():
+	#cycles - e.g. charge at 1A, rest, discharge at 5A, rest, repeat X times.
+	#get user to enter number of cycles
+	cycle_settings = Templates.CycleSettings()
+	cycle_settings.get_cycle_settings()
+	num_cycles = eg.integerbox(msg = "How Many Cycles?",
+								title = "Degradation Cycle", default = 1,
+								lowerbound = 0, upperbound = 999)
 
+	cycle_settings_list = list()
+
+	for i in range(num_cycles):
+		cycle_settings_list.append(cycle_settings)
+	
+	return cycle_settings_list
+
+def two_level_continuous_cycles_with_rest():
+	#A battery degradation test where the degradation is done at one current
+	#and the capacity measurement is done at another current.
+	#e.g. 9 degradation cycles, then 1 capacity measurement cycle.
+	
 	#degradation cycles
 	#get user to enter number of cycles
 	degradation_cycle_settings = Templates.CycleSettings()
 	degradation_cycle_settings.get_cycle_settings("Degradation")
 	num_degradation_cycles = eg.integerbox(msg = "How Many Degradation Cycles?",
-											title = "Degradation Cycle", default = 1,
+											title = "Degradation Cycle", default = 9,
 											lowerbound = 0, upperbound = 99)
 
 	#capacity measurement cycles
-	#only 1 cycle
 	capacity_cycle_settings = Templates.CycleSettings()
 	capacity_cycle_settings.get_cycle_settings("Capacity")
 	num_capacity_cycles = eg.integerbox(msg = "How Many Capacity Cycles?",
@@ -228,10 +252,6 @@ if __name__ == '__main__':
 	first_cycle = eg.buttonbox(msg = "Which cycle type should be completed first?", title = "First Cycle",
 								choices = cycle_types, default_choice = cycle_types[0])
 
-	#storage charge settings
-	storage_charge_settings = Templates.ChargeSettings()
-	storage_charge_settings.get_cycle_settings("Storage Charge")
-
 	cycle_settings_list = list()
 
 	for j in range(num_test_cycles):
@@ -245,11 +265,53 @@ if __name__ == '__main__':
 				cycle_settings_list.append(capacity_cycle_settings)
 			for i in range(num_capacity_cycles):
 				cycle_settings_list.append(degradation_cycle_settings)
+	
+	return cycle_settings_list
 
 
+
+####################################### PROGRAM ######################################
+if __name__ == '__main__':
+	#get the cell name
+	cell_name = eg.enterbox(title = "Test Setup", msg = "Enter the Cell Name\n(Spaces will be replaced with underscores)",
+							default = "CELL_NAME", strip = True)
+	#replace the spaces to keep file names consistent
+	cell_name = cell_name.replace(" ", "_")
+	
 	#Get a directory to save the file
-	directory = get_directory()
+	directory = get_directory("Cycle")
 	init_instruments()
+	
+	#different cycle types that are available
+	available_cycle_types = ("Single Cycle",
+							"One Setting Continuous Cycles With Rest",
+							"Two Setting Continuous Cycles With Rest")
+	
+	#choose the cycle type
+	msg = "Which cycle type do you want to do?"
+	title = "Choose Cycle Type"
+	cycle_type = eg.choicebox(msg, title, available_cycle_types)
+	
+	#gather the list settings based on the cycle type
+	cycle_settings_list = list()
+	if(cycle_type == available_cycle_types[0]):
+		cycle_settings_list = single_cycle()
+	elif(cycle_type == available_cycle_types[1]):
+		cycle_settings_list = one_level_continuous_cycles_with_rest()
+	elif(cycle_type == available_cycle_types[2]):
+		cycle_settings_list = two_level_continuous_cycles_with_rest()
+	
+	#Ask to do a storage charge
+	do_a_storage_charge = eg.ynbox(title = "Storage Charge",
+									msg = "Do you want to do a storage charge?\n\
+											Recommended to do one. Leaving a cell discharged increases\n\
+											risk of latent failures due to dendrite growth.")
+	
+	if(do_a_storage_charge):
+		#storage charge settings
+		#always do a storage charge for cell safety!
+		storage_charge_settings = Templates.ChargeSettings()
+		storage_charge_settings.get_cycle_settings("Storage Charge")
 
 	#cycle x times
 	cycle_num = 0
@@ -262,11 +324,14 @@ if __name__ == '__main__':
 			psu.toggle_output(False)
 			exit()
 		cycle_num += 1
-	#storage charge
-	try:
-		storage_charge(directory, cell_name, storage_charge_settings.settings)
-	except KeyboardInterrupt:
-		eload.toggle_output(False)
-		psu.toggle_output(False)
-		exit()
+	
+	if(do_a_storage_charge):
+		#storage charge
+		#always do a storage charge for cell safety!
+		try:
+			storage_charge(directory, cell_name, storage_charge_settings.settings)
+		except KeyboardInterrupt:
+			eload.toggle_output(False)
+			psu.toggle_output(False)
+			exit()
 	
