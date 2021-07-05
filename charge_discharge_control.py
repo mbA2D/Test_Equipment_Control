@@ -226,45 +226,34 @@ def one_level_continuous_cycles_with_rest():
 def two_level_continuous_cycles_with_rest():
 	#A battery degradation test where the degradation is done at one current
 	#and the capacity measurement is done at another current.
-	#e.g. 9 degradation cycles, then 1 capacity measurement cycle.
+	#e.g. 9 degradation cycles at current X, then 1 capacity measurement cycle at current Y.
 	
-	#degradation cycles
-	#get user to enter number of cycles
-	degradation_cycle_settings = Templates.CycleSettings()
-	degradation_cycle_settings.get_cycle_settings("Degradation")
-	num_degradation_cycles = eg.integerbox(msg = "How Many Degradation Cycles?",
-											title = "Degradation Cycle", default = 9,
+	#Cycle type 1
+	cycle_1_settings = Templates.CycleSettings()
+	cycle_1_settings.get_cycle_settings("Cycle 1")
+	num_cycles_type_1 = eg.integerbox(msg = "How Many Cycles of Type 1?",
+											title = "Cycle 1", default = 9,
 											lowerbound = 0, upperbound = 99)
 
-	#capacity measurement cycles
-	capacity_cycle_settings = Templates.CycleSettings()
-	capacity_cycle_settings.get_cycle_settings("Capacity")
-	num_capacity_cycles = eg.integerbox(msg = "How Many Capacity Cycles?",
-											title = "Capacity Cycle", default = 1,
+	#Cycle type 2
+	cycle_2_settings = Templates.CycleSettings()
+	cycle_2_settings.get_cycle_settings("Cycle 2")
+	num_cycles_type_2 = eg.integerbox(msg = "How Many Cycles of Type 2?",
+											title = "Cycle 2", default = 1,
 											lowerbound = 0, upperbound = 99)
 
-	#test cycles - X discharge, Y charge, how many times?
+	#test cycles - charge and discharge how many times?
 	num_test_cycles = eg.integerbox(msg = "How Many Test Cycles?",
 											title = "Test Cycles", default = 1,
 											lowerbound = 0, upperbound = 99)
 
-	cycle_types = ("Degradation", "Capacity")
-	first_cycle = eg.buttonbox(msg = "Which cycle type should be completed first?", title = "First Cycle",
-								choices = cycle_types, default_choice = cycle_types[0])
-
 	cycle_settings_list = list()
 
 	for j in range(num_test_cycles):
-		if(first_cycle == "Degradation"):
-			for i in range(num_degradation_cycles):
-				cycle_settings_list.append(degradation_cycle_settings)
-			for i in range(num_capacity_cycles):
-				cycle_settings_list.append(capacity_cycle_settings)
-		elif(first_cycle == "Capacity"):
-			for i in range(num_degradation_cycles):
-				cycle_settings_list.append(capacity_cycle_settings)
-			for i in range(num_capacity_cycles):
-				cycle_settings_list.append(degradation_cycle_settings)
+		for i in range(num_cycles_type_1):
+			cycle_settings_list.append(cycle_1_settings)
+		for i in range(num_cycles_type_2):
+			cycle_settings_list.append(cycle_2_settings)
 	
 	return cycle_settings_list
 
