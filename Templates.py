@@ -139,7 +139,7 @@ class CycleSettings:
 		file_root, file_extension = os.path.splitext(filename)
 		if(file_extension != extension):
 			file_extension = extension
-			file_name = file_root + file_extension
+		file_name = file_root + file_extension
 		return file_name
 
 ###############  CHARGE  #####################
