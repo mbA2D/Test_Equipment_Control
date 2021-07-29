@@ -42,7 +42,7 @@ class SPD1000:
 		self.set_voltage(0)
 		time.sleep(0.1)
 		
-	# To Set E-Load in Amps 
+	# To Set power supply current limit in Amps 
 	def set_current(self, current_setpoint_A):		
 		self.inst.write("CURR {}".format(current_setpoint_A))
 
