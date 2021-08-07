@@ -14,14 +14,20 @@ class BK8600:
 			resources = rm.list_resources()
 			
 			########### EASYGUI VERSION #############
-			msg = "Select a visa resource for the E-Load:"
-			title = "E-Load Selection"
-			resource_id = eg.choicebox(msg, title, resources)
-			
-			########### COMMAND LINE VERSION ########
-			#print('{}\n'.format(resources))
-			#id_index = int(input('Select resource list index\n'))
-			#resource_id = resources[id_index]
+			#choicebox needs 2 resources, so if we only have 1 device then add another.
+			title = "Power Supply Selection"
+			if(len(resources) == 0):
+				resource_id = 0
+				print("No Resources Available. Connection attempt will exit with errors")
+			elif(len(resources) == 1):
+				msg = "There is only 1 visa resource available.\nWould you like to use it?\n{}".format(resources[0])
+				if(eg.ynbox(msg, title)):
+					resource_id = resources[0]
+				else:
+					resource_id = 0
+			else:
+				msg = "Select a visa resource for the Power Supply:"
+				resource_id = eg.choicebox(msg, title, resources)
 		
 		self.inst = rm.open_resource(resource_id)
 		print("Connected to %s\n" % self.inst.query("*IDN?"))

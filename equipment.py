@@ -10,6 +10,7 @@ from lab_equipment import Eload_DL3000
 from lab_equipment import PSU_DP800
 from lab_equipment import PSU_SPD1000
 from lab_equipment import PSU_MP71025X
+from lab_equipment import PSU_BK9100
 
 #Digital Multimeters
 #import DM3068
@@ -38,7 +39,8 @@ class powerSupplies:
 		self.part_numbers = {
 			'SPD1000': 'PSU_SPD1000',
 			'DP800': 'PSU_DP800',
-			'MP71025X': 'PSU_MP71025X'
+			'MP71025X': 'PSU_MP71025X',
+			'BK9100': 'PSU_BK9100'
 		}
 	def choose_psu(self):
 		msg = "In which series is the PSU?"
@@ -51,6 +53,8 @@ class powerSupplies:
 			psu = PSU_DP800.DP800()
 		elif(class_name == 'MP71025X'):
 			psu = PSU_MP71025X.MP71025X()
+		elif(class_name == 'BK9100'):
+			psu = PSU_BK9100.BK9100()
 		return psu
 
 '''
