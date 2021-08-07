@@ -35,6 +35,7 @@ class BK9100:
 		self.inst.write_termination = '\r'
 		self.inst.read_termination = '\r'
 		
+		#IDN and RST not implemented in this PSU
 		#print("Connected to %s\n" % self.inst.query("*IDN?"))
 		#self.inst.write("*RST")
 		
@@ -69,19 +70,9 @@ class BK9100:
 	
 	def remote_sense(self, state):
 		pass
-		#only for DP811A
-		#if state:
-		#	self.inst.write(":OUTP:SENS ON")
-		#else:
-		#	self.inst.write(":OUTP:SENS OFF")
 	
 	def lock_front_panel(self, state):
 		pass
-		#if state:
-		#	self.inst.write(":SYST:REM")
-		#else:
-		#	self.inst.write(":SYST:LOC")
-	
 	
 	#extra queries to clear the buffer
 	def measure_voltage(self):
@@ -97,7 +88,11 @@ class BK9100:
 		return i
 		
 	def measure_power(self):
-		return self.measure_current()*self.measure_voltage()
+		p = self.inst.query("GETD")
+		v = float(p[0:4])/100.0
+		i = float(p[4:8])/100.0
+		self.inst.query("")
+		return v*i
 		
 	def __del__(self):
 		self.toggle_output(False)
