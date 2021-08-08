@@ -11,7 +11,7 @@ class N8700:
 		rm = pyvisa.ResourceManager('@ivi')
 		
 		if(resource_id == ""):
-			resources = rm.list_resources()
+			resources = rm.list_resources('@ivi')
 			
 			########### EASYGUI VERSION #############
 			#choicebox needs 2 resources, so if we only have 1 device then add another.
