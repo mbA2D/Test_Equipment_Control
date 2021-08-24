@@ -52,11 +52,11 @@ def read_temperatures():
 
 ####################### FILE IO ###########################
 
-def get_directory(type):
+def get_directory(name):
 	root = tk.Tk()
 	root.withdraw()
 	dir = tk.filedialog.askdirectory(
-		title='Select location to save {} data files'.format(type))
+		title='Select location to save {} data files'.format(name))
 	root.destroy()
 	return dir
 
@@ -123,7 +123,7 @@ def gather_data():
 
 ######################### MAIN PROGRAM #######################
 
-dir = get_directory()
+dir = get_directory("MSXIV Battery Module Test)
 filepath = start_file(dir, "Module_Manufacturing_Test")
 
 response = "Y"
