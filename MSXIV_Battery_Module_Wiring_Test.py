@@ -1,46 +1,74 @@
-import Arduino_IO_Module_control
+import A2D_DAQ_control as AD_control
 import voltage_to_temp as V2T
+import tkinter as tk
+import os
+from datetime import datetime
+import pandas as pd
+
 
 #connect to the io module
-io = Arduino_IO_Module_control.Arduino_IO()
+daq = AD_control.A2D_DAQ()
 
 
 ################ CONNECTIONS ON THE BOARD #################
 
 #cell connections
-c1_vpin = 2
-c2_vpin = 3
-c1_bpin = 4
-c2_bpin = 5
-c2_div_ratio = 2 #cell 2 has a voltage divider to get the 5V analog range
+c1_vpin = 16
+c2_vpin = 17
+c1_bpin = 18
+c2_bpin = 19
+input_pins = [c1_vpin, c2_vpin, c1_bpin, c2_bpin]
+c1_pins = [c1_vpin, c1_bpin]
+c2_pins = [c2_vpin, c2_bpin]
 
-#thermistor connections - have a 10K pullup
-t1_pin = 6
-t2_pin = 7
-t3_pin = 8
-t4_pin = 9
-pullup_r = 10000
-pullup_v = 5
+c1_div_ratio = 2 #cell 1 has a voltage divider for 3.3V max range
+c2_div_ratio = 3 #cell 2 has a voltage divider to get the 3.3V analog range
+
+
+#thermistor connections
+t1_pin = 20
+t2_pin = 21
+t3_pin = 22
+t4_pin = 23
+t5_pin = 24
+thermistor_pins = [t1_pin, t2_pin, t3_pin, t4_pin, t5_pin]
+
+pullup_r = 3300
+pullup_v = 3.3
 
 
 ############# PIN SETUP AND READING ######################
 
 def setup_pins():
-	input_pins = [c1_vpin, c2_vpin, c1_bpin, c2_bpin, t1_pin, t2_pin, t3_pin, t4_pin]
+	daq.calibrate_pullup_v()
+	pullup_v = daq.get_pullup_v()
+	
 	for pin in input_pins:
-		io.conf_io(pin, 0) #0 is input
+		daq.conf_io(pin, 0) #0 is input
+	
+	for pin in thermistor_pins:
+		daq.conf_io(pin, 1) #1 is output
+		daq.set_dig(pin, 1) #pull high
 
 def read_voltages():
 	voltages = list()
-	voltages.append(io.get_analog_v(c1_vpin))
-	voltages.append(io.get_analog_v(c2_vpin)/c2_div_ratio)
-	voltages.append(io.get_analog_v(c1_bpin))
-	voltages.append(io.get_analog_v(c2_bpin)/c2_div_ratio)
+	
+	daq.set_read_delay_ms(50)
+	
+	for pin in c1_pins:
+		voltages.append(daq.get_analog_v(pin)/c1_div_ratio)
+	for pin in c2_pins:
+		voltages.append(daq.get_analog_v(pin)/c2_div_ratio)
 	return voltages
 	
 def read_temperatures():
+	daq.set_read_delay_ms(5)
+	
+	daq.calibrate_pullup_v()
+	pullup_v = daq.get_pullup_v()
+	
 	temperatures = list()
-	t_pins = [t1_pin, t2_pin, t3_pin, t4_pin]
+	t_pins = [t1_pin, t2_pin, t3_pin, t4_pin, t5_pin]
 	
 	for pin in t_pins:
 		pin_v = io.get_analog_v(pin)
@@ -81,13 +109,14 @@ def start_file(directory, name):
 	headers.append('Timestamp')
 	headers.append('Module_Number')
 	headers.append('Cell_1_Voltage-V')
-	headers.append('Cell_2_Voltage-V')
 	headers.append('Cell_1_Balance-V')
+	headers.append('Cell_2_Voltage-V')
 	headers.append('Cell_2_Balance-V')
 	headers.append('Temperature_1-degC')
 	headers.append('Temperature_2-degC')
 	headers.append('Temperature_3-degC')
 	headers.append('Temperature_4-degC')
+	headers.append('Temperature_5-degC')
 	
 	write_line(filepath, headers)
 	
@@ -119,7 +148,8 @@ def gather_data():
 	data.extend(read_voltages())
 	data.extend(read_temperatures())
 	
-	
+	return data
+
 
 ######################### MAIN PROGRAM #######################
 
