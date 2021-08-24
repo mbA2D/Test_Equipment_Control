@@ -62,6 +62,9 @@ class Arduino_IO:
 	def get_analog_mv(self, channel = 2):
 		return self.inst.query('INSTR:IO:READ:ANA? (@{ch})'.format(ch = channel))
 	
+	def get_analog_v(self, channel = 2):
+		return self.get_analog_mv*1000
+	
 	def get_dig_in(self, channel = 2):
 		return self.inst.query('INSTR:IO:READ:DIG? (@{ch})'.format(ch = channel))
 		
