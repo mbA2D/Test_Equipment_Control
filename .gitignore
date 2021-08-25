@@ -1,3 +1,4 @@
 
 *.pyc
 *.pyc
+__pycache__/A2D_DAQ_control.cpython-37.pyc
