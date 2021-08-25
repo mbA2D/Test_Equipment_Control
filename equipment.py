@@ -11,6 +11,7 @@ from lab_equipment import PSU_DP800
 from lab_equipment import PSU_SPD1000
 from lab_equipment import PSU_MP71025X
 from lab_equipment import PSU_BK9100
+from lab_equipment import PSU_N8700
 
 #Digital Multimeters
 #import DM3068
