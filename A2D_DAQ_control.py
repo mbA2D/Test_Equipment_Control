@@ -78,7 +78,7 @@ class A2D_DAQ:
 		return self.inst.query('INSTR:READ:ANA? (@{ch})'.format(ch = channel))
 	
 	def get_analog_v(self, channel = 0):
-		return self.get_analog_mv(channel)/1000.0
+		return float(self.get_analog_mv(channel))/1000.0
 	
 	def get_dig_in(self, channel = 0):
 		return self.inst.query('INSTR:READ:DIG? (@{ch})'.format(ch = channel))

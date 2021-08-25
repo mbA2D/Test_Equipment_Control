@@ -4,6 +4,7 @@ import tkinter as tk
 import os
 from datetime import datetime
 import pandas as pd
+import time
 
 
 #connect to the io module
@@ -18,8 +19,6 @@ c2_vpin = 17
 c1_bpin = 18
 c2_bpin = 19
 input_pins = [c1_vpin, c2_vpin, c1_bpin, c2_bpin]
-c1_pins = [c1_vpin, c1_bpin]
-c2_pins = [c2_vpin, c2_bpin]
 
 c1_div_ratio = 2 #cell 1 has a voltage divider for 3.3V max range
 c2_div_ratio = 3 #cell 2 has a voltage divider to get the 3.3V analog range
@@ -55,10 +54,11 @@ def read_voltages():
 	
 	daq.set_read_delay_ms(50)
 	
-	for pin in c1_pins:
-		voltages.append(daq.get_analog_v(pin)/c1_div_ratio)
-	for pin in c2_pins:
-		voltages.append(daq.get_analog_v(pin)/c2_div_ratio)
+	voltages.append(daq.get_analog_v(c1_vpin)*c1_div_ratio)
+	voltages.append(daq.get_analog_v(c2_vpin)*c2_div_ratio-voltages[-1])
+	voltages.append(daq.get_analog_v(c1_bpin)*c1_div_ratio)
+	voltages.append(daq.get_analog_v(c2_bpin)*c2_div_ratio-voltages[-1])
+	
 	return voltages
 	
 def read_temperatures():
@@ -71,7 +71,7 @@ def read_temperatures():
 	t_pins = [t1_pin, t2_pin, t3_pin, t4_pin, t5_pin]
 	
 	for pin in t_pins:
-		pin_v = io.get_analog_v(pin)
+		pin_v = daq.get_analog_v(pin)
 		temperature_c = V2T.voltage_to_C(pin_v, pullup_r, pullup_v)
 		temperatures.append(temperature_c)
 		
@@ -109,8 +109,8 @@ def start_file(directory, name):
 	headers.append('Timestamp')
 	headers.append('Module_Number')
 	headers.append('Cell_1_Voltage-V')
-	headers.append('Cell_1_Balance-V')
 	headers.append('Cell_2_Voltage-V')
+	headers.append('Cell_1_Balance-V')
 	headers.append('Cell_2_Balance-V')
 	headers.append('Temperature_1-degC')
 	headers.append('Temperature_2-degC')
@@ -132,7 +132,7 @@ def write_data(filepath, test_data, printout=False):
 	if(printout):
 		print(data)
 	
-	write_line(filepath, test_data)
+	write_line(filepath, data)
 
 
 ######################## GATHER DATA #######################
@@ -153,7 +153,7 @@ def gather_data():
 
 ######################### MAIN PROGRAM #######################
 
-dir = get_directory("MSXIV Battery Module Test)
+dir = get_directory("MSXIV Battery Module Wiring Test")
 filepath = start_file(dir, "Module_Manufacturing_Test")
 
 response = "Y"
