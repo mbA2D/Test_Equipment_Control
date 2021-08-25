@@ -77,6 +77,9 @@ class A2D_DAQ:
 	def get_analog_mv(self, channel = 0):
 		return self.inst.query('INSTR:READ:ANA? (@{ch})'.format(ch = channel))
 	
+	def get_analog_v(self, channel = 0):
+		return float(self.get_analog_mv(channel))/1000.0
+	
 	def get_dig_in(self, channel = 0):
 		return self.inst.query('INSTR:READ:DIG? (@{ch})'.format(ch = channel))
 		
@@ -91,6 +94,10 @@ class A2D_DAQ:
 		#x is a character that we parse but do nothing with (channel must be first)
 		self.inst.write('INSTR:DAQ:SET:LED x {val}'.format(val = value))
 		
+	def set_read_delay_ms(self, delay_ms):
+		#x is a character that we parse but do nothing with (channel must be first)
+		self.inst.write('CONF:DAQ:READDEL x {val}'.format(val = delay_ms))
+	
 if __name__ == "__main__":
 	#connect to the daq
 	daq = A2D_DAQ()
