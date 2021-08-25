@@ -35,6 +35,10 @@ thermistor_pins = [t1_pin, t2_pin, t3_pin, t4_pin, t5_pin]
 pullup_r = 3300
 pullup_v = 3.3
 
+#wires used for thermistors
+wire_length_m = 0.75
+wire_awg = 22
+
 
 ############# PIN SETUP AND READING ######################
 
@@ -72,7 +76,8 @@ def read_temperatures():
 	
 	for pin in t_pins:
 		pin_v = daq.get_analog_v(pin)
-		temperature_c = V2T.voltage_to_C(pin_v, pullup_r, pullup_v)
+		print("Pin: {}  Voltage: {}".format(pin, pin_v))
+		temperature_c = V2T.voltage_to_C(pin_v, pullup_r, pullup_v, wire_length_m = wire_length_m, wire_awg = wire_awg)
 		temperatures.append(temperature_c)
 		
 	return temperatures
@@ -141,7 +146,7 @@ def gather_data():
 	data = list()
 	
 	#get the module number
-	module_number = input("Enter the module number:")
+	module_number = input("Enter the module number: ")
 	data.append(module_number)
 	
 	#read the data
@@ -155,6 +160,7 @@ def gather_data():
 
 dir = get_directory("MSXIV Battery Module Wiring Test")
 filepath = start_file(dir, "Module_Manufacturing_Test")
+setup_pins()
 
 response = "Y"
 

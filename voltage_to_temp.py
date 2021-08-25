@@ -49,7 +49,7 @@ def resistance_to_temp(resistance, sh_dict = NXRT15XV103FA1B_SH_CONSTANTS):
 	#Convert resistance to temperature (C)
 	return (1.0/(sh_dict['SH_A'] + sh_dict['SH_B'] * log(resistance) + sh_dict['SH_C'] * (log(resistance)**3.0))) - 273.15
 
-def voltage_to_C(v_meas, r_pullup, v_pullup, sh_constants = NXRT15XV103FA1B_SH_CONSTANTS):
+def voltage_to_C(v_meas, r_pullup, v_pullup, sh_constants = NXRT15XV103FA1B_SH_CONSTANTS, wire_length_m = 3.0, wire_awg = 26.0):
 	if(v_meas >= v_pullup):
 		return max_temp
 	
@@ -57,7 +57,7 @@ def voltage_to_C(v_meas, r_pullup, v_pullup, sh_constants = NXRT15XV103FA1B_SH_C
 	resistance = (float(v_meas) * float(r_pullup)) / (float(v_pullup) - float(v_meas))
 	
 	#compensate for the wire length
-	resistance = resistance - wire_resistance(length_m = 3.0, awg = 26.0)
+	resistance = resistance - wire_resistance(length_m = wire_length_m, awg = wire_awg)
 	
 	#compensate for the switch resistance of the IO expander
 	#TODO - measure this
