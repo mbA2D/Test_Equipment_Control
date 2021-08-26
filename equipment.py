@@ -27,7 +27,6 @@ class eLoads:
 		if include_parallel:
 			self.part_numbers['PARALLEL'] = 'Eload_PARALLEL'
 		
-	
 	def choose_eload(self):
 		msg = "In which series is the E-Load?"
 		title = "E-Load Series Selection"
