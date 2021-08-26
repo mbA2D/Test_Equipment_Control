@@ -32,8 +32,8 @@ class PARALLEL:
 		eload2.toggle_output(state)
 	
 	def remote_sense(self, state):
+		#only do remote sense on a single eload, we only need a single measurement
 		eload1.remote_sense(state)
-		eload2.remote_sense(state)
 	
 	def lock_front_panel(self, state):
 		eload1.lock_front_panel(state)
