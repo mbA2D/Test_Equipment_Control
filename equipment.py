@@ -5,6 +5,7 @@ import easygui as eg
 #Eloads
 from lab_equipment import Eload_BK8600
 from lab_equipment import Eload_DL3000
+from lab_equipment import Eload_PARALLEL
 
 #Power Supplies
 from lab_equipment import PSU_DP800
@@ -17,12 +18,16 @@ from lab_equipment import PSU_N8700
 #import DM3068
 
 class eLoads:
-	def __init__(self):
+	def __init__(self, include_parallel = True):
 		#organized into Cell_Name and Location
 		self.part_numbers = {
 			'BK8600': 'Eload_BK8600',
 			'DL3000': 'Eload_DL3000'
 		}
+		if include_parallel:
+			self.part_numbers['PARALLEL'] = 'Eload_PARALLEL'
+		
+	
 	def choose_eload(self):
 		msg = "In which series is the E-Load?"
 		title = "E-Load Series Selection"
@@ -32,6 +37,8 @@ class eLoads:
 			eload = Eload_BK8600.BK8600()
 		elif(class_name == 'DL3000'):
 			eload = Eload_DL3000.DL3000()
+		elif(class_name == 'PARALLEL'):
+			eload = Eload_PARALLEL.PARALLEL()
 		return eload
 
 class powerSupplies:
@@ -44,6 +51,7 @@ class powerSupplies:
 			'BK9100': 'PSU_BK9100',
 			'N8700': 'PSU_N8700'
 		}
+	
 	def choose_psu(self):
 		msg = "In which series is the PSU?"
 		title = "PSU Series Selection"
