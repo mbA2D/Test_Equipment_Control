@@ -26,6 +26,11 @@ def init_instruments():
 	eload.remote_sense(True)
 	psu.remote_sense(True)
 
+def remove_extreme_values(list_to_remove, num_to_remove):
+	for i in range(remove_num):
+		list_to_remove.remove(max(list_to_remove))
+		list_to_remove.remove(min(list_to_remove))
+	return list_to_remove
 
 def gather_data(samples_to_avg):
 	data = list()
@@ -40,7 +45,7 @@ def gather_data(samples_to_avg):
 		#so we technically are not measuring true power
 		#we will average each term individually as the load conditions are not
 		#changing and any switching noise, mains noise, etc. will be averaged out (hopefully)
-		
+		time.sleep(0.01)
 		input_voltage.append(psu.measure_voltage())
 		input_current.append(psu.measure_current())
 		output_voltage.append(eload.measure_voltage())
@@ -53,15 +58,10 @@ def gather_data(samples_to_avg):
 	#top and bottom amount to remove:
 	remove_num = int(np.log(samples_to_avg))
 	
-	for i in range(remove_num):
-		input_current.remove(max(input_current))
-		input_current.remove(min(input_current))
-		input_voltage.remove(max(input_voltage))
-		input_voltage.remove(min(input_voltage))
-		output_current.remove(max(output_current))
-		output_current.remove(min(output_current))
-		output_voltage.remove(max(output_voltage))
-		output_voltage.remove(min(output_voltage))
+	input_voltage = remove_extreme_values(input_voltage, remove_num)
+	input_current = remove_extreme_values(input_current, remove_num)
+	output_voltage = remove_extreme_values(output_voltage, remove_num)
+	output_current = remove_extreme_values(output_current, remove_num)
 	
 	#compute average of what's left (non-outliers)
 	iv = sum(input_voltage) / len(input_voltage)
