@@ -85,6 +85,8 @@ def sweep_load_current(dir, test_name, settings):
 	num_steps = settings["num_current_steps"]
 	delay_s = settings["step_delay_s"]
 	
+	test_name += "_{}".format(settings["psu_voltage"])
+	
 	filepath = FileIO.start_file(dir, test_name)
 	
 	#TODO - adjust power supply voltage
