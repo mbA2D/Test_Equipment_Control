@@ -69,22 +69,15 @@ def gather_data(samples_to_avg):
 	ov = sum(output_voltage) / len(output_voltage)
 	oc = sum(output_current) / len(output_current)	
 	
-	data.append(oc)
-	data.append(ov)
-	data.append(ic)
 	data.append(iv)
+	data.append(ic)
+	data.append(ov)
+	data.append(oc)
 	
 	return data
 
+def sweep_load_current(filepath, test_name, settings):
 
-#TODO - still need to incorporate averaging of measurements
-def sweep_load_current(dir, test_name, settings):
-	
-	test_name += "_{}".format(settings["psu_voltage"])
-	
-	filepath = FileIO.start_file(dir, test_name)
-	
-	#TODO - adjust power supply voltage
 	psu.set_voltage(settings["psu_voltage"])
 	psu.set_current(settings["psu_current_limit_a"])
 	
@@ -94,6 +87,7 @@ def sweep_load_current(dir, test_name, settings):
 		eload.set_current(current)
 		time.sleep(settings["step_delay_s"])
 		data = gather_data(settings["measurement_samples_for_avg"])
+		data.append(settings["psu_voltage"])
 		FileIO.write_data(filepath, data)
 
 
@@ -124,6 +118,9 @@ if __name__ == '__main__':
 		sweep_settings["measurement_samples_for_avg"] = test_settings["measurement_samples_for_avg"]
 		sweep_settings_list.append(sweep_settings)
 	
+	#Headers - Timestamp is added by FileIO.write_data
+	headers = ['Timestamp', 'v_in', 'i_in', 'v_out', 'i_out', 'v_in_set']
+	filepath = FileIO.start_file(directory, test_name, headers)
 	
 	#Turn on power supply and eload to get the converter started up
 	init_instruments()

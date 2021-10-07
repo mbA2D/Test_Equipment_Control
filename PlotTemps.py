@@ -93,7 +93,7 @@ def get_temps(stats, prefix, log_dir):
 	return df, max_temp
 
 #plot a dataframe that has all the temperatures in it
-def plot_temps(df, cell_name, save_filepath = '', show_graph=True, prefix = ''):
+def plot_temps(df, cell_name, save_filepath = '', show_graph=True, suffix = ''):
 	if df.size == 0:
 		return
 	
@@ -116,8 +116,8 @@ def plot_temps(df, cell_name, save_filepath = '', show_graph=True, prefix = ''):
 		ax_temps.plot('Timestamp', temp_name, data = df, label = location)
 	
 	title = 'Temperature log'
-	if prefix != '':
-		title += ' {}'.format(prefix)
+	if suffix != '':
+		title += ' {}'.format(suffix)
 	
 	fig.suptitle(title)
 	ax_temps.set_ylabel('Temperature (Celsius)')
