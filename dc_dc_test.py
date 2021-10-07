@@ -80,11 +80,6 @@ def gather_data(samples_to_avg):
 #TODO - still need to incorporate averaging of measurements
 def sweep_load_current(dir, test_name, settings):
 	
-	min_a = settings["load_current_min"]
-	max_a = settings["load_current_max"]
-	num_steps = settings["num_current_steps"]
-	delay_s = settings["step_delay_s"]
-	
 	test_name += "_{}".format(settings["psu_voltage"])
 	
 	filepath = FileIO.start_file(dir, test_name)
@@ -97,7 +92,7 @@ def sweep_load_current(dir, test_name, settings):
 								settings["load_current_max"],
 								settings["num_current_steps"]):
 		eload.set_current(current)
-		time.sleep(delay_s)
+		time.sleep(settings["step_delay_s"])
 		data = gather_data(settings["measurement_samples_for_avg"])
 		FileIO.write_data(filepath, data)
 
