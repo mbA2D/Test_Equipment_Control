@@ -34,7 +34,7 @@ class KAXXXXP:
 		
 		self.inst = rm.open_resource(resource_id)
 		
-        self.inst.baud_rate = 9600
+		self.inst.baud_rate = 9600
 		self.inst.query_delay = 0.01
         
 		print("Connected to %s\n" % self.inst.query("*IDN?"))
@@ -66,11 +66,11 @@ class KAXXXXP:
 	
 	def remote_sense(self, state):
 		#these units do not have remote sense
-        pass
+		pass
 	
 	def lock_commands(self, state):
 		#these units auto-lock front panel when USB connected
-        pass
+		pass
 	
 	def measure_voltage(self):
 		return float(self.inst.query("VOUT1?"))

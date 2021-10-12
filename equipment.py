@@ -61,8 +61,8 @@ class powerSupplies:
 			psu = PSU_BK9100.BK9100()
 		elif(class_name == 'N8700'):
 			psu = PSU_N8700.N8700()
-        elif(class_name == 'KAXXXXP':
-            psu = PSU_KAXXXXP.KAXXXXP()
+		elif(class_name == 'KAXXXXP'):
+			psu = PSU_KAXXXXP.KAXXXXP()
 		return psu
 
 '''
