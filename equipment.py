@@ -12,6 +12,7 @@ from lab_equipment import PSU_SPD1000
 from lab_equipment import PSU_MP71025X
 from lab_equipment import PSU_BK9100
 from lab_equipment import PSU_N8700
+from lab_equipment import PSU_KAXXXXP
 
 #Digital Multimeters
 #import DM3068
@@ -42,7 +43,8 @@ class powerSupplies:
 			'DP800': 'PSU_DP800',
 			'MP71025X': 'PSU_MP71025X',
 			'BK9100': 'PSU_BK9100',
-			'N8700': 'PSU_N8700'
+			'N8700': 'PSU_N8700',
+            'KAXXXXP': 'PSU_KAXXXXP'
 		}
 	def choose_psu(self):
 		msg = "In which series is the PSU?"
@@ -59,6 +61,8 @@ class powerSupplies:
 			psu = PSU_BK9100.BK9100()
 		elif(class_name == 'N8700'):
 			psu = PSU_N8700.N8700()
+		elif(class_name == 'KAXXXXP'):
+			psu = PSU_KAXXXXP.KAXXXXP()
 		return psu
 
 '''
