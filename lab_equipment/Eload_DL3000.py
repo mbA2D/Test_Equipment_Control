@@ -15,7 +15,7 @@ class DL3000:
 			
 			########### EASYGUI VERSION #############
 			#choicebox needs 2 resources, so if we only have 1 device then add another.
-			title = "Power Supply Selection"
+			title = "Eload Selection"
 			if(len(resources) == 0):
 				resource_id = 0
 				print("No Resources Available. Connection attempt will exit with errors")
@@ -26,7 +26,7 @@ class DL3000:
 				else:
 					resource_id = 0
 			else:
-				msg = "Select a visa resource for the Power Supply:"
+				msg = "Select a visa resource for the Eload:"
 				resource_id = eg.choicebox(msg, title, resources)
 		
 		#values specific to the DL3000 - will break out to another file later
