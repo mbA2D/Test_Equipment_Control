@@ -52,7 +52,7 @@ def measure_rest():
 	return (eload.measure_voltage(), 0)
 
 def measure_charge():
-	#return current from power supply, voltage from eload`
+	#return current from power supply, voltage from eload (more accurate)
 	return (eload.measure_voltage(), psu.measure_current())
 
 def measure_discharge():

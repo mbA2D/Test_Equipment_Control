@@ -8,10 +8,10 @@ import easygui as eg
 class DL3000:
 	# Initialize the DL3000 E-Load
 	def __init__(self, resource_id = ""):
-		rm = pyvisa.ResourceManager('@ivi')
+		rm = pyvisa.ResourceManager()
 		
 		if(resource_id == ""):
-			resources = rm.list_resources('@ivi')
+			resources = rm.list_resources()
 			
 			########### EASYGUI VERSION #############
 			#choicebox needs 2 resources, so if we only have 1 device then add another.
