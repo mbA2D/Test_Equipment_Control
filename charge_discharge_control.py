@@ -211,7 +211,7 @@ def cycle_cell(dir, cell_name, cycle_settings):
 		data = measure_rest()
 		gather_and_write_data(filepath, data)
 	
-	print('Cycle Completed: {}\n'.format(time.ctime())flush=True)
+	print('Cycle Completed: {}\n'.format(time.ctime()), flush=True)
 	
 	return
 
@@ -226,7 +226,7 @@ def storage_charge(dir, cell_name, charge_settings):
 	#start the storage charging
 	start_charge(charge_settings["charge_end_v"], charge_settings["charge_a"])
 	charge_start_time = time.time()
-	print('Starting Storage Charge: {}\n'.format(time.ctime())flush=True)
+	print('Starting Storage Charge: {}\n'.format(time.ctime()), flush=True)
 	while (data[1] > charge_settings["charge_end_a"]):
 		time.sleep(charge_settings["meas_log_int_s"] - ((time.time() - charge_start_time) % charge_settings["meas_log_int_s"]))
 		data = measure_charge()
