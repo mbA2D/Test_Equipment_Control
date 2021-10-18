@@ -37,6 +37,33 @@ def plot_iv(log_data, save_filepath = '', show_graph=False):
 	else:
 		plt.close()
 
+#Function to plot the incremental capacity analysis of a battery's charge or discharge data.
+#DiffCapAnalyzer may be helpful here: https://www.theoj.org/joss-papers/joss.02624/10.21105.joss.02624.pdf
+#Also, a few other articles as well: https://www.mdpi.com/2313-0105/5/2/37
+def plot_ica(data_w_cap):
+	
+	#First plot voltage=y, capacity (ah) = x
+	fig = plt.figure()
+	ax_cap = fig.add_subplot()
+	
+	title = 'Charge and Incremental Capacity Analysis'
+	if(data_w_cap.loc[data_w_cap.index[0], 'Current'] < 0):
+		title = 'Discharge'
+	fig.suptitle(title)
+	ax_cap.set_xlabel('Voltage')
+	ax_cap.set_ylabel('Capacity (Ah)', color = 'r')
+	ax_cap.plot('Voltage', 'Capacity_Ah_Up_To', data = data_w_cap, color = 'r')
+	
+	ax_ica = ax_cap.twinx()
+	ax_ica.set_ylabel('dQ/dV', color = 'b')
+	ax_ica.plot('Voltage', 'dQ_dV', data = data_w_cap, color = 'b')
+	
+	plt.show()
+	
+
+#Calculates the capacity of the charge or discharge in wh and ah.
+#Also returns a dataframe that contains the temperature log entries corresponding to the
+#same timestamps as the log.
 def calc_capacity(log_data, stats, charge=True, temp_log_dir = ""):
 	#create a mask to get only the discharge data
 	if (charge):
@@ -66,6 +93,10 @@ def calc_capacity(log_data, stats, charge=True, temp_log_dir = ""):
 	dsc_data = dsc_data.assign(SecsFromLastTimestamp=0)
 	dsc_data = dsc_data.assign(Capacity_Ah=0)
 	dsc_data = dsc_data.assign(Capacity_wh=0)
+	dsc_data = dsc_data.assign(Capacity_Ah_Up_To=0)
+	dsc_data = dsc_data.assign(Capacity_wh_Up_To=0)
+	dsc_data = dsc_data.assign(Voltage_Diff=0)
+	dsc_data = dsc_data.assign(dQ_dV=0)
 	
 	#requires indexes to be the default numeric ones
 	for data_index in dsc_data.index:
@@ -76,13 +107,22 @@ def calc_capacity(log_data, stats, charge=True, temp_log_dir = ""):
 			continue
 		
 		dsc_data.loc[data_index, 'Capacity_Ah'] = \
-		dsc_data.loc[data_index, 'Current'] * dsc_data.loc[data_index, 'SecsFromLastTimestamp'] / 3600
+			dsc_data.loc[data_index, 'Current'] * dsc_data.loc[data_index, 'SecsFromLastTimestamp'] / 3600
 		
 		dsc_data.loc[data_index, 'Capacity_wh'] = \
-		dsc_data.loc[data_index, 'Capacity_Ah'] * dsc_data.loc[data_index, 'Voltage']
+			dsc_data.loc[data_index, 'Capacity_Ah'] * dsc_data.loc[data_index, 'Voltage']
+		
+		#Calculate the capacity up to this point, and the voltage differential
+		if(data_index != 0):
+			dsc_data.loc[data_index, 'Capacity_Ah_Up_To'] = dsc_data['Capacity_Ah'].sum()
+			dsc_data.loc[data_index, 'Capacity_wh_Up_To'] = dsc_data['Capacity_wh'].sum()
+			dsc_data.loc[data_index, 'Voltage_Diff'] = dsc_data.loc[data_index, 'Voltage'] - dsc_data.loc[data_index-1, 'Voltage']
+			dsc_data.loc[data_index, 'dQ_dV'] = dsc_data.loc[data_index, 'Capacity_Ah'] / dsc_data.loc[data_index, 'Voltage_Diff']
 		
 	capacity_ah = dsc_data['Capacity_Ah'].sum()
 	capacity_wh = dsc_data['Capacity_wh'].sum()
+	
+	#TODO - better way of detecting charge current - find the CV and CC phases
 	#round current to 1 decimal point
 	charge_a = round(dsc_data['Current'].median(),1)
 	
@@ -103,6 +143,8 @@ def calc_capacity(log_data, stats, charge=True, temp_log_dir = ""):
 	print('Start Time: {}'.format(start_time))
 	print('End Time: {}'.format(end_time))
 
+	plot_ica(dsc_data)
+	
 	if(temps_available):
 		#now add some temperature data
 		temp_data, max_temp = PlotTemps.get_temps(stats.stats, prefix, temp_log_dir)
@@ -265,3 +307,4 @@ if __name__ == '__main__':
 					save_filepath=filepath_graph_temps_charge, show_graph=False, prefix = 'charge')
 			PlotTemps.plot_temps(temps_discharge, cycle_stats.stats['cell_name'], \
 					save_filepath=filepath_graph_temps_discharge, show_graph=False, prefix = 'discharge')
+
