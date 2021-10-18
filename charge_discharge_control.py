@@ -95,11 +95,14 @@ def start_file(directory, name):
 	
 	return filepath
 
-def gather_and_write_data(filepath, iv_data, printout=False):
+def gather_and_write_data(filepath, iv_data, printout=False, timestamp = 0):
 	data = list()
 	
 	#add timestamp
-	data.append(time.time())
+	if(timestamp != 0):
+		data.append(timestamp)
+	else:
+		data.append(time.time())
 	data.append(iv_data[0])
 	data.append(iv_data[1])
 	
@@ -147,6 +150,7 @@ def cycle_cell(dir, cell_name, cycle_settings):
 	start_rest()
 	rest_start_time = time.time()
 	print('Starting Rest After Charge: {}\n'.format(time.ctime()), flush=True)
+  
 	while (time.time() - rest_start_time) < rest_after_charge_s:
 		time.sleep(cycle_settings["meas_log_int_s"] - ((time.time() - rest_start_time) % cycle_settings["meas_log_int_s"]))
 		data = measure_rest()
@@ -155,11 +159,48 @@ def cycle_cell(dir, cell_name, cycle_settings):
 	#start discharge
 	start_discharge(cycle_settings["discharge_a"])
 	discharge_start_time = time.time()
+
+	data = measure_rest()
+	
+	#need to add a previous voltage, previous voltage time so that we can compare to better extimate the end time.
+	#if we underestimate the end time, that's fine since we'll just get a measurement that is closer next, though there will be delay by the time to gather and write data
+	prev_v = data[0]
+	prev_v_time = discharge_start_time
+	new_data_time = discharge_start_time
+	
 	print('Starting Discharge: {}\n'.format(time.ctime()), flush=True)
+
 	while (data[0] > cycle_settings["discharge_end_v"]):
-		time.sleep(cycle_settings["meas_log_int_s"] - ((time.time() - discharge_start_time) % cycle_settings["meas_log_int_s"]))
+		
+		rise = data[0] - prev_v
+		run = new_data_time - prev_v_time
+		slope = 0
+		if(run > 0): #to avoid div by 0 errors
+			slope = rise/run
+		
+		#if slope is 0 or positive (upwards) then we will never hit the intercept.
+		#set interpolated wait time to same as meas_log_interval
+		interpolated_wait_time = cycle_settings["meas_log_int_s"]
+		
+		if slope < 0:
+			#now do the calculation
+			#slope is Volts / second
+			#start from the newest data point, and trace line to the end voltage. Take that time.
+			#change_req = cycle_settings["discharge_end_v"] - data[0] #volts
+			#time_req = change_req / slope #gives result in seconds
+			
+			interpolated_wait_time = (cycle_settings["discharge_end_v"] - data[0]) / slope
+		
+		max_wait_time = cycle_settings["meas_log_int_s"] - ((time.time() - discharge_start_time) % cycle_settings["meas_log_int_s"])
+		wait_time = min(max_wait_time, interpolated_weight_time)
+		time.sleep(wait_time)
+		
+		prev_v = data[0]
+		prev_v_time = new_data_time
+		
+		new_data_time = time.time()
 		data = measure_discharge()
-		gather_and_write_data(filepath, data)
+		gather_and_write_data(filepath, data, timestamp = new_data_time)
 	
 	#rest
 	start_rest()
