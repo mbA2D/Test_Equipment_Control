@@ -192,7 +192,7 @@ def cycle_cell(dir, cell_name, cycle_settings):
 			interpolated_wait_time = (cycle_settings["discharge_end_v"] - data[0]) / slope
 		
 		max_wait_time = cycle_settings["meas_log_int_s"] - ((time.time() - discharge_start_time) % cycle_settings["meas_log_int_s"])
-		wait_time = min(max_wait_time, interpolated_weight_time)
+		wait_time = min(max_wait_time, interpolated_wait_time)
 		time.sleep(wait_time)
 		
 		prev_v = data[0]
