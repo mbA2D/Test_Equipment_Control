@@ -133,14 +133,14 @@ def cycle_cell(dir, cell_name, cycle_settings):
 			'Discharge Current: {}\n'.format(cycle_settings["discharge_a"]) + 
 			'Rest After Discharge (Minutes): {}\n'.format(cycle_settings["rest_after_discharge_min"]) + 
 			'Log Interval (Seconds): {}\n'.format(cycle_settings["meas_log_int_s"]) + 
-			'\n\n')
+			'\n\n', flush=True)
 	
 	data = (cycle_settings["charge_end_v"], cycle_settings["charge_a"])
 	
 	#start the charging
 	start_charge(cycle_settings["charge_end_v"], cycle_settings["charge_a"])
 	charge_start_time = time.time()
-	print('Starting Charge: {}\n'.format(time.ctime()))
+	print('Starting Charge: {}\n'.format(time.ctime()), flush=True)
 	while (data[1] > cycle_settings["charge_end_a"]):
 		time.sleep(cycle_settings["meas_log_int_s"] - ((time.time() - charge_start_time) % cycle_settings["meas_log_int_s"]))
 		data = measure_charge()
@@ -149,8 +149,8 @@ def cycle_cell(dir, cell_name, cycle_settings):
 	#rest
 	start_rest()
 	rest_start_time = time.time()
-	
-	print('Starting Rest After Charge: {}\n'.format(time.ctime()))
+	print('Starting Rest After Charge: {}\n'.format(time.ctime()), flush=True)
+  
 	while (time.time() - rest_start_time) < rest_after_charge_s:
 		time.sleep(cycle_settings["meas_log_int_s"] - ((time.time() - rest_start_time) % cycle_settings["meas_log_int_s"]))
 		data = measure_rest()
@@ -159,7 +159,7 @@ def cycle_cell(dir, cell_name, cycle_settings):
 	#start discharge
 	start_discharge(cycle_settings["discharge_a"])
 	discharge_start_time = time.time()
-	
+
 	data = measure_rest()
 	
 	#need to add a previous voltage, previous voltage time so that we can compare to better extimate the end time.
@@ -168,7 +168,8 @@ def cycle_cell(dir, cell_name, cycle_settings):
 	prev_v_time = discharge_start_time
 	new_data_time = discharge_start_time
 	
-	print('Starting Discharge: {}\n'.format(time.ctime()))
+	print('Starting Discharge: {}\n'.format(time.ctime()), flush=True)
+
 	while (data[0] > cycle_settings["discharge_end_v"]):
 		
 		rise = data[0] - prev_v
@@ -204,13 +205,13 @@ def cycle_cell(dir, cell_name, cycle_settings):
 	#rest
 	start_rest()
 	rest_start_time = time.time()
-	print('Starting Rest After Discharge: {}\n'.format(time.ctime()))
+	print('Starting Rest After Discharge: {}\n'.format(time.ctime()),flush=True)
 	while (time.time() - rest_start_time) < rest_after_discharge_s:
 		time.sleep(cycle_settings["meas_log_int_s"] - ((time.time() - rest_start_time) % cycle_settings["meas_log_int_s"]))
 		data = measure_rest()
 		gather_and_write_data(filepath, data)
 	
-	print('Cycle Completed: {}\n'.format(time.ctime()))
+	print('Cycle Completed: {}\n'.format(time.ctime())flush=True)
 	
 	return
 
@@ -225,7 +226,7 @@ def storage_charge(dir, cell_name, charge_settings):
 	#start the storage charging
 	start_charge(charge_settings["charge_end_v"], charge_settings["charge_a"])
 	charge_start_time = time.time()
-	print('Starting Storage Charge: {}\n'.format(time.ctime()))
+	print('Starting Storage Charge: {}\n'.format(time.ctime())flush=True)
 	while (data[1] > charge_settings["charge_end_a"]):
 		time.sleep(charge_settings["meas_log_int_s"] - ((time.time() - charge_start_time) % charge_settings["meas_log_int_s"]))
 		data = measure_charge()
@@ -345,7 +346,7 @@ if __name__ == '__main__':
 	#cycle x times
 	cycle_num = 0
 	for cycle_settings in cycle_settings_list:
-		print("Cycle {} Starting".format(cycle_num))
+		print("Cycle {} Starting".format(cycle_num), flush=True)
 		try:
 			cycle_cell(directory, cell_name, cycle_settings.settings)
 		except KeyboardInterrupt:
@@ -363,4 +364,3 @@ if __name__ == '__main__':
 			eload.toggle_output(False)
 			psu.toggle_output(False)
 			exit()
-	
