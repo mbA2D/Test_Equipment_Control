@@ -1,23 +1,22 @@
-#python pyvisa commands for controlling Multicomp Pro MP71025X series power supplies
-#MP710256 - 30V 30A 300W
-#MP710257 - 60V 15A 300W
+#python pyvisa commands for controlling Korad KEL10X series eloads
+#Links helpful for finding commands: https://lygte-info.dk/project/TestControllerIntro
 
 import pyvisa
 import time
 import easygui as eg
 
-# Power Supply
-class MP71025X:
-	# Initialize the MP71025X Power Supply (X is 6 or 7)
+# E-Load
+class KEL10X:
+	# Initialize the KEL10X E-Load
 	def __init__(self, resource_id = ""):
-		rm = pyvisa.ResourceManager('@py')
+		rm = pyvisa.ResourceManager()
 		
 		if(resource_id == ""):
 			resources = rm.list_resources()
 			
 			########### EASYGUI VERSION #############
 			#choicebox needs 2 resources, so if we only have 1 device then add another.
-			title = "Power Supply Selection"
+			title = "Eload Selection"
 			if(len(resources) == 0):
 				resource_id = 0
 				print("No Resources Available. Connection attempt will exit with errors")
@@ -28,68 +27,62 @@ class MP71025X:
 				else:
 					resource_id = 0
 			else:
-				msg = "Select a visa resource for the Power Supply:"
+				msg = "Select a visa resource for the Eload:"
 				resource_id = eg.choicebox(msg, title, resources)
 		
 		self.inst = rm.open_resource(resource_id)
-		
+        
 		self.inst.baud_rate = 115200
 		self.inst.read_termination = '\n'
 		self.inst.query_delay = 0.1
         
 		print("Connected to %s\n" % self.inst.query("*IDN?"))
-		#this unit does not have a reset command
-		#self.inst.write("*RST")
-		time.sleep(0.1)
-		
-		self.lock_commands(False)
-		time.sleep(0.01)
-		self.toggle_output(0)
-		time.sleep(0.01)
+		#unit does not have reset command
+        #self.inst.write("*RST")
+		self.set_mode_current()
 		self.set_current(0)
-		time.sleep(0.01)
-		self.set_voltage(0)
-		time.sleep(0.01)
+				
+		#set to remote mode (disable front panel)
+		self.lock_front_panel(True)
 		
-	# To set power supply limit in Amps 
+	# To Set E-Load in Amps 
 	def set_current(self, current_setpoint_A):		
-		self.inst.write("ISET:{}".format(current_setpoint_A))
+		self.inst.write(":CURR {}A".format(current_setpoint_A))
+		
+	def set_mode_current(self):
+		self.inst.write(":FUNC CC")
 
-	def set_voltage(self, voltage_setpoint_V):
-		self.inst.write("VSET:{}".format(voltage_setpoint_V))
-
-	def toggle_output(self, state, ch = 1):
+	def toggle_output(self, state):
 		if state:
-			self.inst.write("OUT:1")
+			self.inst.write(":INP 1")
 		else:
-			self.inst.write("OUT:0")
+			self.inst.write(":INP 0")
 	
 	def remote_sense(self, state):
 		if state:
-			self.inst.write("COMP:1")
+			self.inst.write(":SYST:COMP 1")
 		else:
-			self.inst.write("COMP:0")
+			self.inst.write(":SYST:COMP 0")
 	
-	def lock_commands(self, state):
+	def lock_front_panel(self, state):
+		pass
 		if state:
-			self.inst.write("LOCK:1")
+			self.inst.write(":SYST:LOCK 1")
 		else:
-			self.inst.write("LOCK:0")
+			self.inst.write(":SYST:LOCK 0")
 	
 	def measure_voltage(self):
-		return float(self.inst.query("VOUT?"))
+		return float(self.inst.query(":MEAS:VOLT?").strip('V\n'))
 
 	def measure_current(self):
-		return float(self.inst.query("IOUT?"))
-		
+		return float(self.inst.query(":MEAS:CURR?").strip('A\n'))
+	
 	def measure_power(self):
-		current = self.measure_current()
-		voltage = self.measure_voltage()
-		return float(current*voltage)
-		
+		return float(self.inst.query(":MEAS:POW?").strip('W\n'))
+	
 	def __del__(self):
 		self.toggle_output(False)
-		self.lock_commands(False)
+		self.lock_front_panel(False)
 		try:
 			self.inst.close()
 		except AttributeError:
