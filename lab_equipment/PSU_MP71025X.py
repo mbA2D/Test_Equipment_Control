@@ -33,14 +33,14 @@ class MP71025X:
 		
 		self.inst = rm.open_resource(resource_id)
 		
+        self.inst.baud_rate = 115200
+		self.inst.read_termination = '\n'
+		self.inst.query_delay = 0.1
+        
 		print("Connected to %s\n" % self.inst.query("*IDN?"))
 		#this unit does not have a reset command
 		#self.inst.write("*RST")
 		time.sleep(0.1)
-		
-		self.inst.baud_rate = 115200
-		self.inst.read_termination = '\n'
-		self.inst.query_delay = 0.1
 		
 		self.lock_commands(False)
 		time.sleep(0.01)
