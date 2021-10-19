@@ -33,7 +33,7 @@ class MP71025X:
 		
 		self.inst = rm.open_resource(resource_id)
 		
-        self.inst.baud_rate = 115200
+		self.inst.baud_rate = 115200
 		self.inst.read_termination = '\n'
 		self.inst.query_delay = 0.1
         

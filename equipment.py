@@ -24,7 +24,7 @@ class eLoads:
 		self.part_numbers = {
 			'BK8600': 'Eload_BK8600',
 			'DL3000': 'Eload_DL3000',
-            'KEL10X': 'Eload_KEL10X'
+			'KEL10X': 'Eload_KEL10X'
 		}
 	def choose_eload(self):
 		msg = "In which series is the E-Load?"
@@ -35,7 +35,7 @@ class eLoads:
 			eload = Eload_BK8600.BK8600()
 		elif(class_name == 'DL3000'):
 			eload = Eload_DL3000.DL3000()
-        elif(class_name == 'KEL10X'):
+		elif(class_name == 'KEL10X'):
 			eload = Eload_KEL10X.KEL10X()
 		return eload
 
