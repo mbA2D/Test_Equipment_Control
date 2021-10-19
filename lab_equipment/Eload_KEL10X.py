@@ -1,7 +1,6 @@
 #python pyvisa commands for controlling Korad KEL10X series eloads
 #Links helpful for finding commands: https://lygte-info.dk/project/TestControllerIntro
 
-
 import pyvisa
 import time
 import easygui as eg
