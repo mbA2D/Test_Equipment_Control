@@ -6,6 +6,7 @@ import easygui as eg
 import os
 import Templates
 import PlotTemps
+import FileIO
 from stat import S_IREAD, S_IWUSR
 
 def plot_iv(log_data, save_filepath = '', show_graph=False):
@@ -111,15 +112,6 @@ def calc_capacity(log_data, stats, charge=True, temp_log_dir = ""):
 		return temp_data
 	return dsc_data
 
-def set_read_only(filepath):
-	#make the file read-only so we don't lose decimal places if the CSV is opened in excel
-	os.chmod(filepath, S_IREAD)
-
-def allow_write(filepath):
-	#make the file writable 
-	#https://stackoverflow.com/questions/28492685/change-file-to-read-only-mode-in-python
-	os.chmod(filepath, S_IWUSR|S_IREAD)
-
 #adds a CycleStatistic dictionary to a CSV without duplicating results in the csv
 def dict_to_csv(dict, filepath):
 	dict_dataframe = pd.DataFrame(dict, index = [0])
@@ -127,7 +119,7 @@ def dict_to_csv(dict, filepath):
 	if(os.path.exists(filepath)):
 		write_header = False
 		
-		allow_write(filepath)
+		FileIO.allow_write(filepath)
 		
 		dataframe_csv = pd.read_csv(filepath)
 		
@@ -143,7 +135,7 @@ def dict_to_csv(dict, filepath):
 		
 	dict_dataframe.to_csv(filepath, mode='w', header=True, index=False)
 	
-	set_read_only(filepath)
+	FileIO.set_read_only(filepath)
 
 def add_cycle_numbers(stats_filepath):
 	#only want to add on discharge?
@@ -174,9 +166,9 @@ def add_cycle_numbers(stats_filepath):
 def dataframe_to_csv(df, filepath):
 	#if the file exists, make sure it is write-able.
 	if(os.path.exists(filepath)):
-		allow_write(filepath)
+		FileIO.allow_write(filepath)
 	df.to_csv(filepath, mode='w', header=True, index=False)
-	set_read_only(filepath)
+	FileIO.set_read_only(filepath)
 	
 
 #changes all timestamps in the dataframe to show seconds from
@@ -190,7 +182,7 @@ def timestamp_to_cycle_start(df):
 
 
 if __name__ == '__main__':
-	filepaths = eg.fileopenbox(title = "Select the Log(s) to Graph", filetypes = [['*.csv', 'CSV Files']], multiple = True)
+	filepaths = FileIO.get_multiple_filepaths()
 	
 	#Are there temperature logs associated?
 	temp_log_dir = ""
@@ -199,7 +191,7 @@ if __name__ == '__main__':
 								created by the A2D Electronics 64CH DAQ?")
 	if(temps_available):
 		#get the temps file location
-		temp_log_dir = eg.diropenbox(title = "Choose the directory that contains the temp logs")
+		temp_log_dir = FileIO.get_directory("Choose the directory that contains the temp logs")
 	
 	#ensure that all directories exist
 	filedir = os.path.dirname(filepaths[0])
@@ -208,8 +200,7 @@ if __name__ == '__main__':
 		sub_dirs.append('Temperature Graphs')
 		sub_dirs.append('Split Temperature Logs')
 	for sub_dir in sub_dirs:
-		if not os.path.exists(os.path.join(filedir, sub_dir)):
-			os.makedirs(os.path.join(filedir, sub_dir))
+		FileIO.ensure_subdir_exists_dir(filedir, sub_dir)
 	
 	#go through each voltage log and check it
 	for filepath in filepaths:
