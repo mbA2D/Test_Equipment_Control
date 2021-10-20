@@ -1,9 +1,9 @@
 #class to hold the templates for input/outputs settings
-#TODO - write and read from saved JSON settings files
 
 import easygui as eg
 import json
 import os
+
 
 ###################### Statistics to gather for each cycle ###############
 class CycleStats:
@@ -143,6 +143,7 @@ class CycleSettings:
 		return file_name
 
 ###############  CHARGE  #####################
+
 class ChargeSettings(CycleSettings):
 
 	def __init__(self):
@@ -151,4 +152,35 @@ class ChargeSettings(CycleSettings):
 			"charge_a": 				7.5,
 			"charge_end_a": 			0.3,
 			"meas_log_int_s": 			1
+		}
+
+
+#################### DC DC TESTING ############
+
+class DcdcTestSettings():
+
+	def __init__(self):
+		self.settings = {
+			"psu_voltage_min":				4,
+			"psu_voltage_max":				7,
+			"num_voltage_steps":			4,
+			"psu_current_limit_a":			2,
+			"load_current_min":				0.1,
+			"load_current_max": 			1,
+			"num_current_steps":			10,
+			"step_delay_s":					2,
+			"measurement_samples_for_avg":	10
+		}
+
+class DcdcSweepSettings():
+	
+	def __init__(self):
+		self.settings = {
+			"psu_voltage":					4,
+			"psu_current_limit_a":			2,
+			"load_current_min":				0.1,
+			"load_current_max": 			1,
+			"num_current_steps":			10,
+			"step_delay_s":					2,
+			"measurement_samples_for_avg":	10
 		}
