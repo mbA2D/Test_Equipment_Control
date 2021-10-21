@@ -90,7 +90,7 @@ def rest_cell(log_filepath, cycle_settings, after_charge = True):
 	while (time.time() - rest_start_time) < rest_time_s:
 		time.sleep(cycle_settings["meas_log_int_s"] - ((time.time() - rest_start_time) % cycle_settings["meas_log_int_s"]))
 		data = measure_rest()
-		FileIO.write_data(filepath, data)
+		FileIO.write_data(log_filepath, data)
 
 def discharge_cell(log_filepath, cycle_settings):
 	#start discharge
