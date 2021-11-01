@@ -1,20 +1,16 @@
-import tkinter as tk
 import easygui as eg
 import pandas as pd
 import os
+import time
 from datetime import datetime
 from stat import S_IREAD, S_IWUSR
 
 ####################### FILE IO ###########################
 
 
-def get_directory(type):
-	root = tk.Tk()
-	root.withdraw()
-	dir = tk.filedialog.askdirectory(
-		title='Select location to save {} data files'.format(type))
-	root.destroy()
-	return dir
+def get_directory(title = "Choose Directory"):
+	return eg.diropenbox(title)
+
 
 def write_line(filepath, list_line):
 	#read into pandas dataframe - works, in quick to code
@@ -50,11 +46,14 @@ def ensure_subdir_exists_dir(filedir, subdir_name):
 def ensure_subdir_exists_file(filepath, subdir_name):
 	return ensure_subdir_exists(os.path.dirname(filepath), subdir_name)
 
-def write_data(filepath, data_to_log, printout=False):
+def write_data(filepath, data_to_log, printout=False, timestamp = 0):
 	data = list()
 	
 	#add timestamp
-	data.append(time.time())
+	if(timestamp != 0):
+		data.append(timestamp)
+	else:
+		data.append(time.time())
 	data.extend(data_to_log)
 	
 	if(printout):

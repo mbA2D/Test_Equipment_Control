@@ -6,15 +6,13 @@ from datetime import datetime
 import time
 import pandas as pd
 import easygui as eg
-import tkinter as tk
 import os
 import Templates
+import FileIO
 
-
-#eload = Eload_BK8600.BK8600()
 eloads = eq.eLoads()
 eload = eloads.choose_eload()
-#psu = PSU_SPD1000.SPD1000()
+
 psus = eq.powerSupplies()
 psu = psus.choose_psu()
  
@@ -59,103 +57,42 @@ def measure_discharge():
 	#return current from eload (as negative), voltage from eload
 	return (eload.measure_voltage(), eload.measure_current()*-1)
 
-####################### FILE IO ###########################
-
-def get_directory(type):
-	root = tk.Tk()
-	root.withdraw()
-	dir = tk.filedialog.askdirectory(
-		title='Select location to save {} data files'.format(type))
-	root.destroy()
-	return dir
-
-def write_line(filepath, list_line):
-	#read into pandas dataframe - works, in quick to code
-	#and is likely easy to extend - but one line doesn't really need it
-	df = pd.DataFrame(list_line).T
-	
-	#save to csv - append, no index, no header
-	df.to_csv(filepath, header=False, mode='a', index=False)
-
-def start_file(directory, name):
-	dt = datetime.now().strftime("%Y-%m-%d %H-%M-%S")
-	filename = '{cell_name} {date}.csv'.format(\
-				cell_name = name, date = dt)
-	
-	filepath = os.path.join(directory, filename)
-	
-	#Headers
-	#create a list
-	headers = list()
-	headers.append('Timestamp')
-	headers.append('Voltage')
-	headers.append('Current')
-	
-	write_line(filepath, headers)
-	
-	return filepath
-
-def gather_and_write_data(filepath, iv_data, printout=False, timestamp = 0):
-	data = list()
-	
-	#add timestamp
-	if(timestamp != 0):
-		data.append(timestamp)
-	else:
-		data.append(time.time())
-	data.append(iv_data[0])
-	data.append(iv_data[1])
-	
-	if(printout):
-		print(data)
-	
-	write_line(filepath, data)
 
 ########################## CYCLE #############################
 
-#run a single cycle on a cell while logging data
-def cycle_cell(dir, cell_name, cycle_settings):
-	
-	#start a new file for the cycle
-	filepath = start_file(dir, cell_name)
-	
-	rest_after_charge_s = cycle_settings["rest_after_charge_min"] * 60
-	rest_after_discharge_s = cycle_settings["rest_after_discharge_min"] * 60
-	
-	print('Starting a cycle: {}\n'.format(time.ctime()) + 
-			'Settings:\n' +
-			'Cell Name: {}\n'.format(cell_name) + 
-			'Charge End Voltage: {}\n'.format(cycle_settings["charge_end_v"]) +
-			'Charge Current: {}\n'.format(cycle_settings["charge_a"]) + 
-			'Charge End Current: {}\n'.format(cycle_settings["charge_end_a"]) + 
-			'Rest After Charge (Minutes): {}\n'.format(cycle_settings["rest_after_charge_min"]) + 
-			'Discharge End Voltage: {}\n'.format(cycle_settings["discharge_end_v"]) + 
-			'Discharge Current: {}\n'.format(cycle_settings["discharge_a"]) + 
-			'Rest After Discharge (Minutes): {}\n'.format(cycle_settings["rest_after_discharge_min"]) + 
-			'Log Interval (Seconds): {}\n'.format(cycle_settings["meas_log_int_s"]) + 
-			'\n\n', flush=True)
-	
+def charge_cell(log_filepath, cycle_settings):
+	#start the charging
+	#Start the data so we don't immediately trigger end conditions
 	data = (cycle_settings["charge_end_v"], cycle_settings["charge_a"])
 	
-	#start the charging
 	start_charge(cycle_settings["charge_end_v"], cycle_settings["charge_a"])
 	charge_start_time = time.time()
 	print('Starting Charge: {}\n'.format(time.ctime()), flush=True)
 	while (data[1] > cycle_settings["charge_end_a"]):
 		time.sleep(cycle_settings["meas_log_int_s"] - ((time.time() - charge_start_time) % cycle_settings["meas_log_int_s"]))
 		data = measure_charge()
-		gather_and_write_data(filepath, data)
-	
+		FileIO.write_data(log_filepath, data)
+
+def rest_cell(log_filepath, cycle_settings, after_charge = True):
 	#rest
 	start_rest()
 	rest_start_time = time.time()
-	print('Starting Rest After Charge: {}\n'.format(time.ctime()), flush=True)
+	
+	rest_time_s = 0
+	if(after_charge):
+		rest_time_s = cycle_settings["rest_after_charge_min"] * 60
+	else:
+		rest_time_s = cycle_settings["rest_after_discharge_min"] * 60
+
+	
+	print('Starting Rest: {}\n'.format(time.ctime()), flush=True)
   
-	while (time.time() - rest_start_time) < rest_after_charge_s:
+	while (time.time() - rest_start_time) < rest_time_s:
 		time.sleep(cycle_settings["meas_log_int_s"] - ((time.time() - rest_start_time) % cycle_settings["meas_log_int_s"]))
 		data = measure_rest()
-		gather_and_write_data(filepath, data)
-	
+		FileIO.write_data(log_filepath, data)
+
+def discharge_cell(log_filepath, cycle_settings):
 	#start discharge
 	start_discharge(cycle_settings["discharge_a"])
 	discharge_start_time = time.time()
@@ -171,7 +108,6 @@ def cycle_cell(dir, cell_name, cycle_settings):
 	print('Starting Discharge: {}\n'.format(time.ctime()), flush=True)
 
 	while (data[0] > cycle_settings["discharge_end_v"]):
-		
 		rise = data[0] - prev_v
 		run = new_data_time - prev_v_time
 		slope = 0
@@ -184,11 +120,6 @@ def cycle_cell(dir, cell_name, cycle_settings):
 		
 		if slope < 0:
 			#now do the calculation
-			#slope is Volts / second
-			#start from the newest data point, and trace line to the end voltage. Take that time.
-			#change_req = cycle_settings["discharge_end_v"] - data[0] #volts
-			#time_req = change_req / slope #gives result in seconds
-			
 			interpolated_wait_time = (cycle_settings["discharge_end_v"] - data[0]) / slope
 		
 		max_wait_time = cycle_settings["meas_log_int_s"] - ((time.time() - discharge_start_time) % cycle_settings["meas_log_int_s"])
@@ -200,16 +131,35 @@ def cycle_cell(dir, cell_name, cycle_settings):
 		
 		new_data_time = time.time()
 		data = measure_discharge()
-		gather_and_write_data(filepath, data, timestamp = new_data_time)
+		FileIO.write_data(log_filepath, data, timestamp = new_data_time)
+
+#run a single cycle on a cell while logging data
+def cycle_cell(dir, cell_name, cycle_settings):
 	
-	#rest
-	start_rest()
-	rest_start_time = time.time()
-	print('Starting Rest After Discharge: {}\n'.format(time.ctime()),flush=True)
-	while (time.time() - rest_start_time) < rest_after_discharge_s:
-		time.sleep(cycle_settings["meas_log_int_s"] - ((time.time() - rest_start_time) % cycle_settings["meas_log_int_s"]))
-		data = measure_rest()
-		gather_and_write_data(filepath, data)
+	#start a new file for the cycle
+	headers_list = ['Timestamp', 'Voltage', 'Current']
+	filepath = FileIO.start_file(dir, cell_name, headers_list)
+	
+	print('Starting a cycle: {}\n'.format(time.ctime()) + 
+			'Settings:\n' +
+			'Cell Name: {}\n'.format(cell_name) + 
+			'Charge End Voltage: {}\n'.format(cycle_settings["charge_end_v"]) +
+			'Charge Current: {}\n'.format(cycle_settings["charge_a"]) + 
+			'Charge End Current: {}\n'.format(cycle_settings["charge_end_a"]) + 
+			'Rest After Charge (Minutes): {}\n'.format(cycle_settings["rest_after_charge_min"]) + 
+			'Discharge End Voltage: {}\n'.format(cycle_settings["discharge_end_v"]) + 
+			'Discharge Current: {}\n'.format(cycle_settings["discharge_a"]) + 
+			'Rest After Discharge (Minutes): {}\n'.format(cycle_settings["rest_after_discharge_min"]) + 
+			'Log Interval (Seconds): {}\n'.format(cycle_settings["meas_log_int_s"]) + 
+			'\n\n', flush=True)
+	
+	charge_cell(filepath, cycle_settings)
+	
+	rest_cell(filepath, cycle_settings, after_charge = True)
+	
+	discharge_cell(filepath, cycle_settings)
+	
+	rest_cell(filepath, cycle_settings, after_charge = False)
 	
 	print('Cycle Completed: {}\n'.format(time.ctime()), flush=True)
 	
@@ -218,19 +168,10 @@ def cycle_cell(dir, cell_name, cycle_settings):
 def storage_charge(dir, cell_name, charge_settings):
 	
 	#start a new file for the cycle
-	filepath = start_file(dir, cell_name)
+	headers_list = ['Timestamp', 'Voltage', 'Current']
+	filepath = FileIO.start_file(dir, cell_name, headers_list)
 	
-	#set data to not immediately close the program
-	data = (charge_settings["charge_end_v"], charge_settings["charge_a"])
-	
-	#start the storage charging
-	start_charge(charge_settings["charge_end_v"], charge_settings["charge_a"])
-	charge_start_time = time.time()
-	print('Starting Storage Charge: {}\n'.format(time.ctime()), flush=True)
-	while (data[1] > charge_settings["charge_end_a"]):
-		time.sleep(charge_settings["meas_log_int_s"] - ((time.time() - charge_start_time) % charge_settings["meas_log_int_s"]))
-		data = measure_charge()
-		gather_and_write_data(filepath, data)
+	charge_cell(filepath, charge_settings)
 	
 	#shut off power supply
 	start_rest()
@@ -299,7 +240,6 @@ def two_level_continuous_cycles_with_rest():
 	return cycle_settings_list
 
 
-
 ####################################### PROGRAM ######################################
 if __name__ == '__main__':
 	#get the cell name
@@ -309,7 +249,7 @@ if __name__ == '__main__':
 	cell_name = cell_name.replace(" ", "_")
 	
 	#Get a directory to save the file
-	directory = get_directory("Cycle")
+	directory = FileIO.get_directory("Choose directory to save the cycle logs")
 	init_instruments()
 	
 	#different cycle types that are available
