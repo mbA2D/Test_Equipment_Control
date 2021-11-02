@@ -9,3 +9,5 @@ TODO List
      - reads the "IDN?" response and chooses which set up commands to use
  - change charge and discharge to have the psu or eload passed in to the function
  - add multiple end conditions (time, current, voltage) to each step
+ - charge/discharge profiles from a file
+     - HPPC test profile
