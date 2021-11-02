@@ -11,3 +11,4 @@ TODO List
  - add multiple end conditions (time, current, voltage) to each step
  - charge/discharge profiles from a file
      - HPPC test profile
+ - Add ability to choose different measurement equipment (e.g. DMM instead of eload or PSU for voltage).
