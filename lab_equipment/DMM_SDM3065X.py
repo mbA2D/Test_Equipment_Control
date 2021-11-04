@@ -84,30 +84,41 @@ class SDM3065X:
 	def measure_voltage(self, nplc = 1, volt_range = 'AUTO'):
 		
 		if self.mode != "DCV":
-			self.inst.write("CONF:VOLT:DC")
-			self.mode = "DCV"
-		
+			self.set_mode(mode = "DCV")
+			
 		if self.setup_dcv["NPLC"] != nplc:
-			if nplc not in self.nplc_ranges:
-				print("Invalid NPLC Selection")
-				return 0
-			self.inst.write("SENS:VOLT:DC:NPLC {}".format(nplc))
-			self.setup_dcv["NPLC"] = nplc
+			self.set_nplc(self, nplc = nplc)
 		
 		if self.setup_dcv["RANGE"] != volt_range:
-			if volt_range not in self.volt_ranges.keys():
-				print("Invalid Voltage Range Selection")
-				return 0
-			if volt_range == 'AUTO':
-				self.inst.write("VOLT:DC:RANG:AUTO ON")
-			else:
-				self.inst.write("VOLT:DC:RANG {}".format(self.volt_ranges[volt_range]))
-			self.setup_dcv["RANGE"] = volt_range
+			self.set_range_dcv(self, volt_range = volt_range)
 		
 		return float(self.inst.query("READ?"))
 		
 		#uses auto-range and 10 PLC
 		#return float(self.inst.query("MEAS:VOLT:DC?"))
+	
+	def set_mode(self, mode = "DCV"):
+		if mode == "DCV":
+			self.inst.write("CONF:VOLT:DC")
+			self.mode = mode
+	
+	def set_range_dcv(self, volt_range = 'AUTO'):
+		if volt_range not in self.volt_ranges.keys():
+			print("Invalid Voltage Range Selection")
+			return
+		if volt_range == 'AUTO':
+			self.inst.write("VOLT:DC:RANG:AUTO ON")
+		else:
+			self.inst.write("VOLT:DC:RANG {}".format(self.volt_ranges[volt_range]))
+		self.setup_dcv["RANGE"] = volt_range
+	
+	def set_nplc(self, nplc = 1):
+		if nplc not in self.nplc_ranges:
+			print("Invalid NPLC Selection")
+			return
+		self.inst.write("SENS:VOLT:DC:NPLC {}".format(nplc))
+		self.setup_dcv["NPLC"] = nplc
+	
 	
 	#def measure_voltage_ac(self):
 	#	return float(self.inst.query("MEAS:VOLT:AC?"))
