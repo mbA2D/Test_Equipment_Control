@@ -9,38 +9,72 @@ import easygui as eg
 # Power Supply
 class MP71025X:
 	# Initialize the MP71025X Power Supply (X is 6 or 7)
+	
+	baud_rate = 115200
+	read_termination = '\n'
+	query_delay = 0.05
+	
 	def __init__(self, resource_id = ""):
+		
 		rm = pyvisa.ResourceManager('@py')
 		
 		if(resource_id == ""):
 			resources = rm.list_resources()
-			
-			########### EASYGUI VERSION #############
-			#choicebox needs 2 resources, so if we only have 1 device then add another.
+
+			################# IDN VERSION #################
+			#Attempt to connect to each Visa Resource and get the IDN response
 			title = "Power Supply Selection"
 			if(len(resources) == 0):
 				resource_id = 0
-				print("No Resources Available. Connection attempt will exit with errors")
-			elif(len(resources) == 1):
-				msg = "There is only 1 visa resource available.\nWould you like to use it?\n{}".format(resources[0])
+				print("No PyVisa Resources Available. Connection attempt will exit with errors")
+			idns_dict = {}
+			for resource in resources:
+				try:
+					instrument = rm.open_resource(resource)
+					instrument.baud_rate = MP71025X.baud_rate
+					instrument.read_termination = MP71025X.read_termination
+					instrument.query_delay = MP71025X.query_delay
+					instrument_idn = instrument.query("*IDN?")
+					idns_dict[resource] = instrument_idn
+					instrument.close()
+				except pyvisa.errors.VisaIOError:
+					pass
+					
+			#Now we have all the available resources that we can connect to, with their IDNs.
+			resource_id = 0
+			if(len(idns_dict.values()) == 0):
+				print("No Equipment Available. Connection attempt will exit with errors")
+			elif(len(idns_dict.values()) == 1):
+				msg = "There is only 1 Visa Equipment available.\nWould you like to use it?\n{}".format(list(idns_dict.values())[0])
 				if(eg.ynbox(msg, title)):
-					resource_id = resources[0]
-				else:
-					resource_id = 0
+					idn = list(idns_dict.values())[0]
 			else:
-				msg = "Select a visa resource for the Power Supply:"
-				resource_id = eg.choicebox(msg, title, resources)
-		
+				msg = "Select the Power Supply Model:"
+				idn = eg.choicebox(msg, title, idns_dict.values())
+			#Now we know which IDN we want to connect to
+			#swap keys and values and then connect
+			resources_dict = dict((v,k) for k,v in idns_dict.items())
+			resource_id = resources_dict[idn]
+					
+			
+			
 		self.inst = rm.open_resource(resource_id)
 		
-		self.inst.baud_rate = 115200
-		self.inst.read_termination = '\n'
-		self.inst.query_delay = 0.1
+		self.inst.baud_rate = MP71025X.baud_rate
+		self.inst.read_termination = MP71025X.read_termination
+		self.inst.query_delay = MP71025X.query_delay
         
-		print("Connected to %s\n" % self.inst.query("*IDN?"))
+		self.inst_idn = self.inst.query("*IDN?")
+		print("Connected to {}\n".format(self.inst_idn))
+		
+		split_string = self.inst_idn.split(" ")
+		self.model_number = split_string[0]
+		self.version_number = split_string[1]
+		self.serial_number = split_string[2]
+		
 		#this unit does not have a reset command
 		#self.inst.write("*RST")
-		time.sleep(0.1)
+		time.sleep(0.01)
 		
 		self.lock_commands(False)
 		time.sleep(0.01)

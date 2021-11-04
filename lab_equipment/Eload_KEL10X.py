@@ -8,34 +8,67 @@ import easygui as eg
 # E-Load
 class KEL10X:
 	# Initialize the KEL10X E-Load
+	
+	baud_rate = 115200
+	read_termination = '\n'
+	query_delay = 0.05
+	
 	def __init__(self, resource_id = ""):
 		rm = pyvisa.ResourceManager()
 		
 		if(resource_id == ""):
 			resources = rm.list_resources()
 			
-			########### EASYGUI VERSION #############
-			#choicebox needs 2 resources, so if we only have 1 device then add another.
+			################# IDN VERSION #################
+			#Attempt to connect to each Visa Resource and get the IDN response
 			title = "Eload Selection"
 			if(len(resources) == 0):
 				resource_id = 0
-				print("No Resources Available. Connection attempt will exit with errors")
-			elif(len(resources) == 1):
-				msg = "There is only 1 visa resource available.\nWould you like to use it?\n{}".format(resources[0])
+				print("No PyVisa Resources Available. Connection attempt will exit with errors")
+			idns_dict = {}
+			for resource in resources:
+				try:
+					instrument = rm.open_resource(resource)
+					instrument.baud_rate = KEL10X.baud_rate
+					instrument.read_termination = KEL10X.read_termination
+					instrument.query_delay = KEL10X.query_delay
+					instrument_idn = instrument.query("*IDN?")
+					idns_dict[resource] = instrument_idn
+					instrument.close()
+				except pyvisa.errors.VisaIOError:
+					pass
+					
+			#Now we have all the available resources that we can connect to, with their IDNs.
+			resource_id = 0
+			if(len(idns_dict.values()) == 0):
+				print("No Equipment Available. Connection attempt will exit with errors")
+			elif(len(idns_dict.values()) == 1):
+				msg = "There is only 1 Visa Equipment available.\nWould you like to use it?\n{}".format(list(idns_dict.values())[0])
 				if(eg.ynbox(msg, title)):
-					resource_id = resources[0]
-				else:
-					resource_id = 0
+					idn = list(idns_dict.values())[0]
 			else:
-				msg = "Select a visa resource for the Eload:"
-				resource_id = eg.choicebox(msg, title, resources)
+				msg = "Select the Eload Supply Model:"
+				idn = eg.choicebox(msg, title, idns_dict.values())
+			#Now we know which IDN we want to connect to
+			#swap keys and values and then connect
+			resources_dict = dict((v,k) for k,v in idns_dict.items())
+			resource_id = resources_dict[idn]
 		
 		self.inst = rm.open_resource(resource_id)
         
-		self.inst.baud_rate = 115200
-		self.inst.read_termination = '\n'
-		self.inst.query_delay = 0.1
+		self.inst.baud_rate = KEL10X.baud_rate
+		self.inst.read_termination = KEL10X.read_termination
+		self.inst.query_delay = KEL10X.query_delay
         
+		self.instrument_idn = self.inst.query("*IDN?")
+		print("Connected to {}\n".format(self.instrument_idn))
+		
+		split_string = self.instrument_idn.split(" ")
+		self.model_number = split_string[0]
+		self.version_number = split_string[1]
+		self.serial_number = split_string[2]
+		
+		
 		print("Connected to %s\n" % self.inst.query("*IDN?"))
 		#unit does not have reset command
         #self.inst.write("*RST")
