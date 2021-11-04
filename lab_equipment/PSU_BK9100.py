@@ -7,18 +7,39 @@ import easygui as eg
 # Power Supply
 class BK9100:
 	# Initialize the BK9100 Power Supply
+	
+	baud_rate = 9600
+	write_termination = '\r'
+	read_termination = '\r'
+	
 	def __init__(self, resource_id = ""):
 		rm = pyvisa.ResourceManager('@py')
 		
 		if(resource_id == ""):
 			resources = rm.list_resources()
 			
-			########### EASYGUI VERSION #############
-			#choicebox needs 2 resources, so if we only have 1 device then add another.
+			########### CHECK IF AVAILABLE VERSION #############
+			#IDN is not implemented, so we have to stick to using COM Port for identification.
+			#But we can at least try to see which devices are available to connect to.
 			title = "Power Supply Selection"
+			
 			if(len(resources) == 0):
 				resource_id = 0
 				print("No Resources Available. Connection attempt will exit with errors")
+			
+			for resource in resources:
+				try:
+					instrument = rm.open_resource(resource)
+					#We'll at least try to communicate and read the output status
+					instrument.baud_rate = BK9100.baud_rate
+					instrument.write_termination = BK9100.write_termination
+					instrument.read_termination = BK9100.read_termination
+					instrument.query("GOUT")
+					instrument.query("") #clear output buffer
+					instrument.close()
+				except pyvisa.errors.VisaIOError:
+					resources.remove(resource)
+			
 			elif(len(resources) == 1):
 				msg = "There is only 1 visa resource available.\nWould you like to use it?\n{}".format(resources[0])
 				if(eg.ynbox(msg, title)):
@@ -29,11 +50,12 @@ class BK9100:
 				msg = "Select a visa resource for the Power Supply:"
 				resource_id = eg.choicebox(msg, title, resources)
 		
+		
 		self.inst = rm.open_resource(resource_id)
 		
-		self.inst.baud_rate = 9600
-		self.inst.write_termination = '\r'
-		self.inst.read_termination = '\r'
+		self.inst.baud_rate = BK9100.baud_rate
+		self.inst.write_termination = BK9100.write_termination
+		self.inst.read_termination = BK9100.read_termination
 		
 		#IDN and RST not implemented in this PSU
 		#print("Connected to %s\n" % self.inst.query("*IDN?"))

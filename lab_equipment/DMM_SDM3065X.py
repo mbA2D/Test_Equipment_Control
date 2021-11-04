@@ -8,28 +8,52 @@ import easygui as eg
 # E-Load
 class SDM3065X:
 	# Initialize the SDM3065X E-Load
+	
+	read_termination = '\n'
+	
 	def __init__(self, resource_id = ""):
 		rm = pyvisa.ResourceManager()
 		
 		if(resource_id == ""):
 			resources = rm.list_resources()
 
+			################# IDN VERSION #################
+			#Attempt to connect to each Visa Resource and get the IDN response
 			title = "DMM Selection"
 			if(len(resources) == 0):
 				resource_id = 0
-				print("No Resources Available. Connection attempt will exit with errors")
-			elif(len(resources) == 1):
-				msg = "There is only 1 visa resource available.\nWould you like to use it?\n{}".format(resources[0])
+				print("No PyVisa Resources Available. Connection attempt will exit with errors")
+			idns_dict = {}
+			for resource in resources:
+				try:
+					instrument = rm.open_resource(resource)
+					instrument.read_termination = SDM3065X.read_termination
+					instrument_idn = instrument.query("*IDN?")
+					idns_dict[resource] = instrument_idn
+					instrument.close()
+				except pyvisa.errors.VisaIOError:
+					pass
+					
+			#Now we have all the available resources that we can connect to, with their IDNs.
+			resource_id = 0
+			if(len(idns_dict.values()) == 0):
+				print("No Equipment Available. Connection attempt will exit with errors")
+			elif(len(idns_dict.values()) == 1):
+				msg = "There is only 1 Visa Equipment available.\nWould you like to use it?\n{}".format(list(idns_dict.values())[0])
 				if(eg.ynbox(msg, title)):
-					resource_id = resources[0]
-				else:
-					resource_id = 0
+					idn = list(idns_dict.values())[0]
 			else:
-				msg = "Select a visa resource for the Eload:"
-				resource_id = eg.choicebox(msg, title, resources)
+				msg = "Select the DMM Supply Model:"
+				idn = eg.choicebox(msg, title, idns_dict.values())
+			#Now we know which IDN we want to connect to
+			#swap keys and values and then connect
+			resources_dict = dict((v,k) for k,v in idns_dict.items())
+			resource_id = resources_dict[idn]
+		
+		
 		
 		self.inst = rm.open_resource(resource_id)
-		self.inst.read_termination = '\n'
+		self.inst.read_termination = SDM3065X.read_termination
 		
 		self.volt_ranges = {0.2: '200mv',
 							2: '2V',
