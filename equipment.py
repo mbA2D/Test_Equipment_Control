@@ -16,11 +16,12 @@ from lab_equipment import PSU_N8700
 from lab_equipment import PSU_KAXXXXP
 
 #Digital Multimeters
-#import DM3068
+#from lab_equipment import DM3068
+from lab_equipment import DMM_SDM3065X
+
 
 class eLoads:
 	def __init__(self):
-		#organized into Cell_Name and Location
 		self.part_numbers = {
 			'BK8600': 'Eload_BK8600',
 			'DL3000': 'Eload_DL3000',
@@ -30,7 +31,6 @@ class eLoads:
 		msg = "In which series is the E-Load?"
 		title = "E-Load Series Selection"
 		class_name = eg.choicebox(msg, title, self.part_numbers.keys())
-		module_name = self.part_numbers[class_name]
 		if(class_name == 'BK8600'):
 			eload = Eload_BK8600.BK8600()
 		elif(class_name == 'DL3000'):
@@ -39,9 +39,9 @@ class eLoads:
 			eload = Eload_KEL10X.KEL10X()
 		return eload
 
+
 class powerSupplies:
 	def __init__(self):
-		#organized into Cell_Name and Location
 		self.part_numbers = {
 			'SPD1000': 'PSU_SPD1000',
 			'DP800': 'PSU_DP800',
@@ -54,7 +54,6 @@ class powerSupplies:
 		msg = "In which series is the PSU?"
 		title = "PSU Series Selection"
 		class_name = eg.choicebox(msg, title, self.part_numbers.keys())
-		module_name = self.part_numbers[class_name]
 		if(class_name == 'SPD1000'):
 			psu = PSU_SPD1000.SPD1000()
 		elif(class_name == 'DP800'):
@@ -69,17 +68,19 @@ class powerSupplies:
 			psu = PSU_KAXXXXP.KAXXXXP()
 		return psu
 
-'''
+
 class dmms:
 	def __init__(self):
-		#organized into Cell_Name and Location
 		self.part_numbers = {
-			'DM3068': 'DMM_DM3068'
+			'DM3068': 'DMM_DM3068',
+			'SDM3065X': 'DMM_SDM3065X'
 		}
 	def choose_dmm(self):
 		msg = "In which series is the DMM?"
 		title = "DMM Series Selection"
 		class_name = eg.choicebox(msg, title, self.part_numbers.keys())
-		module_name = self.part_numbers[class_name]
-		return module_name, class_name
-'''
+		#if(class_name == 'DM3068'):
+		#	dmm = DMM_DM3068.DM3068()
+		if(class_name == 'SDM3065X'):
+			dmm = DMM_SDM3065X.SDM3065X()
+		return dmm
