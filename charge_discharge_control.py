@@ -10,72 +10,64 @@ import os
 import Templates
 import FileIO
 
-eloads = eq.eLoads()
-eload = eloads.choose_eload()
-
-psus = eq.powerSupplies()
-psu = psus.choose_psu()
  
-def init_instruments():
+def init_instruments(eload, psu):
 	eload.remote_sense(True)
 	psu.remote_sense(True)
 
 ####################### TEST CONTROL #####################
 
-def start_charge(end_voltage, constant_current):
+def start_charge(end_voltage, constant_current, eload, psu):
 	eload.toggle_output(False)
-	time.sleep(0.1)
 	psu.set_voltage(end_voltage)
-	time.sleep(0.1)
+	time.sleep(0.01)
 	psu.set_current(constant_current)
-	time.sleep(0.1)
+	time.sleep(0.01)
 	psu.toggle_output(True)
 	
-def start_discharge(constant_current):
+def start_discharge(constant_current, eload, psu):
 	psu.toggle_output(False)
-	time.sleep(0.1)
 	eload.set_current(constant_current)
-	time.sleep(0.1)
+	time.sleep(0.01)
 	eload.toggle_output(True)
 
-def start_rest():
+def start_rest(eload, psu):
 	psu.toggle_output(False)
-	time.sleep(0.1)
 	eload.toggle_output(False)
 
 ######################### MEASURING ######################
 
-def measure_rest():
+def measure_rest(eload):
 	#return current as 0, measure from eload (more accurate)
 	return (eload.measure_voltage(), 0)
 
-def measure_charge():
+def measure_charge(eload, psu):
 	#return current from power supply, voltage from eload (more accurate)
 	return (eload.measure_voltage(), psu.measure_current())
 
-def measure_discharge():
+def measure_discharge(eload):
 	#return current from eload (as negative), voltage from eload
 	return (eload.measure_voltage(), eload.measure_current()*-1)
 
 
 ########################## CYCLE #############################
 
-def charge_cell(log_filepath, cycle_settings):
+def charge_cell(log_filepath, cycle_settings, eload, psu):
 	#start the charging
 	#Start the data so we don't immediately trigger end conditions
 	data = (cycle_settings["charge_end_v"], cycle_settings["charge_a"])
 	
-	start_charge(cycle_settings["charge_end_v"], cycle_settings["charge_a"])
+	start_charge(cycle_settings["charge_end_v"], cycle_settings["charge_a"], eload, psu)
 	charge_start_time = time.time()
 	print('Starting Charge: {}\n'.format(time.ctime()), flush=True)
 	while (data[1] > cycle_settings["charge_end_a"]):
 		time.sleep(cycle_settings["meas_log_int_s"] - ((time.time() - charge_start_time) % cycle_settings["meas_log_int_s"]))
-		data = measure_charge()
+		data = measure_charge(eload, psu)
 		FileIO.write_data(log_filepath, data)
 
-def rest_cell(log_filepath, cycle_settings, after_charge = True):
+def rest_cell(log_filepath, cycle_settings, eload, psu, after_charge = True):
 	#rest
-	start_rest()
+	start_rest(eload, psu)
 	rest_start_time = time.time()
 	
 	rest_time_s = 0
@@ -84,20 +76,19 @@ def rest_cell(log_filepath, cycle_settings, after_charge = True):
 	else:
 		rest_time_s = cycle_settings["rest_after_discharge_min"] * 60
 
-	
 	print('Starting Rest: {}\n'.format(time.ctime()), flush=True)
   
 	while (time.time() - rest_start_time) < rest_time_s:
 		time.sleep(cycle_settings["meas_log_int_s"] - ((time.time() - rest_start_time) % cycle_settings["meas_log_int_s"]))
-		data = measure_rest()
+		data = measure_rest(eload)
 		FileIO.write_data(log_filepath, data)
 
-def discharge_cell(log_filepath, cycle_settings):
+def discharge_cell(log_filepath, cycle_settings, eload, psu):
 	#start discharge
-	start_discharge(cycle_settings["discharge_a"])
+	start_discharge(cycle_settings["discharge_a"], eload, psu)
 	discharge_start_time = time.time()
 
-	data = measure_rest()
+	data = measure_rest(eload)
 	
 	#need to add a previous voltage, previous voltage time so that we can compare to better extimate the end time.
 	#if we underestimate the end time, that's fine since we'll just get a measurement that is closer next, though there will be delay by the time to gather and write data
@@ -130,15 +121,15 @@ def discharge_cell(log_filepath, cycle_settings):
 		prev_v_time = new_data_time
 		
 		new_data_time = time.time()
-		data = measure_discharge()
+		data = measure_discharge(eload)
 		FileIO.write_data(log_filepath, data, timestamp = new_data_time)
 
 #run a single cycle on a cell while logging data
-def cycle_cell(dir, cell_name, cycle_settings):
+def cycle_cell(directory, cell_name, cycle_settings, eload, psu):
 	
 	#start a new file for the cycle
 	headers_list = ['Timestamp', 'Voltage', 'Current']
-	filepath = FileIO.start_file(dir, cell_name, headers_list)
+	filepath = FileIO.start_file(directory, cell_name, headers_list)
 	
 	print('Starting a cycle: {}\n'.format(time.ctime()) + 
 			'Settings:\n' +
@@ -153,28 +144,28 @@ def cycle_cell(dir, cell_name, cycle_settings):
 			'Log Interval (Seconds): {}\n'.format(cycle_settings["meas_log_int_s"]) + 
 			'\n\n', flush=True)
 	
-	charge_cell(filepath, cycle_settings)
+	charge_cell(filepath, cycle_settings, eload, psu)
 	
-	rest_cell(filepath, cycle_settings, after_charge = True)
+	rest_cell(filepath, cycle_settings, eload, psu, after_charge = True)
 	
-	discharge_cell(filepath, cycle_settings)
+	discharge_cell(filepath, cycle_settings, eload, psu)
 	
-	rest_cell(filepath, cycle_settings, after_charge = False)
+	rest_cell(filepath, cycle_settings, eload, psu, after_charge = False)
 	
 	print('Cycle Completed: {}\n'.format(time.ctime()), flush=True)
 	
 	return
 
-def storage_charge(dir, cell_name, charge_settings):
+def storage_charge(directory, cell_name, charge_settings, eload, psu):
 	
 	#start a new file for the cycle
 	headers_list = ['Timestamp', 'Voltage', 'Current']
-	filepath = FileIO.start_file(dir, cell_name, headers_list)
+	filepath = FileIO.start_file(directory, cell_name, headers_list)
 	
-	charge_cell(filepath, charge_settings)
+	charge_cell(filepath, charge_settings, eload, psu)
 	
 	#shut off power supply
-	start_rest()
+	start_rest(eload, psu)
 	
 	
 ################################## CYCLE SETTINGS TYPES ################################
@@ -242,6 +233,10 @@ def two_level_continuous_cycles_with_rest():
 
 ####################################### PROGRAM ######################################
 if __name__ == '__main__':
+	
+	eloads = eq.eLoads()
+	psus = eq.powerSupplies()
+	
 	#get the cell name
 	cell_name = eg.enterbox(title = "Test Setup", msg = "Enter the Cell Name\n(Spaces will be replaced with underscores)",
 							default = "CELL_NAME", strip = True)
@@ -250,7 +245,6 @@ if __name__ == '__main__':
 	
 	#Get a directory to save the file
 	directory = FileIO.get_directory("Choose directory to save the cycle logs")
-	init_instruments()
 	
 	#different cycle types that are available
 	available_cycle_types = ("Single Cycle",
@@ -282,13 +276,19 @@ if __name__ == '__main__':
 		#always do a storage charge for cell safety!
 		storage_charge_settings = Templates.ChargeSettings()
 		storage_charge_settings.get_cycle_settings("Storage Charge")
-
+	
+	#Now we choose PSU and Eload to use
+	eload = eloads.choose_eload()
+	psu = psus.choose_psu()
+	
+	init_instruments(eload, psu)
+	
 	#cycle x times
 	cycle_num = 0
 	for cycle_settings in cycle_settings_list:
 		print("Cycle {} Starting".format(cycle_num), flush=True)
 		try:
-			cycle_cell(directory, cell_name, cycle_settings.settings)
+			cycle_cell(directory, cell_name, cycle_settings.settings, eload, psu)
 		except KeyboardInterrupt:
 			eload.toggle_output(False)
 			psu.toggle_output(False)
@@ -299,7 +299,7 @@ if __name__ == '__main__':
 		#storage charge
 		#always do a storage charge for cell safety!
 		try:
-			storage_charge(directory, cell_name, storage_charge_settings.settings)
+			storage_charge(directory, cell_name, storage_charge_settings.settings, eload, psu)
 		except KeyboardInterrupt:
 			eload.toggle_output(False)
 			psu.toggle_output(False)
