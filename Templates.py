@@ -29,7 +29,19 @@ class CycleStats:
 			"discharge_end_v":			0
 		}
 
-
+##################### AVAILABLE CYCLE TYPES ####################
+class CycleTypes:
+	
+	cycle_types = {
+		"Single Cycle": 							{'load_req': True, 'supply_req': True},
+		"One Setting Continuous Cycles With Rest": 	{'load_req': True, 'supply_req': True},
+		"Two Setting Continuous Cycles With Rest": 	{'load_req': True, 'supply_req': True},
+		"Charge Only": 								{'load_req': False, 'supply_req': True},
+		"Discharge Only": 							{'load_req': True, 'supply_req': False}
+	}
+		
+		
+		
 ##################### Checking User Input ##############
 def check_user_entry(entry):
 	if(entry == None):
@@ -151,6 +163,17 @@ class ChargeSettings(CycleSettings):
 			"charge_end_v": 			4.2,
 			"charge_a": 				7.5,
 			"charge_end_a": 			0.3,
+			"meas_log_int_s": 			1
+		}
+		
+###############  CHARGE  #####################
+
+class DischargeSettings(CycleSettings):
+
+	def __init__(self):
+		self.settings = { 
+			"discharge_end_v": 			2.5,
+			"discharge_a": 				52.5,
 			"meas_log_int_s": 			1
 		}
 

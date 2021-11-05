@@ -4,12 +4,17 @@
 import pyvisa
 import time
 import easygui as eg
+import serial
 
 # E-Load
 class SDM3065X:
 	# Initialize the SDM3065X E-Load
 	
 	read_termination = '\n'
+	timeout = 5000 #5 second timeout
+	
+	defaults = {"NPLC": 1,
+				"VOLT_DC_RANGE": 'AUTO'}
 	
 	def __init__(self, resource_id = ""):
 		rm = pyvisa.ResourceManager()
@@ -28,10 +33,11 @@ class SDM3065X:
 				try:
 					instrument = rm.open_resource(resource)
 					instrument.read_termination = SDM3065X.read_termination
+					instrument.timeout = SDM3065X.timeout
 					instrument_idn = instrument.query("*IDN?")
 					idns_dict[resource] = instrument_idn
 					instrument.close()
-				except pyvisa.errors.VisaIOError:
+				except (pyvisa.errors.VisaIOError, PermissionError, serial.serialutil.SerialException):
 					pass
 					
 			#Now we have all the available resources that we can connect to, with their IDNs.
@@ -54,6 +60,7 @@ class SDM3065X:
 		
 		self.inst = rm.open_resource(resource_id)
 		self.inst.read_termination = SDM3065X.read_termination
+		self.inst.timeout = SDM3065X.timeout
 		
 		self.volt_ranges = {0.2: '200mv',
 							2: '2V',
@@ -70,28 +77,28 @@ class SDM3065X:
 							10: '10A',
 							'AUTO': 'AUTO'}
 		self.mode = "NONE"
-		self.setup_dcv = {"MODE": None,
-						  "RANGE": None,
+		self.setup_dcv = {"RANGE": None,
 						  "NPLC": None}
 		
-		print("Connected to %s\n" % self.inst.query("*IDN?"))
+		print("Connected to {}\n".format(self.inst.query("*IDN?")))
 		self.inst.write("*RST")
 				
 		#set to remote mode (disable front panel)
 		#self.lock_front_panel(True)
 		
 	
-	def measure_voltage(self, nplc = 1, volt_range = 'AUTO'):
+	def measure_voltage(self, nplc = defaults["NPLC"], volt_range = defaults["VOLT_DC_RANGE"]):
 		
 		if self.mode != "DCV":
 			self.set_mode(mode = "DCV")
 			
 		if self.setup_dcv["NPLC"] != nplc:
-			self.set_nplc(self, nplc = nplc)
+			self.set_nplc(nplc = nplc)
 		
 		if self.setup_dcv["RANGE"] != volt_range:
-			self.set_range_dcv(self, volt_range = volt_range)
+			self.set_range_dcv(volt_range = volt_range)
 		
+		self.inst.write("INIT") #set to wait for trigger state
 		return float(self.inst.query("READ?"))
 		
 		#uses auto-range and 10 PLC
@@ -100,9 +107,13 @@ class SDM3065X:
 	def set_mode(self, mode = "DCV"):
 		if mode == "DCV":
 			self.inst.write("CONF:VOLT:DC")
+			self.set_auto_zero_dcv(False) #faster measurements
 			self.mode = mode
 	
-	def set_range_dcv(self, volt_range = 'AUTO'):
+	def set_auto_zero_dcv(self, state):
+		self.inst.write("VOLT:DC:AZ {:d}".format(state))
+	
+	def set_range_dcv(self, volt_range = defaults["VOLT_DC_RANGE"]):
 		if volt_range not in self.volt_ranges.keys():
 			print("Invalid Voltage Range Selection")
 			return
@@ -112,7 +123,7 @@ class SDM3065X:
 			self.inst.write("VOLT:DC:RANG {}".format(self.volt_ranges[volt_range]))
 		self.setup_dcv["RANGE"] = volt_range
 	
-	def set_nplc(self, nplc = 1):
+	def set_nplc(self, nplc = defaults["NPLC"]):
 		if nplc not in self.nplc_ranges:
 			print("Invalid NPLC Selection")
 			return
@@ -127,7 +138,7 @@ class SDM3065X:
 	#	return float(self.inst.query("MEAS:DIODE?"))
 
 	#def measure_current(self):
-	#	return float(self.inst.query(":MEAS:CURR?"))
+	#	return float(self.inst.query("MEAS:CURR:DC?"))
 	
 	def __del__(self):
 		#self.conf_voltage_dc(False)

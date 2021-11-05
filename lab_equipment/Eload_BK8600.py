@@ -3,6 +3,7 @@
 import pyvisa
 import time
 import easygui as eg
+import serial
 
 # E-Load
 class BK8600:
@@ -26,7 +27,7 @@ class BK8600:
 					instrument_idn = instrument.query("*IDN?")
 					idns_dict[resource] = instrument_idn
 					instrument.close()
-				except pyvisa.errors.VisaIOError:
+				except (pyvisa.errors.VisaIOError, PermissionError, serial.serialutil.SerialException):
 					pass
 					
 			#Now we have all the available resources that we can connect to, with their IDNs.
@@ -38,7 +39,7 @@ class BK8600:
 				if(eg.ynbox(msg, title)):
 					idn = list(idns_dict.values())[0]
 			else:
-				msg = "Select the Eload Supply Model:"
+				msg = "Select the Eload Model:"
 				idn = eg.choicebox(msg, title, idns_dict.values())
 			#Now we know which IDN we want to connect to
 			#swap keys and values and then connect
