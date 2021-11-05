@@ -3,6 +3,7 @@
 import pyvisa
 import time
 import easygui as eg
+import serial
 
 # Power Supply
 class BK9100:
@@ -23,10 +24,6 @@ class BK9100:
 			#But we can at least try to see which devices are available to connect to.
 			title = "Power Supply Selection"
 			
-			if(len(resources) == 0):
-				resource_id = 0
-				print("No Resources Available. Connection attempt will exit with errors")
-			
 			for resource in resources:
 				try:
 					instrument = rm.open_resource(resource)
@@ -37,8 +34,12 @@ class BK9100:
 					instrument.query("GOUT")
 					instrument.query("") #clear output buffer
 					instrument.close()
-				except pyvisa.errors.VisaIOError:
+				except (pyvisa.errors.VisaIOError, PermissionError, serial.serialutil.SerialException):
 					resources.remove(resource)
+			
+			if(len(resources) == 0):
+				resource_id = 0
+				print("No Resources Available. Connection attempt will exit with errors")
 			
 			elif(len(resources) == 1):
 				msg = "There is only 1 visa resource available.\nWould you like to use it?\n{}".format(resources[0])

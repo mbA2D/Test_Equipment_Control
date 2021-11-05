@@ -5,6 +5,7 @@
 import pyvisa
 import time
 import easygui as eg
+import serial
 
 # Power Supply
 class MP71025X:
@@ -37,7 +38,7 @@ class MP71025X:
 					instrument_idn = instrument.query("*IDN?")
 					idns_dict[resource] = instrument_idn
 					instrument.close()
-				except pyvisa.errors.VisaIOError:
+				except (pyvisa.errors.VisaIOError, PermissionError, serial.serialutil.SerialException):
 					pass
 					
 			#Now we have all the available resources that we can connect to, with their IDNs.

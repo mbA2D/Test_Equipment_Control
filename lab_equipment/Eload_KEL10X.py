@@ -4,6 +4,7 @@
 import pyvisa
 import time
 import easygui as eg
+import serial
 
 # E-Load
 class KEL10X:
@@ -35,7 +36,7 @@ class KEL10X:
 					instrument_idn = instrument.query("*IDN?")
 					idns_dict[resource] = instrument_idn
 					instrument.close()
-				except pyvisa.errors.VisaIOError:
+				except (pyvisa.errors.VisaIOError, PermissionError, serial.serialutil.SerialException):
 					pass
 					
 			#Now we have all the available resources that we can connect to, with their IDNs.
@@ -47,7 +48,7 @@ class KEL10X:
 				if(eg.ynbox(msg, title)):
 					idn = list(idns_dict.values())[0]
 			else:
-				msg = "Select the Eload Supply Model:"
+				msg = "Select the Eload Model:"
 				idn = eg.choicebox(msg, title, idns_dict.values())
 			#Now we know which IDN we want to connect to
 			#swap keys and values and then connect
@@ -67,9 +68,7 @@ class KEL10X:
 		self.model_number = split_string[0]
 		self.version_number = split_string[1]
 		self.serial_number = split_string[2]
-		
-		
-		print("Connected to %s\n" % self.inst.query("*IDN?"))
+
 		#unit does not have reset command
         #self.inst.write("*RST")
 		self.set_mode_current()
