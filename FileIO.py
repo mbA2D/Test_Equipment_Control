@@ -38,7 +38,7 @@ def get_multiple_filepaths():
 	return eg.fileopenbox(title = "Select the Log(s) to Graph", filetypes = [['*.csv', 'CSV Files']], multiple = True)
 
 def ensure_subdir_exists_dir(filedir, subdir_name):
-	candidate_dir = os.path.join(filedir, sub_dir)
+	candidate_dir = os.path.join(filedir, subdir_name)
 	if not os.path.exists(candidate_dir):
 		os.makedirs(candidate_dir)
 	return candidate_dir
