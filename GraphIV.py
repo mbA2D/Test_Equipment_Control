@@ -117,33 +117,15 @@ def calc_capacity(log_data, stats, charge=True, temp_log_dir = "", show_ica_grap
 	total_time = (end_time - start_time)/3600
 	
 	#add columns to the dataset
-	dsc_data = dsc_data.assign(SecsFromLastTimestamp=0)
-	dsc_data = dsc_data.assign(Capacity_Ah=0)
-	dsc_data = dsc_data.assign(Capacity_wh=0)
-	dsc_data = dsc_data.assign(Capacity_Ah_Up_To=0)
-	dsc_data = dsc_data.assign(Capacity_wh_Up_To=0)
-	dsc_data = dsc_data.assign(Voltage_Diff=0)
-	dsc_data = dsc_data.assign(dQ_dV=0)
+	dsc_data['SecsFromLastTimestamp'] = dsc_data['Timestamp'].diff()
+	dsc_data.loc[dsc_data.index.tolist()[0], 'SecsFromLastTimestamp'] = 0 #Set first val to 0 instead of Nan.
 	
-	#requires indexes to be the default numeric ones
-	for data_index in dsc_data.index:
-		try:
-			dsc_data.loc[data_index, 'SecsFromLastTimestamp'] = \
-			dsc_data.loc[data_index, 'Timestamp'] - dsc_data.loc[data_index-1, 'Timestamp']
-		except KeyError:
-			continue
-		
-		dsc_data.loc[data_index, 'Capacity_Ah'] = \
-			dsc_data.loc[data_index, 'Current'] * dsc_data.loc[data_index, 'SecsFromLastTimestamp'] / 3600
-		
-		dsc_data.loc[data_index, 'Capacity_wh'] = \
-			dsc_data.loc[data_index, 'Capacity_Ah'] * dsc_data.loc[data_index, 'Voltage']
-		
-		#Calculate the capacity up to this point, and the voltage differential
-		if(data_index != 0):
-			dsc_data.loc[data_index, 'Capacity_Ah_Up_To'] = dsc_data['Capacity_Ah'].sum()
-			dsc_data.loc[data_index, 'Capacity_wh_Up_To'] = dsc_data['Capacity_wh'].sum()
-			
+	dsc_data = dsc_data.assign(Capacity_Ah = dsc_data['Current'] * dsc_data['SecsFromLastTimestamp'] / 3600)
+	#For some reason, can't assign 2 at the same time, but I think we should be able to
+	dsc_data = dsc_data.assign(Capacity_wh = dsc_data['Capacity_Ah'] * dsc_data['Voltage'])
+	
+	dsc_data['Capacity_Ah_Up_To'] = dsc_data['Capacity_Ah'].cumsum() #cumulative sum of the values
+	dsc_data['Capacity_wh_Up_To'] = dsc_data['Capacity_wh'].cumsum()
 	
 	dsc_data['Voltage_Diff'] = dsc_data['Voltage'].diff()
 	dsc_data = dsc_data.assign(dQ_dV = dsc_data['Capacity_Ah'] / dsc_data['Voltage_Diff'])
