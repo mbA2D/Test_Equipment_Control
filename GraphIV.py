@@ -7,6 +7,7 @@ import os
 import Templates
 import PlotTemps
 from stat import S_IREAD, S_IWUSR
+import scipy.signal
 
 def plot_iv(log_data, save_filepath = '', show_graph=False):
 	#plot time(in seconds) as x
@@ -44,20 +45,46 @@ def plot_ica(data_w_cap):
 	
 	#First plot voltage=y, capacity (ah) = x
 	fig = plt.figure()
-	ax_cap = fig.add_subplot()
+	ax_ica_raw = fig.add_subplot(311)
+	ax_cap_raw = ax_ica_raw.twinx()
 	
 	title = 'Charge and Incremental Capacity Analysis'
 	if(data_w_cap.loc[data_w_cap.index[0], 'Current'] < 0):
 		title = 'Discharge'
 	fig.suptitle(title)
-	ax_cap.set_xlabel('Voltage')
-	ax_cap.set_ylabel('Capacity (Ah)', color = 'r')
-	ax_cap.plot('Voltage', 'Capacity_Ah_Up_To', data = data_w_cap, color = 'r')
+	ax_cap_raw.set_ylabel('Capacity (Ah)', color = 'r')
+	ax_cap_raw.plot('Voltage', 'Capacity_Ah_Up_To', data = data_w_cap, color = 'r')
 	
-	ax_ica = ax_cap.twinx()
-	ax_ica.set_ylabel('dQ/dV', color = 'b')
-	ax_ica.plot('Voltage', 'dQ_dV', data = data_w_cap, color = 'b')
+	ax_ica_raw.plot('Voltage', 'dQ_dV', data = data_w_cap, color = 'b')
 	
+	
+	################# First step - smooth the voltage curve
+	ax_ica_smoothed_v = fig.add_subplot(312, sharex = ax_ica_raw)
+	ax_ica_smoothed_v.set_ylabel('dQ/dV (Ah/V)')
+	
+	#Voltage should not change too quickly - this will only be computed on constant current curves
+	data_w_cap['Voltage_smoothed'] = scipy.signal.savgol_filter(data_w_cap['Voltage'].tolist(), 9, 3)
+	#need to recalculate the voltage difference
+	data_w_cap['Voltage_smoothed_diff'] = data_w_cap['Voltage_smoothed'].diff()
+	data_w_cap = data_w_cap.assign(dQ_dV_v_smoothed = data_w_cap['Capacity_Ah'] / data_w_cap['Voltage_smoothed_diff'])
+	
+	ax_ica_smoothed_v.plot('Voltage_smoothed', 'dQ_dV_v_smoothed', data = data_w_cap, color = 'c')
+	
+	
+	################# 2nd Step - smooth the resulting data
+	#add another subplot below, and share the X-axis.
+	ax_ica_smoothed1 = fig.add_subplot(313, sharex = ax_ica_raw)
+	
+	#Set Y-label to be smoothed ICA - ylabel will be shared by all since its positioned in the middle.
+	ax_ica_smoothed1.set_xlabel('Voltage')
+
+	#savgol filter with window size 9 and polynomial order 3 as suggested by DiffCapAnalyzer.
+	data_w_cap['dQ_dV_smoothed1'] = scipy.signal.savgol_filter(data_w_cap['dQ_dV_v_smoothed'].tolist(), 9, 3)
+
+	#plot the smoothed data on the 3rd subplot
+	ax_ica_smoothed1.plot('Voltage', 'dQ_dV_smoothed1', data = data_w_cap, color = 'g')
+	
+	fig.subplots_adjust(hspace=0.5) #add a little extra space vertically
 	plt.show()
 	
 
@@ -89,7 +116,7 @@ def calc_capacity(log_data, stats, charge=True, temp_log_dir = ""):
 	end_v = dsc_data.loc[dsc_data.index[-1], 'Voltage']
 	total_time = (end_time - start_time)/3600
 	
-	#add 3 columns to the dataset
+	#add columns to the dataset
 	dsc_data = dsc_data.assign(SecsFromLastTimestamp=0)
 	dsc_data = dsc_data.assign(Capacity_Ah=0)
 	dsc_data = dsc_data.assign(Capacity_wh=0)
@@ -116,9 +143,11 @@ def calc_capacity(log_data, stats, charge=True, temp_log_dir = ""):
 		if(data_index != 0):
 			dsc_data.loc[data_index, 'Capacity_Ah_Up_To'] = dsc_data['Capacity_Ah'].sum()
 			dsc_data.loc[data_index, 'Capacity_wh_Up_To'] = dsc_data['Capacity_wh'].sum()
-			dsc_data.loc[data_index, 'Voltage_Diff'] = dsc_data.loc[data_index, 'Voltage'] - dsc_data.loc[data_index-1, 'Voltage']
-			dsc_data.loc[data_index, 'dQ_dV'] = dsc_data.loc[data_index, 'Capacity_Ah'] / dsc_data.loc[data_index, 'Voltage_Diff']
-		
+			
+	
+	dsc_data['Voltage_Diff'] = dsc_data['Voltage'].diff()
+	dsc_data = dsc_data.assign(dQ_dV = dsc_data['Capacity_Ah'] / dsc_data['Voltage_Diff'])
+	
 	capacity_ah = dsc_data['Capacity_Ah'].sum()
 	capacity_wh = dsc_data['Capacity_wh'].sum()
 	
