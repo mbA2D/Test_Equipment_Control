@@ -8,6 +8,7 @@ import Templates
 import PlotTemps
 import FileIO
 from stat import S_IREAD, S_IWUSR
+import scipy.signal
 
 def plot_iv(log_data, save_filepath = '', show_graph=False):
 	#plot time(in seconds) as x
@@ -38,6 +39,59 @@ def plot_iv(log_data, save_filepath = '', show_graph=False):
 	else:
 		plt.close()
 
+#Function to plot the incremental capacity analysis of a battery's charge or discharge data.
+#DiffCapAnalyzer may be helpful here: https://www.theoj.org/joss-papers/joss.02624/10.21105.joss.02624.pdf
+#Also, a few other articles as well: https://www.mdpi.com/2313-0105/5/2/37
+def plot_ica(data_w_cap):
+	
+	#First plot voltage=y, capacity (ah) = x
+	fig = plt.figure()
+	ax_ica_raw = fig.add_subplot(311)
+	ax_cap_raw = ax_ica_raw.twinx()
+	
+	title = 'Charge and Incremental Capacity Analysis'
+	if(data_w_cap.loc[data_w_cap.index[0], 'Current'] < 0):
+		title = 'Discharge'
+	fig.suptitle(title)
+	ax_cap_raw.set_ylabel('Capacity (Ah)', color = 'r')
+	ax_cap_raw.plot('Voltage', 'Capacity_Ah_Up_To', data = data_w_cap, color = 'r')
+	
+	ax_ica_raw.plot('Voltage', 'dQ_dV', data = data_w_cap, color = 'b')
+	
+	
+	################# First step - smooth the voltage curve
+	ax_ica_smoothed_v = fig.add_subplot(312, sharex = ax_ica_raw)
+	ax_ica_smoothed_v.set_ylabel('dQ/dV (Ah/V)')
+	
+	#Voltage should not change too quickly - this will only be computed on constant current curves
+	data_w_cap['Voltage_smoothed'] = scipy.signal.savgol_filter(data_w_cap['Voltage'].tolist(), 9, 3)
+	#need to recalculate the voltage difference
+	data_w_cap['Voltage_smoothed_diff'] = data_w_cap['Voltage_smoothed'].diff()
+	data_w_cap = data_w_cap.assign(dQ_dV_v_smoothed = data_w_cap['Capacity_Ah'] / data_w_cap['Voltage_smoothed_diff'])
+	
+	ax_ica_smoothed_v.plot('Voltage_smoothed', 'dQ_dV_v_smoothed', data = data_w_cap, color = 'c')
+	
+	
+	################# 2nd Step - smooth the resulting data
+	#add another subplot below, and share the X-axis.
+	ax_ica_smoothed1 = fig.add_subplot(313, sharex = ax_ica_raw)
+	
+	#Set Y-label to be smoothed ICA - ylabel will be shared by all since its positioned in the middle.
+	ax_ica_smoothed1.set_xlabel('Voltage')
+
+	#savgol filter with window size 9 and polynomial order 3 as suggested by DiffCapAnalyzer.
+	data_w_cap['dQ_dV_smoothed1'] = scipy.signal.savgol_filter(data_w_cap['dQ_dV_v_smoothed'].tolist(), 9, 3)
+
+	#plot the smoothed data on the 3rd subplot
+	ax_ica_smoothed1.plot('Voltage', 'dQ_dV_smoothed1', data = data_w_cap, color = 'g')
+	
+	fig.subplots_adjust(hspace=0.5) #add a little extra space vertically
+	plt.show()
+	
+
+#Calculates the capacity of the charge or discharge in wh and ah.
+#Also returns a dataframe that contains the temperature log entries corresponding to the
+#same timestamps as the log.
 def calc_capacity(log_data, stats, charge=True, temp_log_dir = ""):
 	#create a mask to get only the discharge data
 	if (charge):
@@ -63,10 +117,14 @@ def calc_capacity(log_data, stats, charge=True, temp_log_dir = ""):
 	end_v = dsc_data.loc[dsc_data.index[-1], 'Voltage']
 	total_time = (end_time - start_time)/3600
 	
-	#add 3 columns to the dataset
+	#add columns to the dataset
 	dsc_data = dsc_data.assign(SecsFromLastTimestamp=0)
 	dsc_data = dsc_data.assign(Capacity_Ah=0)
 	dsc_data = dsc_data.assign(Capacity_wh=0)
+	dsc_data = dsc_data.assign(Capacity_Ah_Up_To=0)
+	dsc_data = dsc_data.assign(Capacity_wh_Up_To=0)
+	dsc_data = dsc_data.assign(Voltage_Diff=0)
+	dsc_data = dsc_data.assign(dQ_dV=0)
 	
 	#requires indexes to be the default numeric ones
 	for data_index in dsc_data.index:
@@ -77,13 +135,24 @@ def calc_capacity(log_data, stats, charge=True, temp_log_dir = ""):
 			continue
 		
 		dsc_data.loc[data_index, 'Capacity_Ah'] = \
-		dsc_data.loc[data_index, 'Current'] * dsc_data.loc[data_index, 'SecsFromLastTimestamp'] / 3600
+			dsc_data.loc[data_index, 'Current'] * dsc_data.loc[data_index, 'SecsFromLastTimestamp'] / 3600
 		
 		dsc_data.loc[data_index, 'Capacity_wh'] = \
-		dsc_data.loc[data_index, 'Capacity_Ah'] * dsc_data.loc[data_index, 'Voltage']
+			dsc_data.loc[data_index, 'Capacity_Ah'] * dsc_data.loc[data_index, 'Voltage']
 		
+		#Calculate the capacity up to this point, and the voltage differential
+		if(data_index != 0):
+			dsc_data.loc[data_index, 'Capacity_Ah_Up_To'] = dsc_data['Capacity_Ah'].sum()
+			dsc_data.loc[data_index, 'Capacity_wh_Up_To'] = dsc_data['Capacity_wh'].sum()
+			
+	
+	dsc_data['Voltage_Diff'] = dsc_data['Voltage'].diff()
+	dsc_data = dsc_data.assign(dQ_dV = dsc_data['Capacity_Ah'] / dsc_data['Voltage_Diff'])
+	
 	capacity_ah = dsc_data['Capacity_Ah'].sum()
 	capacity_wh = dsc_data['Capacity_wh'].sum()
+	
+	#TODO - better way of detecting charge current - find the CV and CC phases
 	#round current to 1 decimal point
 	charge_a = round(dsc_data['Current'].median(),1)
 	
@@ -104,6 +173,8 @@ def calc_capacity(log_data, stats, charge=True, temp_log_dir = ""):
 	print('Start Time: {}'.format(start_time))
 	print('End Time: {}'.format(end_time))
 
+	plot_ica(dsc_data)
+	
 	if(temps_available):
 		#now add some temperature data
 		temp_data, max_temp = PlotTemps.get_temps(stats.stats, prefix, temp_log_dir)
@@ -256,3 +327,4 @@ if __name__ == '__main__':
 					save_filepath=filepath_graph_temps_charge, show_graph=False, prefix = 'charge')
 			PlotTemps.plot_temps(temps_discharge, cycle_stats.stats['cell_name'], \
 					save_filepath=filepath_graph_temps_discharge, show_graph=False, prefix = 'discharge')
+
