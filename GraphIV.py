@@ -7,7 +7,6 @@ import os
 import Templates
 import PlotTemps
 import FileIO
-from stat import S_IREAD, S_IWUSR
 import scipy.signal
 
 def plot_iv(log_data, save_filepath = '', show_graph=False):
@@ -92,7 +91,7 @@ def plot_ica(data_w_cap):
 #Calculates the capacity of the charge or discharge in wh and ah.
 #Also returns a dataframe that contains the temperature log entries corresponding to the
 #same timestamps as the log.
-def calc_capacity(log_data, stats, charge=True, temp_log_dir = ""):
+def calc_capacity(log_data, stats, charge=True, temp_log_dir = "", show_ica_graphs = False):
 	#create a mask to get only the discharge data
 	if (charge):
 		prefix = 'charge'
@@ -173,9 +172,10 @@ def calc_capacity(log_data, stats, charge=True, temp_log_dir = ""):
 	print('Start Time: {}'.format(start_time))
 	print('End Time: {}'.format(end_time))
 
-	plot_ica(dsc_data)
+	if show_ica_graphs: 
+		plot_ica(dsc_data)
 	
-	if(temps_available):
+	if temps_available:
 		#now add some temperature data
 		temp_data, max_temp = PlotTemps.get_temps(stats.stats, prefix, temp_log_dir)
 		stats.stats['{}_max_temp_c'.format(prefix)] = max_temp
@@ -264,6 +264,11 @@ if __name__ == '__main__':
 		#get the temps file location
 		temp_log_dir = FileIO.get_directory("Choose the directory that contains the temp logs")
 	
+	show_discharge_graphs = eg.ynbox(title = "Discharge Graphs",
+									 msg = "Show the discharge plots?")
+	show_ica_graphs = eg.ynbox(title = "ICA Graphs",
+							   msg = "Show the ICA plots?")
+	
 	#ensure that all directories exist
 	filedir = os.path.dirname(filepaths[0])
 	sub_dirs = ['Graphs','Stats']
@@ -307,8 +312,8 @@ if __name__ == '__main__':
 		cycle_stats = Templates.CycleStats()
 		cycle_stats.stats['cell_name'] = cell_name
 		
-		temps_charge = calc_capacity(df, cycle_stats, charge=True, temp_log_dir = temp_log_dir)
-		temps_discharge = calc_capacity(df, cycle_stats, charge=False, temp_log_dir = temp_log_dir)
+		temps_charge = calc_capacity(df, cycle_stats, charge=True, temp_log_dir = temp_log_dir, show_ica_graphs = show_ica_graphs)
+		temps_discharge = calc_capacity(df, cycle_stats, charge=False, temp_log_dir = temp_log_dir, show_ica_graphs = show_ica_graphs)
 		dict_to_csv(cycle_stats.stats, filepath_stats)
 		
 		#Change timestamp to be seconds from cycle start instead of epoch
@@ -321,7 +326,7 @@ if __name__ == '__main__':
 			dataframe_to_csv(temps_discharge, filepath_logs_temps_discharge)
 		
 		#Show plot
-		plot_iv(df, save_filepath=filepath_graph, show_graph=False)
+		plot_iv(df, save_filepath=filepath_graph, show_graph=show_discharge_graphs)
 		if(temps_available):
 			PlotTemps.plot_temps(temps_charge, cycle_stats.stats['cell_name'], \
 					save_filepath=filepath_graph_temps_charge, show_graph=False, prefix = 'charge')
