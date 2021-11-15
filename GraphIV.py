@@ -43,9 +43,10 @@ def plot_iv(log_data, save_filepath = '', show_graph=False):
 #Also, a few other articles as well: https://www.mdpi.com/2313-0105/5/2/37
 def plot_ica(data_w_cap):
 	
-	#First plot voltage=y, capacity (ah) = x
+	#################### Setting up all the graphs:
 	fig = plt.figure()
-	ax_ica_raw = fig.add_subplot(311)
+	
+	ax_ica_raw = fig.add_subplot(411)
 	ax_cap_raw = ax_ica_raw.twinx()
 	
 	title = 'Charge and Incremental Capacity Analysis'
@@ -53,15 +54,32 @@ def plot_ica(data_w_cap):
 		title = 'Discharge'
 	fig.suptitle(title)
 	ax_cap_raw.set_ylabel('Capacity (Ah)', color = 'r')
+	
+	#Smoothing the voltage curve:
+	ax_ica_smoothed_v = fig.add_subplot(412, sharex = ax_ica_raw)
+	#Set Y-label to be smoothed ICA - ylabel will be shared by all since its positioned in the middle.
+	ax_ica_smoothed_v.set_ylabel('dQ/dV (Ah/V)')
+	
+	#add another subplot below, and share the X-axis.
+	ax_ica_smoothed1 = fig.add_subplot(413, sharex = ax_ica_raw)
+	
+	
+	#another subplot - 2nd pass of Savgol Filter
+	ax_ica_smoothed2 = fig.add_subplot(414, sharex = ax_ica_raw)
+	
+	#Label on the bottom-most subplot since all x is shared.
+	ax_ica_smoothed2.set_xlabel('Voltage')
+	
+	fig.subplots_adjust(hspace=0.5) #add a little extra space vertically
+	
+	
+	################ Plot capacity and raw dQ/dV - lots of noise
 	ax_cap_raw.plot('Voltage', 'Capacity_Ah_Up_To', data = data_w_cap, color = 'r')
 	
 	ax_ica_raw.plot('Voltage', 'dQ_dV', data = data_w_cap, color = 'b')
 	
 	
 	################# First step - smooth the voltage curve
-	ax_ica_smoothed_v = fig.add_subplot(312, sharex = ax_ica_raw)
-	ax_ica_smoothed_v.set_ylabel('dQ/dV (Ah/V)')
-	
 	#Voltage should not change too quickly - this will only be computed on constant current curves
 	data_w_cap['Voltage_smoothed'] = scipy.signal.savgol_filter(data_w_cap['Voltage'].tolist(), 9, 3)
 	#need to recalculate the voltage difference
@@ -72,19 +90,16 @@ def plot_ica(data_w_cap):
 	
 	
 	################# 2nd Step - smooth the resulting data
-	#add another subplot below, and share the X-axis.
-	ax_ica_smoothed1 = fig.add_subplot(313, sharex = ax_ica_raw)
-	
-	#Set Y-label to be smoothed ICA - ylabel will be shared by all since its positioned in the middle.
-	ax_ica_smoothed1.set_xlabel('Voltage')
-
 	#savgol filter with window size 9 and polynomial order 3 as suggested by DiffCapAnalyzer.
 	data_w_cap['dQ_dV_smoothed1'] = scipy.signal.savgol_filter(data_w_cap['dQ_dV_v_smoothed'].tolist(), 9, 3)
-
+	
 	#plot the smoothed data on the 3rd subplot
 	ax_ica_smoothed1.plot('Voltage', 'dQ_dV_smoothed1', data = data_w_cap, color = 'g')
 	
-	fig.subplots_adjust(hspace=0.5) #add a little extra space vertically
+	################# 3rd Step - 2nd pass of Savgol Filter
+	data_w_cap['dQ_dV_smoothed2'] = scipy.signal.savgol_filter(data_w_cap['dQ_dV_smoothed1'].tolist(), 9, 3)
+	ax_ica_smoothed2.plot('Voltage','dQ_dV_smoothed2', data = data_w_cap, color = 'y')
+	
 	plt.show()
 	
 
@@ -118,7 +133,7 @@ def calc_capacity(log_data, stats, charge=True, temp_log_dir = "", show_ica_grap
 	
 	#add columns to the dataset
 	dsc_data['SecsFromLastTimestamp'] = dsc_data['Timestamp'].diff()
-	dsc_data.loc[dsc_data.index.tolist()[0], 'SecsFromLastTimestamp'] = 0 #Set first val to 0 instead of Nan.
+	dsc_data.loc[dsc_data.index.tolist()[0], 'SecsFromLastTimestamp'] = 0 #Set first val to 0 instead of NaN.
 	
 	dsc_data = dsc_data.assign(Capacity_Ah = dsc_data['Current'] * dsc_data['SecsFromLastTimestamp'] / 3600)
 	#For some reason, can't assign 2 at the same time, but I think we should be able to
