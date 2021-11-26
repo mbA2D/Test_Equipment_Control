@@ -1,5 +1,9 @@
 #Program to run the charge discharge control in different threads.
 
+'''
+#Tkinter had some weird interaction with EasyGui (which is based on TKinter). After closing a window
+#in the thread, the main window would lock up.
+
 import tkinter as tk
 import threading
 import charge_discharge_control as cdc
@@ -23,3 +27,34 @@ btn_1.pack(pady = 20)
 frm_1.pack()
 
 window.mainloop()
+'''
+
+
+from PyQt6.QtGui import *
+from PyQt6.QtWidgets import *
+from PyQt6.QtCore import *
+import sys
+
+import charge_discharge_control as cdc
+
+class CDC_Class(QThread):
+	def __init__(self):
+		QThread.__init__(self)
+	
+	def __del__(self):
+		self.wait()
+		
+	def run(self):
+		cdc.charge_discharge_control()
+
+
+def main():
+	app = QtGui.QApplication(sys.argv)
+	test_window = 
+	test_window.show()
+	app.exec_()
+	
+
+if __name__ == '__main__':
+	main()
+	
