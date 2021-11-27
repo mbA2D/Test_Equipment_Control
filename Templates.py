@@ -33,11 +33,11 @@ class CycleStats:
 class CycleTypes:
 	
 	cycle_types = {
-		"Single Cycle": 							{'load_req': True, 'supply_req': True},
-		"One Setting Continuous Cycles With Rest": 	{'load_req': True, 'supply_req': True},
-		"Two Setting Continuous Cycles With Rest": 	{'load_req': True, 'supply_req': True},
-		"Charge Only": 								{'load_req': False, 'supply_req': True},
-		"Discharge Only": 							{'load_req': True, 'supply_req': False}
+		"Single Cycle": 							{'func_call': '', 'str_chg_opt': True, 'load_req': True, 'supply_req': True},
+		"One Setting Continuous Cycles With Rest": 	{'func_call': '', 'str_chg_opt': True,'load_req': True, 'supply_req': True},
+		"Two Setting Continuous Cycles With Rest": 	{'func_call': '', 'str_chg_opt': True,'load_req': True, 'supply_req': True},
+		"Charge Only": 								{'func_call': '', 'str_chg_opt': False,'load_req': False, 'supply_req': True},
+		"Discharge Only": 							{'func_call': '', 'str_chg_opt': False,'load_req': True, 'supply_req': False}
 	}
 		
 		

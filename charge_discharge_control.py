@@ -306,34 +306,24 @@ if __name__ == '__main__':
 	
 	#different cycle types that are available
 	cycle_types = Templates.CycleTypes.cycle_types
+	cycle_types["Single Cycle"]['func_call'] = single_cycle
+	cycle_types["One Setting Continuous Cycles With Rest"]['func_call'] = one_level_continuous_cycles_with_rest
+	cycle_types["Two Setting Continuous Cycles With Rest"]['func_call'] = two_level_continuous_cycles_with_rest
+	cycle_types["Charge Only"]['func_call'] = charge_only_cycle_info
+	cycle_types["Discharge Only"]['func_call'] = discharge_only_cycle_info
 	
 	#choose the cycle type
 	msg = "Which cycle type do you want to do?"
 	title = "Choose Cycle Type"
 	cycle_type = eg.choicebox(msg, title, list(cycle_types.keys()))
 	
-	do_a_storage_charge = False
-	
 	#gather the list settings based on the cycle type
 	cycle_settings_list = list()
-	if(cycle_type == list(cycle_types.keys())[0]):
-		cycle_settings_list = single_cycle()
+	cycle_settings_list = cycle_types[cycle_type]['func_call']()
+	
+	do_a_storage_charge = False
+	if(cycle_types[cycle_type]['str_chg_opt']):
 		do_a_storage_charge = ask_storage_charge()
-	
-	elif(cycle_type == list(cycle_types.keys())[1]):
-		cycle_settings_list = one_level_continuous_cycles_with_rest()
-		do_a_storage_charge = ask_storage_charge()
-	
-	elif(cycle_type == list(cycle_types.keys())[2]):
-		cycle_settings_list = two_level_continuous_cycles_with_rest()
-		do_a_storage_charge = ask_storage_charge()
-	
-	elif(cycle_type == list(cycle_types.keys())[3]):
-		cycle_settings_list = charge_only_cycle_info()
-	
-	elif(cycle_type == list(cycle_types.keys())[4]):
-		cycle_settings_list = discharge_only_cycle_info()
-	
 	load_required = cycle_types[cycle_type]['load_req']
 	supply_required = cycle_types[cycle_type]['supply_req']
 	
