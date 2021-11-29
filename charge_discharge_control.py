@@ -335,9 +335,12 @@ if __name__ == '__main__':
 	msg = "Do you want to use a separate device to measure voltage?"
 	title = "Voltage Measurement Device"
 	separate_v_meas = eg.ynbox(msg, title)
-	dmm = None
+	dmm_v = None
 	
-	#Now we choose the PSU, Eload, and dmm to use
+	#TODO - a separate imeas device so that we can pass only these to the measure functions
+	#This will let us measure during numerous types of steps
+	
+	#Now we choose the PSU, Eload, and dmm_v to use
 	if load_required:	
 		eload = eloads.choose_eload()
 		init_eload(eload)
@@ -346,13 +349,13 @@ if __name__ == '__main__':
 		init_psu(psu)
 	if separate_v_meas:
 		dmms = eq.dmms()
-		dmm = dmms.choose_dmm()
+		dmm_v = dmms.choose_dmm()
 		#test voltage measurement to ensure everything is set up correctly
 		#often the first measurement takes longer as it needs to setup range, NPLC
 		#This also gets it setup to the correct range.
 		#TODO - careful of batteries that will require a range switch during the charge
 		#	  - this could lead to a measurement delay. 6S happens to cross the 20V range.
-		test_volt = dmm.measure_voltage()
+		test_volt = dmm_v.measure_voltage()
 	
 	#cycle x times
 	cycle_num = 0
@@ -361,15 +364,15 @@ if __name__ == '__main__':
 		try:
 			#Charge only - only using the power supply
 			if isinstance(cycle_settings, Templates.ChargeSettings):
-				charge_cycle(directory, cell_name, cycle_settings.settings, psu, v_meas_eq = dmm)
+				charge_cycle(directory, cell_name, cycle_settings.settings, psu, v_meas_eq = dmm_v)
 				
 			#Discharge only - only using the eload
 			elif isinstance(cycle_settings, Templates.DischargeSettings):
-				discharge_cycle(directory, cell_name, cycle_settings.settings, eload, v_meas_eq = dmm)
+				discharge_cycle(directory, cell_name, cycle_settings.settings, eload, v_meas_eq = dmm_v)
 			
 			#Cycle the cell - using both psu and eload
 			else:
-				cycle_cell(directory, cell_name, cycle_settings.settings, eload, psu, v_meas_eq = dmm)
+				cycle_cell(directory, cell_name, cycle_settings.settings, eload, psu, v_meas_eq = dmm_v)
 			
 		except KeyboardInterrupt:
 			eload.toggle_output(False)
