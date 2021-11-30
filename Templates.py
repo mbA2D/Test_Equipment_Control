@@ -45,22 +45,7 @@ class CycleTypes:
 		
 		
 ##################### Checking User Input ##############
-def check_user_entry(entry):
-	if(entry == None):
-		return False
-	
-	for val in entry:
-		if not is_number_float(val):
-			return False
-	
-	return True
 
-def is_number_float(string):
-	try:
-		float(string)
-		return True
-	except ValueError:
-		return False
 
 ###############  CYCLE  #######################
 class CycleSettings:
@@ -89,7 +74,7 @@ class CycleSettings:
 			while valid_entries == False:
 				response_list = eg.multenterbox(msg = "Enter Info for {}cycle".format(cycle_name), title = response,
 												fields = list(self.settings.keys()), values = list(self.settings.values()))
-				valid_entries = check_user_entry(response_list)
+				valid_entries = self.check_user_entry(response_list)
 			
 			#update dict entries with the response
 			self.update_settings(response_list)
@@ -100,7 +85,32 @@ class CycleSettings:
 			self.import_cycle_settings(cycle_name)
 		
 		self.convert_to_float()
-			
+	
+	def check_user_entry(keys, entries):
+		if(entries == None):
+			return False
+		
+		entry_dict = dict(zip(keys, entries))
+		
+		for key in entry_dict:
+			if not is_entry_valid(key, entry_dict[key]):
+				return False
+		
+		return True
+
+	def is_entry_valid(key, value):
+		try:
+			float(value)
+			return True
+		except ValueError:
+			try:
+				if value in self.valid_strings[key]:
+					return True
+			except AttributeError:
+				return False
+			return False
+		return False
+	
 	def convert_to_float(self):
 		#if possible, convert items to floats
 		for key in self.settings.keys():
@@ -190,6 +200,11 @@ class StepSettings(CycleSettings):
 			"end_style":				'time_s', #'time_s', 'current_a', 'voltage_v'
 			"end_condition":			'greater', #'greater', 'lesser'
 			"end_value":				10
+		}
+		self.valid_strings = {
+			"drive_style":				{'current_a', 'voltage_v'},
+			"end_style":				{'time_s', 'current_a', 'voltage_v'},
+			"end_condition":			{'greater', 'lesser'}
 		}
 
 #################### DC DC TESTING ############
