@@ -22,6 +22,19 @@ def init_psu(psu):
 	psu.set_voltage(0)
 	psu.set_current(0)
 
+def init_dmm_v(dmm):
+	test_v = dmm.measure_voltage()
+	#test voltage measurement to ensure everything is set up correctly
+	#often the first measurement takes longer as it needs to setup range, NPLC
+	#This also gets it setup to the correct range.
+	#TODO - careful of batteries that will require a range switch during the charge
+	#	  - this could lead to a measurement delay. 6S happens to cross the 20V range.
+
+def init_dmm_i(dmm):
+	test_i = dmm.measure_current()
+	#test measurement to ensure everything is set up correctly
+	#and the fisrt measurement which often takes longer is out of the way
+
 ####################### TEST CONTROL #####################
 
 def start_charge(end_voltage, constant_current, psu):
@@ -61,7 +74,7 @@ def measure_discharge(v_meas_eq, eload):
 
 ########################## CHARGE, DISCHARGE, REST #############################
 
-def charge_cell(log_filepath, cycle_settings, psu, v_meas_eq):
+def charge_cell(log_filepath, cycle_settings, psu, v_meas_eq, i_meas_eq):
 	#start the charging
 	#Start the data so we don't immediately trigger end conditions
 	data = (cycle_settings["charge_end_v"], cycle_settings["charge_a"])
@@ -71,7 +84,7 @@ def charge_cell(log_filepath, cycle_settings, psu, v_meas_eq):
 	print('Starting Charge: {}\n'.format(time.ctime()), flush=True)
 	while (data[1] > cycle_settings["charge_end_a"]):
 		time.sleep(cycle_settings["meas_log_int_s"] - ((time.time() - charge_start_time) % cycle_settings["meas_log_int_s"]))
-		data = measure_charge(v_meas_eq, psu)
+		data = measure_charge(v_meas_eq, i_meas_eq)
 		FileIO.write_data(log_filepath, data)
 		
 	end_charge(psu)
@@ -93,7 +106,7 @@ def rest_cell(log_filepath, cycle_settings, v_meas_eq, after_charge = True):
 		data = measure_rest(v_meas_eq)
 		FileIO.write_data(log_filepath, data)
 
-def discharge_cell(log_filepath, cycle_settings, eload, v_meas_eq):
+def discharge_cell(log_filepath, cycle_settings, eload, v_meas_eq, i_meas_eq):
 	#start discharge
 	start_discharge(cycle_settings["discharge_a"], eload)
 	discharge_start_time = time.time()
@@ -131,7 +144,7 @@ def discharge_cell(log_filepath, cycle_settings, eload, v_meas_eq):
 		prev_v_time = new_data_time
 		
 		new_data_time = time.time()
-		data = measure_discharge(v_meas_eq, eload)
+		data = measure_discharge(v_meas_eq, i_meas_eq)
 		FileIO.write_data(log_filepath, data, timestamp = new_data_time)
 	
 	end_discharge(eload)
@@ -141,13 +154,15 @@ def discharge_cell(log_filepath, cycle_settings, eload, v_meas_eq):
 ################################## SETTING CYCLE, CHARGE, DISCHARGE ############################
 
 #run a single cycle on a cell while logging data
-def cycle_cell(directory, cell_name, cycle_settings, eload, psu, v_meas_eq = None):
+def cycle_cell(directory, cell_name, cycle_settings, eload, psu, v_meas_eq = None, i_meas_eq = None):
 	#v_meas_eq is the measurement equipment to use for measuring the voltage.
 	#the device MUST have a measure_voltage() method that returns a float with units of Volts.
 	
+	#use eload by default since they typically have better accuracy
 	if v_meas_eq == None:
-		#use eload by default since they typically have better accuracy
 		v_meas_eq = eload
+	if i_meas_eq == None:
+		i_meas_eq = eload
 	
 	#start a new file for the cycle
 	headers_list = ['Timestamp', 'Voltage', 'Current']
@@ -166,11 +181,12 @@ def cycle_cell(directory, cell_name, cycle_settings, eload, psu, v_meas_eq = Non
 			'Log Interval (Seconds): {}\n'.format(cycle_settings["meas_log_int_s"]) + 
 			'\n\n', flush=True)
 	
-	charge_cell(filepath, cycle_settings, psu, v_meas_eq)
+	#need to override i_meas_eq since eload does not provide current during this step.
+	charge_cell(filepath, cycle_settings, psu, v_meas_eq, i_meas_eq = psu) 
 	
 	rest_cell(filepath, cycle_settings, v_meas_eq, after_charge = True)
 	
-	discharge_cell(filepath, cycle_settings, eload, v_meas_eq)
+	discharge_cell(filepath, cycle_settings, eload, v_meas_eq, i_meas_eq = eload)
 	
 	rest_cell(filepath, cycle_settings, v_meas_eq, after_charge = False)
 	
@@ -178,27 +194,31 @@ def cycle_cell(directory, cell_name, cycle_settings, eload, psu, v_meas_eq = Non
 	
 	return
 
-def charge_cycle(directory, cell_name, charge_settings, psu, v_meas_eq = None):
+def charge_cycle(directory, cell_name, charge_settings, psu, v_meas_eq = None, i_meas_eq = None):
 
 	if v_meas_eq == None:
 		v_meas_eq = psu
+	if i_meas_eq == None:
+		i_meas_eq = psu
 		
 	#start a new file for the cycle
 	headers_list = ['Timestamp', 'Voltage', 'Current']
 	filepath = FileIO.start_file(directory, cell_name, headers_list)
 	
-	charge_cell(filepath, charge_settings, psu, v_meas_eq)
+	charge_cell(filepath, charge_settings, psu, v_meas_eq, i_meas_eq)
 	
-def discharge_cycle(directory, cell_name, charge_settings, eload, v_meas_eq = None):
+def discharge_cycle(directory, cell_name, charge_settings, eload, v_meas_eq = None, i_meas_eq = None):
 
 	if v_meas_eq == None:
 		v_meas_eq = eload
+	if i_meas_eq == None:
+		i_meas_eq = eload
 		
 	#start a new file for the cycle
 	headers_list = ['Timestamp', 'Voltage', 'Current']
 	filepath = FileIO.start_file(directory, cell_name, headers_list)
 	
-	discharge_cell(filepath, charge_settings, eload, v_meas_eq)
+	discharge_cell(filepath, charge_settings, eload, v_meas_eq, i_meas_eq)
 	
 	
 ################################## CHOOSING CYCLE SETTINGS TYPES ################################
@@ -331,11 +351,15 @@ if __name__ == '__main__':
 	if do_a_storage_charge:
 		cycle_settings_list.extend(charge_only_cycle_info())
 	
-	#Separate voltage measurement device
+	#Separate measurement devices
 	msg = "Do you want to use a separate device to measure voltage?"
 	title = "Voltage Measurement Device"
 	separate_v_meas = eg.ynbox(msg, title)
 	dmm_v = None
+	msg = "Do you want to use a separate device to measure current?"
+	title = "Current Measurement Device"
+	separate_i_meas = eg.ynbox(msg, title)
+	dmm_i = None
 	
 	#TODO - a separate imeas device so that we can pass only these to the measure functions
 	#This will let us measure during numerous types of steps
@@ -347,15 +371,15 @@ if __name__ == '__main__':
 	if supply_required:
 		psu = psus.choose_psu()
 		init_psu(psu)
-	if separate_v_meas:
+	if separate_v_meas or separate_i_meas:
 		dmms = eq.dmms()
-		dmm_v = dmms.choose_dmm()
-		#test voltage measurement to ensure everything is set up correctly
-		#often the first measurement takes longer as it needs to setup range, NPLC
-		#This also gets it setup to the correct range.
-		#TODO - careful of batteries that will require a range switch during the charge
-		#	  - this could lead to a measurement delay. 6S happens to cross the 20V range.
-		test_volt = dmm_v.measure_voltage()
+		if separate_v_meas:
+			dmm_v = dmms.choose_dmm()
+			init_dmm_v(dmm_v)
+		if separate_i_meas:
+			dmm_i = dmms.choose_dmm()
+			init_dmm_i(dmm_i)
+		
 	
 	#cycle x times
 	cycle_num = 0
@@ -364,15 +388,15 @@ if __name__ == '__main__':
 		try:
 			#Charge only - only using the power supply
 			if isinstance(cycle_settings, Templates.ChargeSettings):
-				charge_cycle(directory, cell_name, cycle_settings.settings, psu, v_meas_eq = dmm_v)
+				charge_cycle(directory, cell_name, cycle_settings.settings, psu, v_meas_eq = dmm_v, i_meas_eq = dmm_i)
 				
 			#Discharge only - only using the eload
 			elif isinstance(cycle_settings, Templates.DischargeSettings):
-				discharge_cycle(directory, cell_name, cycle_settings.settings, eload, v_meas_eq = dmm_v)
+				discharge_cycle(directory, cell_name, cycle_settings.settings, eload, v_meas_eq = dmm_v, i_meas_eq = dmm_i)
 			
 			#Cycle the cell - using both psu and eload
 			else:
-				cycle_cell(directory, cell_name, cycle_settings.settings, eload, psu, v_meas_eq = dmm_v)
+				cycle_cell(directory, cell_name, cycle_settings.settings, eload, psu, v_meas_eq = dmm_v, i_meas_eq = dmm_i)
 			
 		except KeyboardInterrupt:
 			eload.toggle_output(False)
