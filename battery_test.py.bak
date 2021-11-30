@@ -14,7 +14,7 @@ class MainTestWindow(QMainWindow):
 		button.clicked.connect(self.batt_test_process)
 		self.setCentralWidget(button)
 	
-	def batt_test_process(self):
+	def batt_test_process():
 		process1 = Process(target=cdc.charge_discharge_control)
 		process1.start()
 
