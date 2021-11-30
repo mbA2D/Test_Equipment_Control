@@ -56,6 +56,52 @@ def start_discharge(constant_current, eload):
 def end_discharge(eload):
 	eload.toggle_output(False)
 	eload.set_current(0)
+	
+def start_step(step_settings, psu, eload, v_meas_eq, i_meas_eq):
+	#This function will set all the supplies to the settings given in the step
+	if step_settings["drive_style"] == 'current_a':
+		if step_settings["drive_value"] > 0:
+			#charge
+			psu.set_current(step_settings["drive_value"])
+			psu.set_voltage(step_settings["drive_value_other"])
+		elif step_settings["drive_value"] < 0:
+			#discharge
+			eload.set_current(step_settings["drive_value"])
+			#we're in constant current mode - can't set a voltage.
+		elif step_settings["drive_value"] == 0:
+			#rest
+			#TODO - for now just ensure to shut off both. Later we will need to ensure transition between steps is 'smooth'
+			psu.set_current(step_settings["drive_value"])
+			eload.set_current(step_settings["drive_value"])
+	elif step_settings["drive_style"] == 'voltage_v':
+		pass
+	
+	#TODO - add settings the voltage - during a current driven step, we need to choose a voltage limit.
+	
+
+def evaluate_end_condition(step_settings, data):
+	#evaluates different end conditions (voltage, current, time)
+	#returns true if the end condition has been met (e.g. voltage hits lower bound, current hits lower bound, etc.)
+	
+	voltage_v = data[0]
+	current_a = data[1]
+	time_since_step_s = data[2]
+	
+	if step_settings["end_style"] == 'current_a':
+		left_comparator = current_a
+	elif step_settings["end_style"] == 'voltage_v':
+		left_comparator = voltage_v
+	elif step_settings["end_style"] == 'time_s':
+		left_comparator = time_since_step_s
+	
+	if step_settings["end_condition"] == 'greater':
+		return left_comparator > step_settings["end_value"]
+	elif step_settings["end_condition"] == 'lesser':
+		return left_comparator < step_settings["end_value"]
+	
+	#return True so that we end the step if the settings were incorrectly configured.
+	return True
+
 
 ######################### MEASURING ######################
 
@@ -144,6 +190,19 @@ def discharge_cell(log_filepath, cycle_settings, eload, v_meas_eq, i_meas_eq):
 	
 	end_discharge(eload)
 
+def step_cell(log_filepath, step_settings, psu = None, eload = None, v_meas_eq = None, i_meas_eq = None):
+	
+	start_step(step_settings, psu, eload, v_meas_eq, i_meas_eq)
+	step_start_time = time.time()
+	
+	while not evaluate_end_condition(step_settings, data):
+		time.sleep(step_settings["meas_log_int_s"] - ((time.time() - step_start_time) % cycle_settings["meas_log_int_s"]))
+		data = measure_battery(v_meas_eq, i_meas_eq)
+		data.append(time.time() - step_start_time)
+		FileIO.write_data(log_filepath, data)
+	
+#TODO - data should be a dictionary to store more varied types of data (specifically data_timestamp, ah, wh)
+#TODO - FileIO's timestamp that it adds should be a log timestamp, and we should have a separate data timestamp.
 
 
 ################################## SETTING CYCLE, CHARGE, DISCHARGE ############################
@@ -152,6 +211,10 @@ def discharge_cell(log_filepath, cycle_settings, eload, v_meas_eq, i_meas_eq):
 def cycle_cell(directory, cell_name, cycle_settings, eload, psu, v_meas_eq = None, i_meas_eq = None):
 	#v_meas_eq is the measurement equipment to use for measuring the voltage.
 	#the device MUST have a measure_voltage() method that returns a float with units of Volts.
+	
+	#i_meas_eq is the measurement equipment to use for measuring the current.
+	#the device MUST have a measure_current() method that returns a float with units of Amps.
+	#When charging the battery this function should be positive current and discharging should be negative current.
 	
 	#use eload by default since they typically have better accuracy
 	if v_meas_eq == None:
@@ -298,6 +361,16 @@ def discharge_only_cycle_info():
 	
 	return cycle_settings_list
 
+def single_step_cell_info():
+	step_settings_list = list()
+	
+	step_settings = Templates.StepSettings()
+	step_settings.get_cycle_settings("Step")
+	
+	step_settings_list.append(step_settings)
+	
+	return step_settings_list
+
 def ask_storage_charge():
 	return eg.ynbox(title = "Storage Charge",
 					msg = "Do you want to do a storage charge?\n\
@@ -326,6 +399,7 @@ if __name__ == '__main__':
 	cycle_types["Two Setting Continuous Cycles With Rest"]['func_call'] = two_level_continuous_cycles_with_rest
 	cycle_types["Charge Only"]['func_call'] = charge_only_cycle_info
 	cycle_types["Discharge Only"]['func_call'] = discharge_only_cycle_info
+	cycle_types["Single Step"]['func_call'] = single_step_cell_info
 	
 	#choose the cycle type
 	msg = "Which cycle type do you want to do?"

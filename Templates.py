@@ -37,9 +37,11 @@ class CycleTypes:
 		"One Setting Continuous Cycles With Rest": 	{'func_call': '', 'str_chg_opt': True,'load_req': True, 'supply_req': True},
 		"Two Setting Continuous Cycles With Rest": 	{'func_call': '', 'str_chg_opt': True,'load_req': True, 'supply_req': True},
 		"Charge Only": 								{'func_call': '', 'str_chg_opt': False,'load_req': False, 'supply_req': True},
-		"Discharge Only": 							{'func_call': '', 'str_chg_opt': False,'load_req': True, 'supply_req': False}
+		"Discharge Only": 							{'func_call': '', 'str_chg_opt': False,'load_req': True, 'supply_req': False},
+		"Single Step":								{'func_call': '', 'str_chg_opt': False,'load_req': True, 'supply_req': True}
 	}
-		
+	
+	#TODO - Step should not have its load and supply requirements given here - it should only be after the step values are chosen
 		
 		
 ##################### Checking User Input ##############
@@ -177,6 +179,18 @@ class DischargeSettings(CycleSettings):
 			"meas_log_int_s": 			1
 		}
 
+################# STEPS FOR CONTROLLING BATTERY TEST ############
+
+class StepSettings(CycleSettings):
+	def __init__(self):
+		self.settings = {
+			"drive_style":				'current_a', #'current_a', 'voltage_v'
+			"drive_value":				1,
+			"drive_value_other":		4.0,
+			"end_style":				'time_s', #'time_s', 'current_a', 'voltage_v'
+			"end_condition":			'greater', #'greater', 'lesser'
+			"end_value":				10
+		}
 
 #################### DC DC TESTING ############
 
