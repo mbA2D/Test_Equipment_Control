@@ -59,17 +59,12 @@ def end_discharge(eload):
 
 ######################### MEASURING ######################
 
-def measure_rest(v_meas_eq):
-	#return current as 0
-	return (v_meas_eq.measure_voltage(), 0)
-
-def measure_charge(v_meas_eq, psu):
-	#return current from power supply
-	return (v_meas_eq.measure_voltage(), psu.measure_current())
-
-def measure_discharge(v_meas_eq, eload):
-	#return current from eload (as negative)
-	return (v_meas_eq.measure_voltage(), eload.measure_current()*-1)
+def measure_battery(v_meas_eq, i_meas_eq = None):
+	voltage = v_meas_eq.measure_voltage()
+	current = 0
+	if i_meas_eq != None:
+		current = i_meas_eq.measure_current()
+	return (voltage, current)
 
 
 ########################## CHARGE, DISCHARGE, REST #############################
@@ -84,7 +79,7 @@ def charge_cell(log_filepath, cycle_settings, psu, v_meas_eq, i_meas_eq):
 	print('Starting Charge: {}\n'.format(time.ctime()), flush=True)
 	while (data[1] > cycle_settings["charge_end_a"]):
 		time.sleep(cycle_settings["meas_log_int_s"] - ((time.time() - charge_start_time) % cycle_settings["meas_log_int_s"]))
-		data = measure_charge(v_meas_eq, i_meas_eq)
+		data = measure_battery(v_meas_eq, i_meas_eq)
 		FileIO.write_data(log_filepath, data)
 		
 	end_charge(psu)
@@ -103,7 +98,7 @@ def rest_cell(log_filepath, cycle_settings, v_meas_eq, after_charge = True):
   
 	while (time.time() - rest_start_time) < rest_time_s:
 		time.sleep(cycle_settings["meas_log_int_s"] - ((time.time() - rest_start_time) % cycle_settings["meas_log_int_s"]))
-		data = measure_rest(v_meas_eq)
+		data = measure_battery(v_meas_eq)
 		FileIO.write_data(log_filepath, data)
 
 def discharge_cell(log_filepath, cycle_settings, eload, v_meas_eq, i_meas_eq):
@@ -111,7 +106,7 @@ def discharge_cell(log_filepath, cycle_settings, eload, v_meas_eq, i_meas_eq):
 	start_discharge(cycle_settings["discharge_a"], eload)
 	discharge_start_time = time.time()
 
-	data = measure_rest(v_meas_eq)
+	data = measure_battery(v_meas_eq)
 	
 	#need to add a previous voltage, previous voltage time so that we can compare to better extimate the end time.
 	#if we underestimate the end time, that's fine since we'll just get a measurement that is closer next, though there will be delay by the time to gather and write data
@@ -144,7 +139,7 @@ def discharge_cell(log_filepath, cycle_settings, eload, v_meas_eq, i_meas_eq):
 		prev_v_time = new_data_time
 		
 		new_data_time = time.time()
-		data = measure_discharge(v_meas_eq, i_meas_eq)
+		data = measure_battery(v_meas_eq, i_meas_eq)
 		FileIO.write_data(log_filepath, data, timestamp = new_data_time)
 	
 	end_discharge(eload)
