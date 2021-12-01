@@ -52,7 +52,7 @@ class MainTestWindow(QMainWindow):
 		
 		#Start tests on each channel
 		for ch_num in range(self.num_battery_channels):
-			batt_test_process(batt_ch_list[ch_num], psu = psu_ch_list[ch_num], eload = eload_ch_list[ch_num],
+			self.batt_test_process(batt_ch_list[ch_num], psu = psu_ch_list[ch_num], eload = eload_ch_list[ch_num],
 							  dmm_v = dmm_v_ch_list[ch_num], dmm_i = dmm_i_ch_list[ch_num])
 		
 	
