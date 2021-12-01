@@ -33,7 +33,7 @@ class MainTestWindow(QMainWindow):
 			
 			#choose a psu and eload for each channel
 			eload = eloads.choose_eload()
-			psu = eloade.choose_psu()
+			psu = psus.choose_psu()
 			
 			#Separate measurement devices
 			msg = "Do you want to use a separate device to measure voltage?"
