@@ -402,9 +402,15 @@ def ask_storage_charge():
 
 def charge_discharge_control(res_ids_dict):
 	
+	print("Resource IDs Dict:")
+	print(res_ids_dict)
+	
 	eq_dict = dict()
 	for key in res_ids_dict:
-		eq_dict[key] = eq.connect_to_eq(key, res_ids_dict[key][0], res_ids_dict[key][1])
+		if res_ids_dict[key]['res_id'] != None:
+			eq_dict[key] = eq.connect_to_eq(key, res_ids_dict[key]['class_name'], res_ids_dict[key]['res_id'])
+		else:
+			eq_dict[key] = None
 	
 	#get the cell name
 	cell_name = eg.enterbox(title = "Test Setup", msg = "Enter the Cell Name\n(Spaces will be replaced with underscores)",
