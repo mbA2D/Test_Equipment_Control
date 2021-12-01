@@ -514,8 +514,8 @@ class BatteryChannel:
 		#disconnect from equipment so that we can pass the resource ids to the
 		#charge_discharge_control function and reconnect to the devices there
 		for key in self.eq_dict:
-			if self.eq_dict[key] != None:
-				self.eq_dict[key].inst.close()
+			if self.eq_dict[key][1] != None:
+				self.eq_dict[key][1].inst.close()
 
 
 if __name__ == '__main__':
