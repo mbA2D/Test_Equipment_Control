@@ -1,8 +1,10 @@
 #Program to run the charge discharge control in different processes for each channel.
 
 from PyQt6.QtWidgets import QApplication, QMainWindow, QPushButton
-import charge_discharge_control as cdc
 from multiprocessing import Process
+
+import charge_discharge_control as cdc
+import equipment as eq
 
 class MainTestWindow(QMainWindow):
 	def __init__(self):
