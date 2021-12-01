@@ -24,33 +24,42 @@ class MainTestWindow(QMainWindow):
 		psus = eq.powerSupplies()
 		dmms = eq.dmms()
 		
-		batt_channel_list = list()
+		batt_ch_list = [None for i in range(self.num_battery_channels)]
+		psu_ch_list = [None for i in range(self.num_battery_channels)]
+		eload_ch_list = [None for i in range(self.num_battery_channels)]
+		dmm_v_ch_list = [None for i in range(self.num_battery_channels)]
+		dmm_i_ch_list = [None for i in range(self.num_battery_channels)]
 		
-		equipment_dict = dict()
-		
+		#Assign all equipment
 		for ch_num in range(self.num_battery_channels):
 			
-			batt_channel_list.append(cdc.BatteryChannel())
+			batt_ch_list[ch_num] = cdc.BatteryChannel()
 			
 			#choose a psu and eload for each channel
-			eload = eloads.choose_eload()
-			psu = psus.choose_psu()
+			eload_ch_list[ch_num] = eloads.choose_eload()
+			psu_ch_list[ch_num] = psus.choose_psu()
 			
 			#Separate measurement devices
 			msg = "Do you want to use a separate device to measure voltage?"
 			title = "Voltage Measurement Device"
-			separate_v_meas = eg.ynbox(msg, title)
-			dmm_v = None
+			if eg.ynbox(msg, title):
+				dmm_v_ch_list[ch_num] = dmms.choose_dmm()
 			msg = "Do you want to use a separate device to measure current?"
 			title = "Current Measurement Device"
-			separate_i_meas = eg.ynbox(msg, title)
-			dmm_i = None
+			if eg.ynbox(msg, title):
+				dmm_i_ch_list[ch_num] = dmms.choose_dmm()
+
 		
+		#Start tests on each channel
+		for ch_num in range(self.num_battery_channels):
+			batt_test_process(batt_ch_list[ch_num], psu = psu_ch_list[ch_num], eload = eload_ch_list[ch_num],
+							  dmm_v = dmm_v_ch_list[ch_num], dmm_i = dmm_i_ch_list[ch_num])
 		
 	
 	def batt_test_process(self, batt_channel, psu = None, eload = None, dmm_v = None, dmm_i = None):
 		
-		batt_channel.assign_equipment(psu_to_assign = psu, eload_to_assign = eload, dmm_v_to_assign = dmm_v, dmm_i_to_assign = dmm_i)
+		batt_channel.assign_equipment(psu_to_assign = psu, eload_to_assign = eload,
+									  dmm_v_to_assign = dmm_v, dmm_i_to_assign = dmm_i)
 		
 		process1 = Process(target=batt_channel.charge_discharge_control)
 		process1.start()
