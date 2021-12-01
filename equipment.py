@@ -33,18 +33,18 @@ def connect_to_eq(key, class_name, res_id):
 
 
 class eLoads:
-	def __init__(self):
-		self.part_numbers = {
-			'BK8600': 'Eload_BK8600',
-			'DL3000': 'Eload_DL3000',
-			'KEL10X': 'Eload_KEL10X'
-		}
+	part_numbers = {
+		'BK8600': 'Eload_BK8600',
+		'DL3000': 'Eload_DL3000',
+		'KEL10X': 'Eload_KEL10X'
+	}
+		
 	@classmethod
 	def choose_eload(self, class_name = None, resource_id = None):
 		if class_name == None:
 			msg = "In which series is the E-Load?"
 			title = "E-Load Series Selection"
-			class_name = eg.choicebox(msg, title, self.part_numbers.keys())
+			class_name = eg.choicebox(msg, title, eLoads.part_numbers.keys())
 		
 		if(class_name == 'BK8600'):
 			eload = Eload_BK8600.BK8600(resource_id = resource_id)
@@ -56,21 +56,21 @@ class eLoads:
 
 
 class powerSupplies:
-	def __init__(self):
-		self.part_numbers = {
-			'SPD1000': 'PSU_SPD1000',
-			'DP800': 'PSU_DP800',
-			'MP71025X': 'PSU_MP71025X',
-			'BK9100': 'PSU_BK9100',
-			'N8700': 'PSU_N8700',
-            'KAXXXXP': 'PSU_KAXXXXP'
-		}
+	part_numbers = {
+		'SPD1000': 'PSU_SPD1000',
+		'DP800': 'PSU_DP800',
+		'MP71025X': 'PSU_MP71025X',
+		'BK9100': 'PSU_BK9100',
+		'N8700': 'PSU_N8700',
+		'KAXXXXP': 'PSU_KAXXXXP'
+	}
+	
 	@classmethod
 	def choose_psu(self, class_name = None, resource_id = None):
 		if class_name == None:
 			msg = "In which series is the PSU?"
 			title = "PSU Series Selection"
-			class_name = eg.choicebox(msg, title, self.part_numbers.keys())
+			class_name = eg.choicebox(msg, title, powerSupplies.part_numbers.keys())
 		
 		if(class_name == 'SPD1000'):
 			psu = PSU_SPD1000.SPD1000(resource_id = resource_id)
@@ -88,17 +88,17 @@ class powerSupplies:
 
 
 class dmms:
-	def __init__(self):
-		self.part_numbers = {
-			'DM3068': 'DMM_DM3068',
-			'SDM3065X': 'DMM_SDM3065X'
-		}
+	part_numbers = {
+		'DM3068': 'DMM_DM3068',
+		'SDM3065X': 'DMM_SDM3065X'
+	}
+	
 	@classmethod
 	def choose_dmm(self, class_name = None, resource_id = None):
 		if class_name == None:
 			msg = "In which series is the DMM?"
 			title = "DMM Series Selection"
-			class_name = eg.choicebox(msg, title, self.part_numbers.keys())
+			class_name = eg.choicebox(msg, title, dmms.part_numbers.keys())
 		
 		#if(class_name == 'DM3068'):
 		#	dmm = DMM_DM3068.DM3068(resource_id = resource_id)
