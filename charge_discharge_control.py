@@ -400,8 +400,9 @@ def ask_storage_charge():
 							Recommended to do one. Leaving a cell discharged increases\n\
 							risk of latent failures due to dendrite growth.")
 
-####################################### PROGRAM ######################################
-if __name__ == '__main__':
+
+####################################### MAIN PROGRAM ######################################
+def charge_discharge_control():
 	
 	eloads = eq.eLoads()
 	psus = eq.powerSupplies()
@@ -498,4 +499,7 @@ if __name__ == '__main__':
 		cycle_num += 1
 	
 	print("All Cycles Completed")
+
+if __name__ == '__main__':
 	
+	charge_discharge_control()
