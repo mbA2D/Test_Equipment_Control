@@ -71,7 +71,7 @@ class CycleSettings:
 			while valid_entries == False:
 				response_list = eg.multenterbox(msg = "Enter Info for {}cycle".format(cycle_name), title = response,
 												fields = list(self.settings.keys()), values = list(self.settings.values()))
-				valid_entries = self.check_user_entry(response_list)
+				valid_entries = self.check_user_entry(self.settings.keys.tolist(), response_list)
 			
 			#update dict entries with the response
 			self.update_settings(response_list)
