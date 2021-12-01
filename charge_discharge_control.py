@@ -86,16 +86,12 @@ def evaluate_end_condition(step_settings, data):
 	#evaluates different end conditions (voltage, current, time)
 	#returns true if the end condition has been met (e.g. voltage hits lower bound, current hits lower bound, etc.)
 	
-	voltage_v = data[0]
-	current_a = data[1]
-	time_since_step_s = data[2]
-	
 	if step_settings["end_style"] == 'current_a':
-		left_comparator = current_a
+		left_comparator = data["Current"]
 	elif step_settings["end_style"] == 'voltage_v':
-		left_comparator = voltage_v
+		left_comparator = data["Voltage"]
 	elif step_settings["end_style"] == 'time_s':
-		left_comparator = time_since_step_s
+		left_comparator = data["Data_Timestamp_From_Step_Start"]
 	
 	if step_settings["end_condition"] == 'greater':
 		return left_comparator > step_settings["end_value"]
@@ -205,7 +201,7 @@ def step_cell(log_filepath, step_settings, psu = None, eload = None, v_meas_eq =
 	while not evaluate_end_condition(step_settings, data):
 		time.sleep(step_settings["meas_log_int_s"] - ((time.time() - step_start_time) % cycle_settings["meas_log_int_s"]))
 		data["Voltage"], data["Current"], data["Data_Timestamp"] = measure_battery(v_meas_eq, i_meas_eq)
-		data.append(time.time() - step_start_time)
+		data["Data_Timestamp_From_Step_Start"] = (data["Data_Timestamp"] - step_start_time)
 		FileIO.write_data(log_filepath, data)
 
 
