@@ -83,7 +83,7 @@ class CycleSettings:
 		
 		self.convert_to_float()
 	
-	def check_user_entry(keys, entries):
+	def check_user_entry(self, keys, entries):
 		if(entries == None):
 			return False
 		
@@ -95,7 +95,7 @@ class CycleSettings:
 		
 		return True
 
-	def is_entry_valid(key, value):
+	def is_entry_valid(self, key, value):
 		try:
 			float(value)
 			return True
@@ -196,7 +196,8 @@ class StepSettings(CycleSettings):
 			"drive_value_other":		4.0,
 			"end_style":				'time_s', #'time_s', 'current_a', 'voltage_v'
 			"end_condition":			'greater', #'greater', 'lesser'
-			"end_value":				10
+			"end_value":				10,
+			"meas_log_int_s":			1
 		}
 		self.valid_strings = {
 			"drive_style":				{'current_a', 'voltage_v', 'none'},

@@ -277,6 +277,20 @@ def discharge_cycle(directory, cell_name, charge_settings, eload, v_meas_eq = No
 	filepath = FileIO.start_file(directory, cell_name, headers_list)
 	
 	discharge_cell(filepath, charge_settings, eload, v_meas_eq, i_meas_eq)
+
+def step_cycle(directory, cell_name, step_settings, eload, psu, v_meas_eq = None, i_meas_eq = None):
+	
+	#TODO - what if these defaults are not available??
+	if v_meas_eq == None:
+		v_meas_eq = eload
+	if i_meas_eq == None:
+		i_meas_eq = eload
+	
+	#start a new file for the cycle
+	headers_list = ['Log_Timestamp', 'Voltage', 'Current', 'Data_Timestamp', 'Data_Timestamp_From_Step_Start']
+	filepath = FileIO.start_file(directory, cell_name, headers_list)
+	
+	step_cell(filepath, step_settings, psu, eload, v_meas_eq, i_meas_eq)
 	
 	
 ################################## CHOOSING CYCLE SETTINGS TYPES ################################
@@ -459,6 +473,10 @@ if __name__ == '__main__':
 			#Discharge only - only using the eload
 			elif isinstance(cycle_settings, Templates.DischargeSettings):
 				discharge_cycle(directory, cell_name, cycle_settings.settings, eload, v_meas_eq = dmm_v, i_meas_eq = dmm_i)
+			
+			#Use Step Functions
+			elif isinstance(cycle_settings, Templates.StepSettings):
+				step_cycle(directory, cell_name, cycle_settings.settings, eload, psu, v_meas_eq = dmm_v, i_meas_eq = dmm_i)
 			
 			#Cycle the cell - using both psu and eload
 			else:
