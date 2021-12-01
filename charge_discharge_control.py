@@ -450,14 +450,14 @@ def charge_discharge_control(res_ids_dict):
 		cycle_settings_list.extend(charge_only_cycle_info())
 	
 	#Now we choose the PSU, Eload, dmms to use
-	if eload != None:	
-		init_eload(eload)
-	if psu != None:
-		init_psu(psu)
-	if dmm_v != None:
-		init_dmm_v(dmm_v)
-	if dmm_i != None:
-		init_dmm_i(dmm_i)
+	if eq_dict['eload'] != None:	
+		init_eload(eq_dict['eload'])
+	if eq_dict['psu'] != None:
+		init_psu(eq_dict['psu'])
+	if eq_dict['dmm_v'] != None:
+		init_dmm_v(eq_dict['dmm_v'])
+	if eq_dict['dmm_i'] != None:
+		init_dmm_i(eq_dict['dmm_i'])
 		
 	#cycle x times
 	cycle_num = 0
@@ -466,19 +466,19 @@ def charge_discharge_control(res_ids_dict):
 		try:
 			#Charge only - only using the power supply
 			if isinstance(cycle_settings, Templates.ChargeSettings):
-				charge_cycle(directory, cell_name, cycle_settings.settings, psu, v_meas_eq = dmm_v, i_meas_eq = dmm_i)
+				charge_cycle(directory, cell_name, cycle_settings.settings, eq_dict['psu'], v_meas_eq = eq_dict['dmm_v'], i_meas_eq = eq_dict['dmm_i'])
 				
 			#Discharge only - only using the eload
 			elif isinstance(cycle_settings, Templates.DischargeSettings):
-				discharge_cycle(directory, cell_name, cycle_settings.settings, eload, v_meas_eq = dmm_v, i_meas_eq = dmm_i)
+				discharge_cycle(directory, cell_name, cycle_settings.settings, eq_dict['eload'], v_meas_eq = eq_dict['dmm_v'], i_meas_eq = eq_dict['dmm_i'])
 			
 			#Use Step Functions
 			elif isinstance(cycle_settings, Templates.StepSettings):
-				step_cycle(directory, cell_name, cycle_settings.settings, eload, psu, v_meas_eq = dmm_v, i_meas_eq = dmm_i)
+				step_cycle(directory, cell_name, cycle_settings.settings, eq_dict['eload'], eq_dict['psu'], v_meas_eq = eq_dict['dmm_v'], i_meas_eq = eq_dict['dmm_i'])
 			
 			#Cycle the cell - using both psu and eload
 			else:
-				cycle_cell(directory, cell_name, cycle_settings.settings, eload, psu, v_meas_eq = dmm_v, i_meas_eq = dmm_i)
+				cycle_cell(directory, cell_name, cycle_settings.settings, eq_dict['eload'], eq_dict['psu'], v_meas_eq = eq_dict['dmm_v'], i_meas_eq = eq_dict['dmm_i'])
 			
 		except KeyboardInterrupt:
 			self.eload.toggle_output(False)
