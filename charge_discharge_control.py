@@ -110,7 +110,7 @@ def measure_battery(v_meas_eq, i_meas_eq = None):
 	current = 0
 	if i_meas_eq != None:
 		current = i_meas_eq.measure_current()
-	return (voltage, current)
+	return (voltage, current, time.time())
 
 
 ########################## CHARGE, DISCHARGE, REST #############################
@@ -118,14 +118,17 @@ def measure_battery(v_meas_eq, i_meas_eq = None):
 def charge_cell(log_filepath, cycle_settings, psu, v_meas_eq, i_meas_eq):
 	#start the charging
 	#Start the data so we don't immediately trigger end conditions
-	data = (cycle_settings["charge_end_v"], cycle_settings["charge_a"])
+	data = dict()
+	data["Current"] = cycle_settings["charge_a"]
+	data["Voltage"] = cycle_settings["charge_end_v"]
+	data["Data_Timestamp"] = time.time()
 	
 	start_charge(cycle_settings["charge_end_v"], cycle_settings["charge_a"], psu)
 	charge_start_time = time.time()
 	print('Starting Charge: {}\n'.format(time.ctime()), flush=True)
-	while (data[1] > cycle_settings["charge_end_a"]):
+	while (data["Current"] > cycle_settings["charge_end_a"]):
 		time.sleep(cycle_settings["meas_log_int_s"] - ((time.time() - charge_start_time) % cycle_settings["meas_log_int_s"]))
-		data = measure_battery(v_meas_eq, i_meas_eq)
+		data["Voltage"], data["Current"], data["Data_Timestamp"] = measure_battery(v_meas_eq, i_meas_eq)
 		FileIO.write_data(log_filepath, data)
 		
 	end_charge(psu)
@@ -141,10 +144,11 @@ def rest_cell(log_filepath, cycle_settings, v_meas_eq, after_charge = True):
 		rest_time_s = cycle_settings["rest_after_discharge_min"] * 60
 
 	print('Starting Rest: {}\n'.format(time.ctime()), flush=True)
+	data = dict()
   
 	while (time.time() - rest_start_time) < rest_time_s:
 		time.sleep(cycle_settings["meas_log_int_s"] - ((time.time() - rest_start_time) % cycle_settings["meas_log_int_s"]))
-		data = measure_battery(v_meas_eq)
+		data["Voltage"], data["Current"], data["Data_Timestamp"] = measure_battery(v_meas_eq)
 		FileIO.write_data(log_filepath, data)
 
 def discharge_cell(log_filepath, cycle_settings, eload, v_meas_eq, i_meas_eq):
@@ -152,19 +156,20 @@ def discharge_cell(log_filepath, cycle_settings, eload, v_meas_eq, i_meas_eq):
 	start_discharge(cycle_settings["discharge_a"], eload)
 	discharge_start_time = time.time()
 
-	data = measure_battery(v_meas_eq)
+	data = dict()
+	data["Voltage"], data["Current"], data["Data_Timestamp"] = measure_battery(v_meas_eq)
 	
 	#need to add a previous voltage, previous voltage time so that we can compare to better extimate the end time.
 	#if we underestimate the end time, that's fine since we'll just get a measurement that is closer next, though there will be delay by the time to gather and write data
-	prev_v = data[0]
+	prev_v = data["Voltage"]
 	prev_v_time = discharge_start_time
-	new_data_time = discharge_start_time
+	data["Data_Timestamp"] = discharge_start_time
 	
 	print('Starting Discharge: {}\n'.format(time.ctime()), flush=True)
 
-	while (data[0] > cycle_settings["discharge_end_v"]):
-		rise = data[0] - prev_v
-		run = new_data_time - prev_v_time
+	while (data["Voltage"] > cycle_settings["discharge_end_v"]):
+		rise = data["Voltage"] - prev_v
+		run = data["Data_Timestamp"] - prev_v_time
 		slope = 0
 		if(run > 0): #to avoid div by 0 errors
 			slope = rise/run
@@ -175,18 +180,17 @@ def discharge_cell(log_filepath, cycle_settings, eload, v_meas_eq, i_meas_eq):
 		
 		if slope < 0:
 			#now do the calculation
-			interpolated_wait_time = (cycle_settings["discharge_end_v"] - data[0]) / slope
+			interpolated_wait_time = (cycle_settings["discharge_end_v"] - data["Voltage"]) / slope
 		
 		max_wait_time = cycle_settings["meas_log_int_s"] - ((time.time() - discharge_start_time) % cycle_settings["meas_log_int_s"])
 		wait_time = min(max_wait_time, interpolated_wait_time)
 		time.sleep(wait_time)
 		
-		prev_v = data[0]
-		prev_v_time = new_data_time
+		prev_v = data["Voltage"]
+		prev_v_time = data["Data_Timestamp"]
 		
-		new_data_time = time.time()
-		data = measure_battery(v_meas_eq, i_meas_eq)
-		FileIO.write_data(log_filepath, data, timestamp = new_data_time)
+		data["Voltage"], data["Current"], data["Data_Timestamp"] = measure_battery(v_meas_eq, i_meas_eq)
+		FileIO.write_data(log_filepath, data)
 	
 	end_discharge(eload)
 
@@ -197,12 +201,9 @@ def step_cell(log_filepath, step_settings, psu = None, eload = None, v_meas_eq =
 	
 	while not evaluate_end_condition(step_settings, data):
 		time.sleep(step_settings["meas_log_int_s"] - ((time.time() - step_start_time) % cycle_settings["meas_log_int_s"]))
-		data = measure_battery(v_meas_eq, i_meas_eq)
+		data["Voltage"], data["Current"], data["Data_Timestamp"] = measure_battery(v_meas_eq, i_meas_eq)
 		data.append(time.time() - step_start_time)
 		FileIO.write_data(log_filepath, data)
-	
-#TODO - data should be a dictionary to store more varied types of data (specifically data_timestamp, ah, wh)
-#TODO - FileIO's timestamp that it adds should be a log timestamp, and we should have a separate data timestamp.
 
 
 ################################## SETTING CYCLE, CHARGE, DISCHARGE ############################
@@ -223,7 +224,7 @@ def cycle_cell(directory, cell_name, cycle_settings, eload, psu, v_meas_eq = Non
 		i_meas_eq = eload
 	
 	#start a new file for the cycle
-	headers_list = ['Timestamp', 'Voltage', 'Current']
+	headers_list = ['Log_Timestamp', 'Voltage', 'Current', 'Data_Timestamp']
 	filepath = FileIO.start_file(directory, cell_name, headers_list)
 	
 	print('Starting a cycle: {}\n'.format(time.ctime()) + 
@@ -260,7 +261,7 @@ def charge_cycle(directory, cell_name, charge_settings, psu, v_meas_eq = None, i
 		i_meas_eq = psu
 		
 	#start a new file for the cycle
-	headers_list = ['Timestamp', 'Voltage', 'Current']
+	headers_list = ['Log_Timestamp', 'Voltage', 'Current', 'Data_Timestamp']
 	filepath = FileIO.start_file(directory, cell_name, headers_list)
 	
 	charge_cell(filepath, charge_settings, psu, v_meas_eq, i_meas_eq)
@@ -273,7 +274,7 @@ def discharge_cycle(directory, cell_name, charge_settings, eload, v_meas_eq = No
 		i_meas_eq = eload
 		
 	#start a new file for the cycle
-	headers_list = ['Timestamp', 'Voltage', 'Current']
+	headers_list = ['Log_Timestamp', 'Voltage', 'Current', 'Data_Timestamp']
 	filepath = FileIO.start_file(directory, cell_name, headers_list)
 	
 	discharge_cell(filepath, charge_settings, eload, v_meas_eq, i_meas_eq)
@@ -430,10 +431,7 @@ if __name__ == '__main__':
 	separate_i_meas = eg.ynbox(msg, title)
 	dmm_i = None
 	
-	#TODO - a separate imeas device so that we can pass only these to the measure functions
-	#This will let us measure during numerous types of steps
-	
-	#Now we choose the PSU, Eload, and dmm_v to use
+	#Now we choose the PSU, Eload, dmms to use
 	if load_required:	
 		eload = eloads.choose_eload()
 		init_eload(eload)

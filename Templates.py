@@ -5,7 +5,7 @@ import json
 import os
 
 
-###################### Statistics to gather for each cycle ###############
+######################  Statistics to gather for each cycle  ###############
 class CycleStats:
 	
 	def __init__(self):
@@ -29,7 +29,7 @@ class CycleStats:
 			"discharge_end_v":			0
 		}
 
-##################### AVAILABLE CYCLE TYPES ####################
+#####################  AVAILABLE CYCLE TYPES  ####################
 class CycleTypes:
 	
 	cycle_types = {
@@ -42,9 +42,6 @@ class CycleTypes:
 	}
 	
 	#TODO - Step should not have its load and supply requirements given here - it should only be after the step values are chosen
-		
-		
-##################### Checking User Input ##############
 
 
 ###############  CYCLE  #######################
@@ -178,7 +175,7 @@ class ChargeSettings(CycleSettings):
 			"meas_log_int_s": 			1
 		}
 		
-###############  CHARGE  #####################
+###############  DISCHARGE  #####################
 
 class DischargeSettings(CycleSettings):
 
@@ -189,7 +186,7 @@ class DischargeSettings(CycleSettings):
 			"meas_log_int_s": 			1
 		}
 
-################# STEPS FOR CONTROLLING BATTERY TEST ############
+#################  STEPS FOR CONTROLLING BATTERY TEST  ############
 
 class StepSettings(CycleSettings):
 	def __init__(self):
@@ -207,7 +204,7 @@ class StepSettings(CycleSettings):
 			"end_condition":			{'greater', 'lesser'}
 		}
 
-#################### DC DC TESTING ############
+####################  DC DC TESTING  ############
 
 class DcdcTestSettings():
 
