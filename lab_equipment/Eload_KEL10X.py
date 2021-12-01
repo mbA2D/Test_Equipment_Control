@@ -107,7 +107,7 @@ class KEL10X:
 		return float(self.inst.query(":MEAS:VOLT?").strip('V\n'))
 
 	def measure_current(self):
-		return float(self.inst.query(":MEAS:CURR?").strip('A\n'))
+		return (float(self.inst.query(":MEAS:CURR?").strip('A\n')) * (-1))
 	
 	def measure_power(self):
 		return float(self.inst.query(":MEAS:POW?").strip('W\n'))

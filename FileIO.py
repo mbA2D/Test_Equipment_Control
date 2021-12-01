@@ -13,8 +13,8 @@ def get_directory(title = "Choose Directory"):
 
 
 def write_line(filepath, list_line):
-	#read into pandas dataframe - works, in quick to code
-	#and is likely easy to extend - but one line doesn't really need it
+	#read into pandas dataframe - works, quick to code
+	#and is likely easy to extend - but one line doesn't really need it - likely quicker ways to do it
 	df = pd.DataFrame(list_line).T
 	
 	#save to csv - append, no index, no header
@@ -46,15 +46,12 @@ def ensure_subdir_exists_dir(filedir, subdir_name):
 def ensure_subdir_exists_file(filepath, subdir_name):
 	return ensure_subdir_exists(os.path.dirname(filepath), subdir_name)
 
-def write_data(filepath, data_to_log, printout=False, timestamp = 0):
+def write_data(filepath, data_to_log, printout=False):
 	data = list()
 	
 	#add timestamp
-	if(timestamp != 0):
-		data.append(timestamp)
-	else:
-		data.append(time.time())
-	data.extend(data_to_log)
+	data.append(time.time())
+	data.extend((data_to_log["Voltage"], data_to_log["Current"], data_to_log["Data_Timestamp"]))
 	
 	if(printout):
 		print(data)

@@ -81,7 +81,7 @@ class BK8600:
 		return float(self.inst.query("MEAS:VOLT:DC?"))
 
 	def measure_current(self):
-		return float(self.inst.query("MEAS:CURR:DC?"))
+		return (float(self.inst.query("MEAS:CURR:DC?")) * (-1))
 		
 	def __del__(self):
 		self.toggle_output(False)

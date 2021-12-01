@@ -16,10 +16,10 @@ def plot_iv(log_data, save_filepath = '', show_graph=False):
 	fig, ax_volt = plt.subplots()
 	fig.set_size_inches(12, 10)
 
-	ax_volt.plot('Timestamp', 'Voltage', data = log_data, color='r')
+	ax_volt.plot('Data_Timestamp', 'Voltage', data = log_data, color='r')
 	
 	ax_curr = ax_volt.twinx()
-	ax_curr.plot('Timestamp', 'Current', data = log_data, color='b')
+	ax_curr.plot('Data_Timestamp', 'Current', data = log_data, color='b')
 	
 	fig.suptitle('Cell Cycle Graph')
 	ax_volt.set_ylabel('Votlage (V)', color = 'r')
@@ -126,8 +126,8 @@ def calc_capacity(log_data, stats, charge=True, temp_log_dir = "", show_ica_grap
 		return dsc_data
 	
 	#Calculate time required for cycle
-	start_time = dsc_data.loc[dsc_data.index[0], 'Timestamp']
-	end_time = dsc_data.loc[dsc_data.index[-1], 'Timestamp']
+	start_time = dsc_data.loc[dsc_data.index[0], 'Data_Timestamp']
+	end_time = dsc_data.loc[dsc_data.index[-1], 'Data_Timestamp']
 	end_v = dsc_data.loc[dsc_data.index[-1], 'Voltage']
 	total_time = (end_time - start_time)/3600
 	
@@ -243,8 +243,8 @@ def dataframe_to_csv(df, filepath):
 #cycle start instead python's time.time
 def timestamp_to_cycle_start(df):
 	if df.size > 0:
-		start_time = df['Timestamp'].iloc[0]
-		df['Timestamp'] = df['Timestamp'] - start_time
+		start_time = df['Data_Timestamp'].iloc[0]
+		df['Data_Timestamp'] = df['Data_Timestamp'] - start_time
 	return df
 
 
