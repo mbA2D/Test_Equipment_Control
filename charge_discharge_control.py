@@ -64,9 +64,11 @@ def start_step(step_settings, psu, eload, v_meas_eq, i_meas_eq):
 			#charge
 			psu.set_current(step_settings["drive_value"])
 			psu.set_voltage(step_settings["drive_value_other"])
+			psu.toggle_output(True)
 		elif step_settings["drive_value"] < 0:
 			#discharge
 			eload.set_current(step_settings["drive_value"])
+			eload.toggle_output(True)
 			#we're in constant current mode - can't set a voltage.
 		elif step_settings["drive_value"] == 0:
 			#rest
