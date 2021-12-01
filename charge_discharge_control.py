@@ -203,11 +203,13 @@ def step_cell(log_filepath, step_settings, psu = None, eload = None, v_meas_eq =
 	data["Data_Timestamp_From_Step_Start"] = 0
 	
 	while not evaluate_end_condition(step_settings, data):
-		time.sleep(step_settings["meas_log_int_s"] - ((time.time() - step_start_time) % cycle_settings["meas_log_int_s"]))
+		time.sleep(step_settings["meas_log_int_s"] - ((time.time() - step_start_time) % step_settings["meas_log_int_s"]))
 		data["Voltage"], data["Current"], data["Data_Timestamp"] = measure_battery(v_meas_eq, i_meas_eq)
 		data["Data_Timestamp_From_Step_Start"] = (data["Data_Timestamp"] - step_start_time)
 		FileIO.write_data(log_filepath, data)
-
+	
+	psu.toggle_output(False)
+	eload.toggle_output(False)
 
 ################################## SETTING CYCLE, CHARGE, DISCHARGE ############################
 
@@ -274,7 +276,7 @@ def discharge_cycle(directory, cell_name, charge_settings, eload, v_meas_eq = No
 	if v_meas_eq == None:
 		v_meas_eq = eload
 	if i_meas_eq == None:
-		i_meas_eq = eload
+		i_meas_eq = psu
 		
 	#start a new file for the cycle
 	headers_list = ['Log_Timestamp', 'Voltage', 'Current', 'Data_Timestamp']
