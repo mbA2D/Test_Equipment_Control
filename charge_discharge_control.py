@@ -198,6 +198,10 @@ def step_cell(log_filepath, step_settings, psu = None, eload = None, v_meas_eq =
 	start_step(step_settings, psu, eload, v_meas_eq, i_meas_eq)
 	step_start_time = time.time()
 	
+	data = dict()
+	data["Voltage"], data["Current"], data["Data_Timestamp"] = measure_battery(v_meas_eq)
+	data["Data_Timestamp_From_Step_Start"] = 0
+	
 	while not evaluate_end_condition(step_settings, data):
 		time.sleep(step_settings["meas_log_int_s"] - ((time.time() - step_start_time) % cycle_settings["meas_log_int_s"]))
 		data["Voltage"], data["Current"], data["Data_Timestamp"] = measure_battery(v_meas_eq, i_meas_eq)
