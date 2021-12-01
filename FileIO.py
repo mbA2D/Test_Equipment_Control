@@ -1,6 +1,7 @@
 import easygui as eg
 import pandas as pd
 import os
+import csv
 import time
 from datetime import datetime
 from stat import S_IREAD, S_IWUSR
@@ -12,13 +13,18 @@ def get_directory(title = "Choose Directory"):
 	return eg.diropenbox(title)
 
 
-def write_line(filepath, list_line):
-	#read into pandas dataframe - works, in quick to code
-	#and is likely easy to extend - but one line doesn't really need it
-	df = pd.DataFrame(list_line).T
+def write_line(filepath, data_dict):
+
+	with open(filepath, 'a') as csvfile:
+		writer = csv.DictWriter(csvfile, fieldnames = data_dict.keys.tolist())
+		writer.writerow(data_dict)
+		
+	#read into pandas dataframe - works, quick to code
+	#and is likely easy to extend - but one line doesn't really need it - likely quicker ways to do it
+	#df = pd.DataFrame(data_dict).T
 	
 	#save to csv - append, no index, no header
-	df.to_csv(filepath, header=False, mode='a', index=False)
+	#df.to_csv(filepath, header=False, mode='a', index=False)
 
 def start_file(directory, name, headers_list):
 	dt = datetime.now().strftime("%Y-%m-%d %H-%M-%S")
@@ -26,8 +32,6 @@ def start_file(directory, name, headers_list):
 				test_name = name, date = dt)
 	
 	filepath = os.path.join(directory, filename)
-	
-	write_line(filepath, headers_list)
 	
 	return filepath
 
@@ -46,15 +50,8 @@ def ensure_subdir_exists_dir(filedir, subdir_name):
 def ensure_subdir_exists_file(filepath, subdir_name):
 	return ensure_subdir_exists(os.path.dirname(filepath), subdir_name)
 
-def write_data(filepath, data_to_log, printout=False, timestamp = 0):
-	data = list()
-	
-	#add timestamp
-	if(timestamp != 0):
-		data.append(timestamp)
-	else:
-		data.append(time.time())
-	data.extend(data_to_log)
+def write_data(filepath, data, printout=False):
+	data["Log_Timestamp"] = time.time()
 	
 	if(printout):
 		print(data)
