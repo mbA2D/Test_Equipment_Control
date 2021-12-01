@@ -506,7 +506,7 @@ class BatteryChannel:
 		for key in self.eq_dict:
 			eq_res_ids_dict[key] = {'class_name': None, 'res_id': None}
 			if self.eq_dict[key] != None:
-				eq_res_ids_dict[key] = {'class_name': self.eq_dict[key][0], 'res_id': self.eq_dict[key].inst.resource_name}
+				eq_res_ids_dict[key] = {'class_name': self.eq_dict[key][0], 'res_id': self.eq_dict[key][1].inst.resource_name}
 		
 		return eq_res_ids_dict 
 		
