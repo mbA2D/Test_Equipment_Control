@@ -63,7 +63,7 @@ class MainTestWindow(QMainWindow):
 		
 		
 		
-		process1 = Process(target=cdc.charge_discharge_control, asrg = batt_channel.get_assigned_equipment())
+		process1 = Process(target=cdc.charge_discharge_control, args = batt_channel.get_assigned_equipment())
 		process1.start()
 
 def main():
