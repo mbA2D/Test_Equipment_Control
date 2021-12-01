@@ -41,9 +41,11 @@ class eLoads:
 		}
 	@classmethod
 	def choose_eload(self, class_name = None, resource_id = None):
-		msg = "In which series is the E-Load?"
-		title = "E-Load Series Selection"
-		class_name = eg.choicebox(msg, title, self.part_numbers.keys())
+		if class_name == None:
+			msg = "In which series is the E-Load?"
+			title = "E-Load Series Selection"
+			class_name = eg.choicebox(msg, title, self.part_numbers.keys())
+		
 		if(class_name == 'BK8600'):
 			eload = Eload_BK8600.BK8600(resource_id = resource_id)
 		elif(class_name == 'DL3000'):
@@ -65,9 +67,11 @@ class powerSupplies:
 		}
 	@classmethod
 	def choose_psu(self, class_name = None, resource_id = None):
-		msg = "In which series is the PSU?"
-		title = "PSU Series Selection"
-		class_name = eg.choicebox(msg, title, self.part_numbers.keys())
+		if class_name == None:
+			msg = "In which series is the PSU?"
+			title = "PSU Series Selection"
+			class_name = eg.choicebox(msg, title, self.part_numbers.keys())
+		
 		if(class_name == 'SPD1000'):
 			psu = PSU_SPD1000.SPD1000(resource_id = resource_id)
 		elif(class_name == 'DP800'):
@@ -91,9 +95,11 @@ class dmms:
 		}
 	@classmethod
 	def choose_dmm(self, class_name = None, resource_id = None):
-		msg = "In which series is the DMM?"
-		title = "DMM Series Selection"
-		class_name = eg.choicebox(msg, title, self.part_numbers.keys())
+		if class_name == None:
+			msg = "In which series is the DMM?"
+			title = "DMM Series Selection"
+			class_name = eg.choicebox(msg, title, self.part_numbers.keys())
+		
 		#if(class_name == 'DM3068'):
 		#	dmm = DMM_DM3068.DM3068(resource_id = resource_id)
 		if(class_name == 'SDM3065X'):
