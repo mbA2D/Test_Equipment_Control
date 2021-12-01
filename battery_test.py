@@ -5,6 +5,7 @@ from multiprocessing import Process
 
 import charge_discharge_control as cdc
 import equipment as eq
+import easygui as eg
 
 class MainTestWindow(QMainWindow):
 	def __init__(self):
