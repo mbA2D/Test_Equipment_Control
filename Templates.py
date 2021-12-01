@@ -90,7 +90,7 @@ class CycleSettings:
 		entry_dict = dict(zip(keys, entries))
 		
 		for key in entry_dict:
-			if not is_entry_valid(key, entry_dict[key]):
+			if not self.is_entry_valid(key, entry_dict[key]):
 				return False
 		
 		return True
