@@ -64,7 +64,7 @@ class MainTestWindow(QMainWindow):
 		res_ids_dict = batt_channel.get_assigned_eq_res_ids()
 		batt_channel.disconnect_all_assigned_eq()
 		
-		process1 = Process(target=cdc.charge_discharge_control, args = (res_ids_dict))
+		process1 = Process(target=cdc.charge_discharge_control, args = (res_ids_dict,))
 		process1.start()
 
 def main():
