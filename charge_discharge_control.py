@@ -71,13 +71,16 @@ def start_step(step_settings, psu, eload, v_meas_eq, i_meas_eq):
 		elif step_settings["drive_value"] == 0:
 			#rest
 			#TODO - for now just ensure to shut off both. Later we will need to ensure transition between steps is 'smooth'
-			psu.set_current(step_settings["drive_value"])
-			eload.set_current(step_settings["drive_value"])
+			psu.set_current(0)
+			eload.set_current(0)
 	elif step_settings["drive_style"] == 'voltage_v':
+		print("Voltage Step Not Yet Implemented")
 		pass
-	
-	#TODO - add settings the voltage - during a current driven step, we need to choose a voltage limit.
-	
+	elif step_settings["drive_style"] == 'none':
+		psu.set_current(0)
+		psu.toggle_output(False)
+		eload.set_current(0)
+		eload.toggle_output(False)	
 
 def evaluate_end_condition(step_settings, data):
 	#evaluates different end conditions (voltage, current, time)

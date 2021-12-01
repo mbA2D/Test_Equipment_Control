@@ -191,7 +191,7 @@ class DischargeSettings(CycleSettings):
 class StepSettings(CycleSettings):
 	def __init__(self):
 		self.settings = {
-			"drive_style":				'current_a', #'current_a', 'voltage_v'
+			"drive_style":				'current_a', #'current_a', 'voltage_v', 'none'
 			"drive_value":				1,
 			"drive_value_other":		4.0,
 			"end_style":				'time_s', #'time_s', 'current_a', 'voltage_v'
@@ -199,7 +199,7 @@ class StepSettings(CycleSettings):
 			"end_value":				10
 		}
 		self.valid_strings = {
-			"drive_style":				{'current_a', 'voltage_v'},
+			"drive_style":				{'current_a', 'voltage_v', 'none'},
 			"end_style":				{'time_s', 'current_a', 'voltage_v'},
 			"end_condition":			{'greater', 'lesser'}
 		}
