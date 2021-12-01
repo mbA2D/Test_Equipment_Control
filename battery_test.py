@@ -61,7 +61,9 @@ class MainTestWindow(QMainWindow):
 		batt_channel.assign_equipment(psu_to_assign = psu, eload_to_assign = eload,
 									  dmm_v_to_assign = dmm_v, dmm_i_to_assign = dmm_i)
 		
-		process1 = Process(target=batt_channel.charge_discharge_control)
+		
+		
+		process1 = Process(target=cdc.charge_discharge_control, asrg = batt_channel.get_assigned_equipment())
 		process1.start()
 
 def main():

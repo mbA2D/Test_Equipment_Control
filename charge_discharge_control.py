@@ -400,7 +400,83 @@ def ask_storage_charge():
 							Recommended to do one. Leaving a cell discharged increases\n\
 							risk of latent failures due to dendrite growth.")
 
-
+def charge_discharge_control(psu = None, eload = None, dmm_v = None, dmm_i = None):
+		
+	#get the cell name
+	cell_name = eg.enterbox(title = "Test Setup", msg = "Enter the Cell Name\n(Spaces will be replaced with underscores)",
+							default = "CELL_NAME", strip = True)
+	#replace the spaces to keep file names consistent
+	cell_name = cell_name.replace(" ", "_")
+	
+	#Get a directory to save the file
+	directory = FileIO.get_directory("Choose directory to save the cycle logs")
+	
+	#different cycle types that are available
+	cycle_types = Templates.CycleTypes.cycle_types
+	cycle_types["Single Cycle"]['func_call'] = single_cycle
+	cycle_types["One Setting Continuous Cycles With Rest"]['func_call'] = one_level_continuous_cycles_with_rest
+	cycle_types["Two Setting Continuous Cycles With Rest"]['func_call'] = two_level_continuous_cycles_with_rest
+	cycle_types["Charge Only"]['func_call'] = charge_only_cycle_info
+	cycle_types["Discharge Only"]['func_call'] = discharge_only_cycle_info
+	cycle_types["Single Step"]['func_call'] = single_step_cell_info
+	
+	#choose the cycle type
+	msg = "Which cycle type do you want to do?"
+	title = "Choose Cycle Type"
+	cycle_type = eg.choicebox(msg, title, list(cycle_types.keys()))
+	
+	#gather the list settings based on the cycle type
+	cycle_settings_list = list()
+	cycle_settings_list = cycle_types[cycle_type]['func_call']()
+	
+	do_a_storage_charge = False
+	if(cycle_types[cycle_type]['str_chg_opt']):
+		do_a_storage_charge = ask_storage_charge()
+	load_required = cycle_types[cycle_type]['load_req']
+	supply_required = cycle_types[cycle_type]['supply_req']
+	
+	#extend adds two lists, append adds a single element to a list. We want extend here since charge_only_cycle() returns a list.
+	if do_a_storage_charge:
+		cycle_settings_list.extend(charge_only_cycle_info())
+	
+	#Now we choose the PSU, Eload, dmms to use
+	if eload != None:	
+		init_eload(eload)
+	if psu != None:
+		init_psu(psu)
+	if dmm_v != None:
+		init_dmm_v(dmm_v)
+	if dmm_i != None:
+		init_dmm_i(dmm_i)
+		
+	#cycle x times
+	cycle_num = 0
+	for cycle_settings in cycle_settings_list:
+		print("Cycle {} Starting".format(cycle_num), flush=True)
+		try:
+			#Charge only - only using the power supply
+			if isinstance(cycle_settings, Templates.ChargeSettings):
+				charge_cycle(directory, cell_name, cycle_settings.settings, psu, v_meas_eq = dmm_v, i_meas_eq = dmm_i)
+				
+			#Discharge only - only using the eload
+			elif isinstance(cycle_settings, Templates.DischargeSettings):
+				discharge_cycle(directory, cell_name, cycle_settings.settings, eload, v_meas_eq = dmm_v, i_meas_eq = dmm_i)
+			
+			#Use Step Functions
+			elif isinstance(cycle_settings, Templates.StepSettings):
+				step_cycle(directory, cell_name, cycle_settings.settings, eload, psu, v_meas_eq = dmm_v, i_meas_eq = dmm_i)
+			
+			#Cycle the cell - using both psu and eload
+			else:
+				cycle_cell(directory, cell_name, cycle_settings.settings, eload, psu, v_meas_eq = dmm_v, i_meas_eq = dmm_i)
+			
+		except KeyboardInterrupt:
+			self.eload.toggle_output(False)
+			self.psu.toggle_output(False)
+			exit()
+		cycle_num += 1
+	
+	print("All Cycles Completed")
 
 ####################################### MAIN PROGRAM ######################################
 
@@ -419,84 +495,8 @@ class BatteryChannel:
 		self.dmm_v = dmm_v_to_assign
 		self.dmm_i = dmm_i_to_assign
 	
-	def charge_discharge_control(self):
-		
-		#get the cell name
-		cell_name = eg.enterbox(title = "Test Setup", msg = "Enter the Cell Name\n(Spaces will be replaced with underscores)",
-								default = "CELL_NAME", strip = True)
-		#replace the spaces to keep file names consistent
-		cell_name = cell_name.replace(" ", "_")
-		
-		#Get a directory to save the file
-		directory = FileIO.get_directory("Choose directory to save the cycle logs")
-		
-		#different cycle types that are available
-		cycle_types = Templates.CycleTypes.cycle_types
-		cycle_types["Single Cycle"]['func_call'] = single_cycle
-		cycle_types["One Setting Continuous Cycles With Rest"]['func_call'] = one_level_continuous_cycles_with_rest
-		cycle_types["Two Setting Continuous Cycles With Rest"]['func_call'] = two_level_continuous_cycles_with_rest
-		cycle_types["Charge Only"]['func_call'] = charge_only_cycle_info
-		cycle_types["Discharge Only"]['func_call'] = discharge_only_cycle_info
-		cycle_types["Single Step"]['func_call'] = single_step_cell_info
-		
-		#choose the cycle type
-		msg = "Which cycle type do you want to do?"
-		title = "Choose Cycle Type"
-		cycle_type = eg.choicebox(msg, title, list(cycle_types.keys()))
-		
-		#gather the list settings based on the cycle type
-		cycle_settings_list = list()
-		cycle_settings_list = cycle_types[cycle_type]['func_call']()
-		
-		do_a_storage_charge = False
-		if(cycle_types[cycle_type]['str_chg_opt']):
-			do_a_storage_charge = ask_storage_charge()
-		load_required = cycle_types[cycle_type]['load_req']
-		supply_required = cycle_types[cycle_type]['supply_req']
-		
-		#extend adds two lists, append adds a single element to a list. We want extend here since charge_only_cycle() returns a list.
-		if do_a_storage_charge:
-			cycle_settings_list.extend(charge_only_cycle_info())
-		
-		#Now we choose the PSU, Eload, dmms to use
-		if self.eload != None:	
-			init_eload(self.eload)
-		if self.psu != None:
-			init_psu(self.psu)
-		if self.dmm_v != None:
-			init_dmm_v(self.dmm_v)
-		if self.dmm_i != None:
-			init_dmm_i(self.dmm_i)
-			
-		#cycle x times
-		cycle_num = 0
-		for cycle_settings in cycle_settings_list:
-			print("Cycle {} Starting".format(cycle_num), flush=True)
-			try:
-				#Charge only - only using the power supply
-				if isinstance(cycle_settings, Templates.ChargeSettings):
-					charge_cycle(directory, cell_name, cycle_settings.settings, self.psu, v_meas_eq = self.dmm_v, i_meas_eq = self.dmm_i)
-					
-				#Discharge only - only using the eload
-				elif isinstance(cycle_settings, Templates.DischargeSettings):
-					discharge_cycle(directory, cell_name, cycle_settings.settings, self.eload, v_meas_eq = self.dmm_v, i_meas_eq = self.dmm_i)
-				
-				#Use Step Functions
-				elif isinstance(cycle_settings, Templates.StepSettings):
-					step_cycle(directory, cell_name, cycle_settings.settings, self.eload, self.psu, v_meas_eq = self.dmm_v, i_meas_eq = self.dmm_i)
-				
-				#Cycle the cell - using both psu and eload
-				else:
-					cycle_cell(directory, cell_name, cycle_settings.settings, self.eload, self.psu, v_meas_eq = self.dmm_v, i_meas_eq = self.dmm_i)
-				
-			except KeyboardInterrupt:
-				self.eload.toggle_output(False)
-				self.psu.toggle_output(False)
-				exit()
-			cycle_num += 1
-		
-		print("All Cycles Completed")
-
+	def get_assigned_equipment(self):
+		return (self.psu, self.eload, self.dmm_v, self.dmm_i)
 
 
 if __name__ == '__main__':
