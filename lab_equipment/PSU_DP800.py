@@ -8,10 +8,10 @@ import serial
 # Power Supply
 class DP800:
 	# Initialize the DP800 Power Supply
-	def __init__(self, resource_id = ""):
+	def __init__(self, resource_id = None):
 		rm = pyvisa.ResourceManager('@ivi')
 		
-		if(resource_id == ""):
+		if(resource_id == None):
 			resources = rm.list_resources()
 			
 			################# IDN VERSION #################

@@ -400,8 +400,12 @@ def ask_storage_charge():
 							Recommended to do one. Leaving a cell discharged increases\n\
 							risk of latent failures due to dendrite growth.")
 
-def charge_discharge_control(psu = None, eload = None, dmm_v = None, dmm_i = None):
-		
+def charge_discharge_control(res_ids_dict):
+	
+	eq_dict = dict()
+	for key in res_ids_dict:
+		eq_dict[key] = eq.connect_to_eq(key, res_ids_dict[key][0], res_ids_dict[key][1])
+	
 	#get the cell name
 	cell_name = eg.enterbox(title = "Test Setup", msg = "Enter the Cell Name\n(Spaces will be replaced with underscores)",
 							default = "CELL_NAME", strip = True)
@@ -483,20 +487,35 @@ def charge_discharge_control(psu = None, eload = None, dmm_v = None, dmm_i = Non
 class BatteryChannel:
 	
 	def __init__(self, psu = None, eload = None, dmm_v = None, dmm_i = None):
-		self.eload = None
-		self.psu = None
-		self.dmm_v = None
-		self.dmm_i = None
+		self.eq_dict = dict()
+		self.eq_dict['eload'] = None
+		self.eq_dict['psu'] = None
+		self.eq_dict['dmm_v'] = None
+		self.eq_dict['dmm_i'] = None
 		self.assign_equipment(psu_to_assign = psu, eload_to_assign = eload, dmm_v_to_assign = dmm_v, dmm_i_to_assign = dmm_i)
 	
 	def assign_equipment(self, psu_to_assign = None, eload_to_assign = None, dmm_v_to_assign = None, dmm_i_to_assign = None):
-		self.eload = eload_to_assign
-		self.psu = psu_to_assign
-		self.dmm_v = dmm_v_to_assign
-		self.dmm_i = dmm_i_to_assign
+		self.eq_dict['eload'] = eload_to_assign
+		self.eq_dict['psu'] = psu_to_assign
+		self.eq_dict['dmm_v'] = dmm_v_to_assign
+		self.eq_dict['dmm_i'] = dmm_i_to_assign
 	
-	def get_assigned_equipment(self):
-		return (self.psu, self.eload, self.dmm_v, self.dmm_i)
+	def get_assigned_eq_res_ids(self):
+		eq_res_ids_dict = dict()
+		
+		for key in self.eq_dict:
+			eq_res_ids_dict[key] = {'class_name': None, 'res_id': None}
+			if self.eq_dict[key] != None:
+				eq_res_ids_dict[key] = {'class_name': self.eq_dict[key][0], 'res_id': self.eq_dict[key].inst.resource_name}
+		
+		return eq_res_ids_dict 
+		
+	def disconnect_all_assigned_eq(self):
+		#disconnect from equipment so that we can pass the resource ids to the
+		#charge_discharge_control function and reconnect to the devices there
+		for key in self.eq_dict:
+			if self.eq_dict[key] != None:
+				self.eq_dict[key].inst.close()
 
 
 if __name__ == '__main__':
