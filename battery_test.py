@@ -21,9 +21,14 @@ class MainTestWindow(QMainWindow):
 		psus = eq.powerSupplies()
 		dmms = eq.dmms()
 		
+		batt_channel_list = list()
+		
 		equipment_dict = dict()
 		
 		for ch_num in range(self.num_battery_channels):
+			
+			batt_channel_list.append(cdc.BatteryChannel())
+			
 			#choose a psu and eload for each channel
 			eload = eloads.choose_eload()
 			psu = eloade.choose_psu()
@@ -40,8 +45,11 @@ class MainTestWindow(QMainWindow):
 		
 		
 	
-	def batt_test_processes(self):		
-		process1 = Process(target=cdc.charge_discharge_control)
+	def batt_test_process(self, batt_channel, psu = None, eload = None, dmm_v = None, dmm_i = None):
+		
+		batt_channel.assign_equipment(psu_to_assign = psu, eload_to_assign = eload, dmm_v_to_assign = dmm_v, dmm_i_to_assign = dmm_i)
+		
+		process1 = Process(target=batt_channel.charge_discharge_control)
 		process1.start()
 
 def main():

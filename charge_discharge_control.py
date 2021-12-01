@@ -406,11 +406,12 @@ def ask_storage_charge():
 
 class BatteryChannel:
 	
-	def __init__(self):
+	def __init__(self, psu = None, eload = None, dmm_v = None, dmm_i = None):
 		self.eload = None
 		self.psu = None
 		self.dmm_v = None
 		self.dmm_i = None
+		self.assign_equipment(psu_to_assign = psu, eload_to_assign = eload, dmm_v_to_assign = dmm_v, dmm_i_to_assign = dmm_i)
 	
 	def assign_equipment(self, psu_to_assign = None, eload_to_assign = None, dmm_v_to_assign = None, dmm_i_to_assign = None):
 		self.eload = eload_to_assign
