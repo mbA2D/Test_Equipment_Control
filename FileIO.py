@@ -56,7 +56,7 @@ def write_data(filepath, data, printout=False, first_line = False):
 	if(printout):
 		print(data)
 	
-	write_line(filepath, data, first_line = first_line)
+	write_line(filepath, data)
 	
 def set_read_only(filepath):
 	#make the file read-only so we don't lose decimal places if the CSV is opened in excel
