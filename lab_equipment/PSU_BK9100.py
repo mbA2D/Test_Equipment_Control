@@ -13,10 +13,10 @@ class BK9100:
 	write_termination = '\r'
 	read_termination = '\r'
 	
-	def __init__(self, resource_id = ""):
+	def __init__(self, resource_id = None):
 		rm = pyvisa.ResourceManager('@py')
 		
-		if(resource_id == ""):
+		if(resource_id == None):
 			resources = rm.list_resources()
 			
 			########### CHECK IF AVAILABLE VERSION #############

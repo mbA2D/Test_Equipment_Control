@@ -13,10 +13,10 @@ class SPD1000:
 	write_termination = '\n'
 	query_delay = 0.1
 	
-	def __init__(self, resource_id = ""):
+	def __init__(self, resource_id = None):
 		rm = pyvisa.ResourceManager('@ivi')
 		
-		if(resource_id == ""):
+		if(resource_id == None):
 			resources = rm.list_resources('@ivi')
 			
 			################# IDN VERSION #################

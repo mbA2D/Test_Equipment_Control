@@ -10,7 +10,7 @@ import os
 import Templates
 import FileIO
 
- 
+
 def init_eload(eload):
 	eload.toggle_output(False)
 	eload.remote_sense(True)
@@ -400,12 +400,14 @@ def ask_storage_charge():
 							Recommended to do one. Leaving a cell discharged increases\n\
 							risk of latent failures due to dendrite growth.")
 
-
-####################################### MAIN PROGRAM ######################################
-def charge_discharge_control():
+def charge_discharge_control(res_ids_dict):
 	
-	eloads = eq.eLoads()
-	psus = eq.powerSupplies()
+	eq_dict = dict()
+	for key in res_ids_dict:
+		if res_ids_dict[key]['res_id'] != None:
+			eq_dict[key] = eq.connect_to_eq(key, res_ids_dict[key]['class_name'], res_ids_dict[key]['res_id'])
+		else:
+			eq_dict[key] = None
 	
 	#get the cell name
 	cell_name = eg.enterbox(title = "Test Setup", msg = "Enter the Cell Name\n(Spaces will be replaced with underscores)",
@@ -444,33 +446,16 @@ def charge_discharge_control():
 	if do_a_storage_charge:
 		cycle_settings_list.extend(charge_only_cycle_info())
 	
-	#Separate measurement devices
-	msg = "Do you want to use a separate device to measure voltage?"
-	title = "Voltage Measurement Device"
-	separate_v_meas = eg.ynbox(msg, title)
-	dmm_v = None
-	msg = "Do you want to use a separate device to measure current?"
-	title = "Current Measurement Device"
-	separate_i_meas = eg.ynbox(msg, title)
-	dmm_i = None
-	
 	#Now we choose the PSU, Eload, dmms to use
-	if load_required:	
-		eload = eloads.choose_eload()
-		init_eload(eload)
-	if supply_required:
-		psu = psus.choose_psu()
-		init_psu(psu)
-	if separate_v_meas or separate_i_meas:
-		dmms = eq.dmms()
-		if separate_v_meas:
-			dmm_v = dmms.choose_dmm()
-			init_dmm_v(dmm_v)
-		if separate_i_meas:
-			dmm_i = dmms.choose_dmm()
-			init_dmm_i(dmm_i)
+	if eq_dict['eload'] != None:	
+		init_eload(eq_dict['eload'])
+	if eq_dict['psu'] != None:
+		init_psu(eq_dict['psu'])
+	if eq_dict['dmm_v'] != None:
+		init_dmm_v(eq_dict['dmm_v'])
+	if eq_dict['dmm_i'] != None:
+		init_dmm_i(eq_dict['dmm_i'])
 		
-	
 	#cycle x times
 	cycle_num = 0
 	for cycle_settings in cycle_settings_list:
@@ -478,28 +463,64 @@ def charge_discharge_control():
 		try:
 			#Charge only - only using the power supply
 			if isinstance(cycle_settings, Templates.ChargeSettings):
-				charge_cycle(directory, cell_name, cycle_settings.settings, psu, v_meas_eq = dmm_v, i_meas_eq = dmm_i)
+				charge_cycle(directory, cell_name, cycle_settings.settings, eq_dict['psu'], v_meas_eq = eq_dict['dmm_v'], i_meas_eq = eq_dict['dmm_i'])
 				
 			#Discharge only - only using the eload
 			elif isinstance(cycle_settings, Templates.DischargeSettings):
-				discharge_cycle(directory, cell_name, cycle_settings.settings, eload, v_meas_eq = dmm_v, i_meas_eq = dmm_i)
+				discharge_cycle(directory, cell_name, cycle_settings.settings, eq_dict['eload'], v_meas_eq = eq_dict['dmm_v'], i_meas_eq = eq_dict['dmm_i'])
 			
 			#Use Step Functions
 			elif isinstance(cycle_settings, Templates.StepSettings):
-				step_cycle(directory, cell_name, cycle_settings.settings, eload, psu, v_meas_eq = dmm_v, i_meas_eq = dmm_i)
+				step_cycle(directory, cell_name, cycle_settings.settings, eq_dict['eload'], eq_dict['psu'], v_meas_eq = eq_dict['dmm_v'], i_meas_eq = eq_dict['dmm_i'])
 			
 			#Cycle the cell - using both psu and eload
 			else:
-				cycle_cell(directory, cell_name, cycle_settings.settings, eload, psu, v_meas_eq = dmm_v, i_meas_eq = dmm_i)
+				cycle_cell(directory, cell_name, cycle_settings.settings, eq_dict['eload'], eq_dict['psu'], v_meas_eq = eq_dict['dmm_v'], i_meas_eq = eq_dict['dmm_i'])
 			
 		except KeyboardInterrupt:
-			eload.toggle_output(False)
-			psu.toggle_output(False)
+			self.eload.toggle_output(False)
+			self.psu.toggle_output(False)
 			exit()
 		cycle_num += 1
 	
 	print("All Cycles Completed")
 
-if __name__ == '__main__':
+####################################### MAIN PROGRAM ######################################
+
+class BatteryChannel:
 	
-	charge_discharge_control()
+	def __init__(self, psu = None, eload = None, dmm_v = None, dmm_i = None):
+		self.eq_dict = dict()
+		self.eq_dict['eload'] = None
+		self.eq_dict['psu'] = None
+		self.eq_dict['dmm_v'] = None
+		self.eq_dict['dmm_i'] = None
+		self.assign_equipment(psu_to_assign = psu, eload_to_assign = eload, dmm_v_to_assign = dmm_v, dmm_i_to_assign = dmm_i)
+	
+	def assign_equipment(self, psu_to_assign = None, eload_to_assign = None, dmm_v_to_assign = None, dmm_i_to_assign = None):
+		self.eq_dict['eload'] = eload_to_assign
+		self.eq_dict['psu'] = psu_to_assign
+		self.eq_dict['dmm_v'] = dmm_v_to_assign
+		self.eq_dict['dmm_i'] = dmm_i_to_assign
+	
+	def get_assigned_eq_res_ids(self):
+		eq_res_ids_dict = dict()
+		
+		for key in self.eq_dict:
+			eq_res_ids_dict[key] = {'class_name': None, 'res_id': None}
+			if self.eq_dict[key] != None:
+				eq_res_ids_dict[key] = {'class_name': self.eq_dict[key][0], 'res_id': self.eq_dict[key][1].inst.resource_name}
+		
+		return eq_res_ids_dict 
+		
+	def disconnect_all_assigned_eq(self):
+		#disconnect from equipment so that we can pass the resource ids to the
+		#charge_discharge_control function and reconnect to the devices there
+		for key in self.eq_dict:
+			if self.eq_dict[key] != None:
+				self.eq_dict[key][1].inst.close()
+
+
+if __name__ == '__main__':
+	print("Use the battery_test.py script")
+	#charge_discharge_control()

@@ -15,11 +15,11 @@ class MP71025X:
 	read_termination = '\n'
 	query_delay = 0.05
 	
-	def __init__(self, resource_id = ""):
+	def __init__(self, resource_id = None):
 		
 		rm = pyvisa.ResourceManager('@py')
 		
-		if(resource_id == ""):
+		if(resource_id == None):
 			resources = rm.list_resources()
 
 			################# IDN VERSION #################

@@ -16,10 +16,10 @@ class SDM3065X:
 	defaults = {"NPLC": 1,
 				"VOLT_DC_RANGE": 'AUTO'}
 	
-	def __init__(self, resource_id = ""):
+	def __init__(self, resource_id = None):
 		rm = pyvisa.ResourceManager()
 		
-		if(resource_id == ""):
+		if(resource_id == None):
 			resources = rm.list_resources()
 
 			################# IDN VERSION #################

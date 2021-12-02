@@ -16,11 +16,8 @@ import jsonIO
 
 #sweep the load current of an E-load from X to Y A in increments and log to CSV
 
-eloads = eq.eLoads()
-eload = eloads.choose_eload()
-
-psus = eq.powerSupplies()
-psu = psus.choose_psu()
+eload = eq.eLoads.choose_eload()[1]
+psu = eq.powerSupplies.choose_psu()[1]
 
 def init_instruments():
 	eload.remote_sense(True)
