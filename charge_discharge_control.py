@@ -482,8 +482,15 @@ def charge_discharge_control(res_ids_dict):
 	do_a_storage_charge = False
 	if(cycle_types[cycle_type]['str_chg_opt']):
 		do_a_storage_charge = ask_storage_charge()
-	load_required = cycle_types[cycle_type]['load_req']
-	supply_required = cycle_types[cycle_type]['supply_req']
+	
+	#TODO - check the step settings given to see if we need an eload and/or power supply
+	if cycle_types[cycle_type]['load_req'] and eq_dict['eload'] == None:
+		print("Eload required for cycle but none connected! Exiting")
+		return
+	
+	if cycle_types[cycle_type]['supply_req'] and eq_dict['psu'] == None:
+		print("Power Supply required for cycle type but none connected! Exiting")
+		return
 	
 	#extend adds two lists, append adds a single element to a list. We want extend here since charge_only_cycle() returns a list.
 	if do_a_storage_charge:
@@ -521,8 +528,10 @@ def charge_discharge_control(res_ids_dict):
 				cycle_cell(directory, cell_name, cycle_settings.settings, eq_dict['eload'], eq_dict['psu'], v_meas_eq = eq_dict['dmm_v'], i_meas_eq = eq_dict['dmm_i'])
 			
 		except KeyboardInterrupt:
-			self.eload.toggle_output(False)
-			self.psu.toggle_output(False)
+			if eq_dict['eload'] != None:	
+				eq_dict['eload'].toggle_output(False)
+			if eq_dict['psu'] != None:
+				eq_dict['psu'].toggle_output(False)
 			exit()
 		cycle_num += 1
 	
