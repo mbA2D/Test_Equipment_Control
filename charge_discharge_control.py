@@ -232,8 +232,7 @@ def cycle_cell(directory, cell_name, cycle_settings, eload, psu, v_meas_eq = Non
 		i_meas_eq = eload
 	
 	#start a new file for the cycle
-	headers_list = ['Log_Timestamp', 'Voltage', 'Current', 'Data_Timestamp']
-	filepath = FileIO.start_file(directory, cell_name, headers_list)
+	filepath = FileIO.start_file(directory, cell_name)
 	
 	print('Starting a cycle: {}\n'.format(time.ctime()) + 
 			'Settings:\n' +
@@ -269,8 +268,7 @@ def charge_cycle(directory, cell_name, charge_settings, psu, v_meas_eq = None, i
 		i_meas_eq = psu
 		
 	#start a new file for the cycle
-	headers_list = ['Log_Timestamp', 'Voltage', 'Current', 'Data_Timestamp']
-	filepath = FileIO.start_file(directory, cell_name, headers_list)
+	filepath = FileIO.start_file(directory, cell_name)
 	
 	charge_cell(filepath, charge_settings, psu, v_meas_eq, i_meas_eq)
 	
@@ -282,8 +280,7 @@ def discharge_cycle(directory, cell_name, charge_settings, eload, v_meas_eq = No
 		i_meas_eq = eload
 		
 	#start a new file for the cycle
-	headers_list = ['Log_Timestamp', 'Voltage', 'Current', 'Data_Timestamp']
-	filepath = FileIO.start_file(directory, cell_name, headers_list)
+	filepath = FileIO.start_file(directory, cell_name)
 	
 	discharge_cell(filepath, charge_settings, eload, v_meas_eq, i_meas_eq)
 
@@ -296,8 +293,7 @@ def step_cycle(directory, cell_name, step_settings, eload, psu, v_meas_eq = None
 		i_meas_eq = psu
 	
 	#start a new file for the cycle
-	headers_list = ['Log_Timestamp', 'Voltage', 'Current', 'Data_Timestamp', 'Data_Timestamp_From_Step_Start']
-	filepath = FileIO.start_file(directory, cell_name, headers_list)
+	filepath = FileIO.start_file(directory, cell_name)
 	
 	step_cell(filepath, step_settings, psu, eload, v_meas_eq, i_meas_eq)
 	
