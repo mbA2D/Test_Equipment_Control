@@ -49,7 +49,7 @@ class SDM3065X:
 				if(eg.ynbox(msg, title)):
 					idn = list(idns_dict.values())[0]
 			else:
-				msg = "Select the DMM Supply Model:"
+				msg = "Select the DMM Model:"
 				idn = eg.choicebox(msg, title, idns_dict.values())
 			#Now we know which IDN we want to connect to
 			#swap keys and values and then connect
