@@ -12,7 +12,6 @@ from stat import S_IREAD, S_IWUSR
 def get_directory(title = "Choose Directory"):
 	return eg.diropenbox(title)
 
-
 def write_line(filepath, data_dict, first_line = True):
 
 	with open(filepath, 'a') as csvfile:
@@ -24,7 +23,7 @@ def write_line(filepath, data_dict, first_line = True):
 	#read into pandas dataframe - works, quick to code
 	#and is likely easy to extend - but one line doesn't really need it - likely quicker ways to do it
 	#df = pd.DataFrame(data_dict).T
-	
+  
 	#save to csv - append, no index, no header
 	#df.to_csv(filepath, header=False, mode='a', index=False)
 

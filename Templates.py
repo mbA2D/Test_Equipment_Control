@@ -5,7 +5,7 @@ import json
 import os
 
 
-###################### Statistics to gather for each cycle ###############
+######################  Statistics to gather for each cycle  ###############
 class CycleStats:
 	
 	def __init__(self):
@@ -29,36 +29,20 @@ class CycleStats:
 			"discharge_end_v":			0
 		}
 
-##################### AVAILABLE CYCLE TYPES ####################
+#####################  AVAILABLE CYCLE TYPES  ####################
 class CycleTypes:
 	
 	cycle_types = {
-		"Single Cycle": 							{'load_req': True, 'supply_req': True},
-		"One Setting Continuous Cycles With Rest": 	{'load_req': True, 'supply_req': True},
-		"Two Setting Continuous Cycles With Rest": 	{'load_req': True, 'supply_req': True},
-		"Charge Only": 								{'load_req': False, 'supply_req': True},
-		"Discharge Only": 							{'load_req': True, 'supply_req': False}
+		"Single Cycle": 							{'func_call': '', 'str_chg_opt': True, 'load_req': True, 'supply_req': True},
+		"One Setting Continuous Cycles With Rest": 	{'func_call': '', 'str_chg_opt': True,'load_req': True, 'supply_req': True},
+		"Two Setting Continuous Cycles With Rest": 	{'func_call': '', 'str_chg_opt': True,'load_req': True, 'supply_req': True},
+		"Charge Only": 								{'func_call': '', 'str_chg_opt': False,'load_req': False, 'supply_req': True},
+		"Discharge Only": 							{'func_call': '', 'str_chg_opt': False,'load_req': True, 'supply_req': False},
+		"Single Step":								{'func_call': '', 'str_chg_opt': False,'load_req': True, 'supply_req': True}
 	}
-		
-		
-		
-##################### Checking User Input ##############
-def check_user_entry(entry):
-	if(entry == None):
-		return False
 	
-	for val in entry:
-		if not is_number_float(val):
-			return False
-	
-	return True
+	#TODO - Step should not have its load and supply requirements given here - it should only be after the step values are chosen
 
-def is_number_float(string):
-	try:
-		float(string)
-		return True
-	except ValueError:
-		return False
 
 ###############  CYCLE  #######################
 class CycleSettings:
@@ -87,7 +71,7 @@ class CycleSettings:
 			while valid_entries == False:
 				response_list = eg.multenterbox(msg = "Enter Info for {}cycle".format(cycle_name), title = response,
 												fields = list(self.settings.keys()), values = list(self.settings.values()))
-				valid_entries = check_user_entry(response_list)
+				valid_entries = self.check_user_entry(list(self.settings.keys()), response_list)
 			
 			#update dict entries with the response
 			self.update_settings(response_list)
@@ -98,7 +82,32 @@ class CycleSettings:
 			self.import_cycle_settings(cycle_name)
 		
 		self.convert_to_float()
-			
+	
+	def check_user_entry(self, keys, entries):
+		if(entries == None):
+			return False
+		
+		entry_dict = dict(zip(keys, entries))
+		
+		for key in entry_dict:
+			if not self.is_entry_valid(key, entry_dict[key]):
+				return False
+		
+		return True
+
+	def is_entry_valid(self, key, value):
+		try:
+			float(value)
+			return True
+		except ValueError:
+			try:
+				if value in self.valid_strings[key]:
+					return True
+			except AttributeError:
+				return False
+			return False
+		return False
+	
 	def convert_to_float(self):
 		#if possible, convert items to floats
 		for key in self.settings.keys():
@@ -166,7 +175,7 @@ class ChargeSettings(CycleSettings):
 			"meas_log_int_s": 			1
 		}
 		
-###############  CHARGE  #####################
+###############  DISCHARGE  #####################
 
 class DischargeSettings(CycleSettings):
 
@@ -177,8 +186,26 @@ class DischargeSettings(CycleSettings):
 			"meas_log_int_s": 			1
 		}
 
+#################  STEPS FOR CONTROLLING BATTERY TEST  ############
 
-#################### DC DC TESTING ############
+class StepSettings(CycleSettings):
+	def __init__(self):
+		self.settings = {
+			"drive_style":				'current_a', #'current_a', 'voltage_v', 'none'
+			"drive_value":				1,
+			"drive_value_other":		4.0,
+			"end_style":				'time_s', #'time_s', 'current_a', 'voltage_v'
+			"end_condition":			'greater', #'greater', 'lesser'
+			"end_value":				10,
+			"meas_log_int_s":			1
+		}
+		self.valid_strings = {
+			"drive_style":				{'current_a', 'voltage_v', 'none'},
+			"end_style":				{'time_s', 'current_a', 'voltage_v'},
+			"end_condition":			{'greater', 'lesser'}
+		}
+
+####################  DC DC TESTING  ############
 
 class DcdcTestSettings():
 

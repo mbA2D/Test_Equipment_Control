@@ -8,10 +8,10 @@ import serial
 # Power Supply
 class N8700:
 	# Initialize the N8700 Power Supply
-	def __init__(self, resource_id = ""):
+	def __init__(self, resource_id = None):
 		rm = pyvisa.ResourceManager('@ivi')
 		
-		if(resource_id == ""):
+		if(resource_id == None):
 			resources = rm.list_resources('@ivi')
 			
 			################# IDN VERSION #################

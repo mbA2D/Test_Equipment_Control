@@ -8,10 +8,10 @@ import serial
 # E-Load
 class DL3000:
 	# Initialize the DL3000 E-Load
-	def __init__(self, resource_id = ""):
+	def __init__(self, resource_id = None):
 		rm = pyvisa.ResourceManager()
 		
-		if(resource_id == ""):
+		if(resource_id == None):
 			resources = rm.list_resources()
 			
 			################# IDN VERSION #################
@@ -107,7 +107,7 @@ class DL3000:
 		return float(self.inst.query(":MEAS:VOLT:DC?"))
 
 	def measure_current(self):
-		return float(self.inst.query(":MEAS:CURR:DC?"))
+		return (float(self.inst.query(":MEAS:CURR:DC?")) * (-1))
 
 	def __del__(self):
 		self.toggle_output(False)

@@ -16,10 +16,10 @@ def plot_iv(log_data, save_filepath = '', show_graph=False):
 	fig, ax_volt = plt.subplots()
 	fig.set_size_inches(12, 10)
 
-	ax_volt.plot('Timestamp', 'Voltage', data = log_data, color='r')
+	ax_volt.plot('Data_Timestamp', 'Voltage', data = log_data, color='r')
 	
 	ax_curr = ax_volt.twinx()
-	ax_curr.plot('Timestamp', 'Current', data = log_data, color='b')
+	ax_curr.plot('Data_Timestamp', 'Current', data = log_data, color='b')
 	
 	fig.suptitle('Cell Cycle Graph')
 	ax_volt.set_ylabel('Votlage (V)', color = 'r')
@@ -43,9 +43,10 @@ def plot_iv(log_data, save_filepath = '', show_graph=False):
 #Also, a few other articles as well: https://www.mdpi.com/2313-0105/5/2/37
 def plot_ica(data_w_cap):
 	
-	#First plot voltage=y, capacity (ah) = x
+	#################### Setting up all the graphs:
 	fig = plt.figure()
-	ax_ica_raw = fig.add_subplot(311)
+	
+	ax_ica_raw = fig.add_subplot(411)
 	ax_cap_raw = ax_ica_raw.twinx()
 	
 	title = 'Charge and Incremental Capacity Analysis'
@@ -53,15 +54,32 @@ def plot_ica(data_w_cap):
 		title = 'Discharge'
 	fig.suptitle(title)
 	ax_cap_raw.set_ylabel('Capacity (Ah)', color = 'r')
+	
+	#Smoothing the voltage curve:
+	ax_ica_smoothed_v = fig.add_subplot(412, sharex = ax_ica_raw)
+	#Set Y-label to be smoothed ICA - ylabel will be shared by all since its positioned in the middle.
+	ax_ica_smoothed_v.set_ylabel('dQ/dV (Ah/V)')
+	
+	#add another subplot below, and share the X-axis.
+	ax_ica_smoothed1 = fig.add_subplot(413, sharex = ax_ica_raw)
+	
+	
+	#another subplot - 2nd pass of Savgol Filter
+	ax_ica_smoothed2 = fig.add_subplot(414, sharex = ax_ica_raw)
+	
+	#Label on the bottom-most subplot since all x is shared.
+	ax_ica_smoothed2.set_xlabel('Voltage')
+	
+	fig.subplots_adjust(hspace=0.5) #add a little extra space vertically
+	
+	
+	################ Plot capacity and raw dQ/dV - lots of noise
 	ax_cap_raw.plot('Voltage', 'Capacity_Ah_Up_To', data = data_w_cap, color = 'r')
 	
 	ax_ica_raw.plot('Voltage', 'dQ_dV', data = data_w_cap, color = 'b')
 	
 	
 	################# First step - smooth the voltage curve
-	ax_ica_smoothed_v = fig.add_subplot(312, sharex = ax_ica_raw)
-	ax_ica_smoothed_v.set_ylabel('dQ/dV (Ah/V)')
-	
 	#Voltage should not change too quickly - this will only be computed on constant current curves
 	data_w_cap['Voltage_smoothed'] = scipy.signal.savgol_filter(data_w_cap['Voltage'].tolist(), 9, 3)
 	#need to recalculate the voltage difference
@@ -72,19 +90,16 @@ def plot_ica(data_w_cap):
 	
 	
 	################# 2nd Step - smooth the resulting data
-	#add another subplot below, and share the X-axis.
-	ax_ica_smoothed1 = fig.add_subplot(313, sharex = ax_ica_raw)
-	
-	#Set Y-label to be smoothed ICA - ylabel will be shared by all since its positioned in the middle.
-	ax_ica_smoothed1.set_xlabel('Voltage')
-
 	#savgol filter with window size 9 and polynomial order 3 as suggested by DiffCapAnalyzer.
 	data_w_cap['dQ_dV_smoothed1'] = scipy.signal.savgol_filter(data_w_cap['dQ_dV_v_smoothed'].tolist(), 9, 3)
-
+	
 	#plot the smoothed data on the 3rd subplot
 	ax_ica_smoothed1.plot('Voltage', 'dQ_dV_smoothed1', data = data_w_cap, color = 'g')
 	
-	fig.subplots_adjust(hspace=0.5) #add a little extra space vertically
+	################# 3rd Step - 2nd pass of Savgol Filter
+	data_w_cap['dQ_dV_smoothed2'] = scipy.signal.savgol_filter(data_w_cap['dQ_dV_smoothed1'].tolist(), 9, 3)
+	ax_ica_smoothed2.plot('Voltage','dQ_dV_smoothed2', data = data_w_cap, color = 'y')
+	
 	plt.show()
 	
 
@@ -111,39 +126,21 @@ def calc_capacity(log_data, stats, charge=True, temp_log_dir = "", show_ica_grap
 		return dsc_data
 	
 	#Calculate time required for cycle
-	start_time = dsc_data.loc[dsc_data.index[0], 'Timestamp']
-	end_time = dsc_data.loc[dsc_data.index[-1], 'Timestamp']
+	start_time = dsc_data.loc[dsc_data.index[0], 'Data_Timestamp']
+	end_time = dsc_data.loc[dsc_data.index[-1], 'Data_Timestamp']
 	end_v = dsc_data.loc[dsc_data.index[-1], 'Voltage']
 	total_time = (end_time - start_time)/3600
 	
 	#add columns to the dataset
-	dsc_data = dsc_data.assign(SecsFromLastTimestamp=0)
-	dsc_data = dsc_data.assign(Capacity_Ah=0)
-	dsc_data = dsc_data.assign(Capacity_wh=0)
-	dsc_data = dsc_data.assign(Capacity_Ah_Up_To=0)
-	dsc_data = dsc_data.assign(Capacity_wh_Up_To=0)
-	dsc_data = dsc_data.assign(Voltage_Diff=0)
-	dsc_data = dsc_data.assign(dQ_dV=0)
+	dsc_data['SecsFromLastTimestamp'] = dsc_data['Timestamp'].diff()
+	dsc_data.loc[dsc_data.index.tolist()[0], 'SecsFromLastTimestamp'] = 0 #Set first val to 0 instead of NaN.
 	
-	#requires indexes to be the default numeric ones
-	for data_index in dsc_data.index:
-		try:
-			dsc_data.loc[data_index, 'SecsFromLastTimestamp'] = \
-			dsc_data.loc[data_index, 'Timestamp'] - dsc_data.loc[data_index-1, 'Timestamp']
-		except KeyError:
-			continue
-		
-		dsc_data.loc[data_index, 'Capacity_Ah'] = \
-			dsc_data.loc[data_index, 'Current'] * dsc_data.loc[data_index, 'SecsFromLastTimestamp'] / 3600
-		
-		dsc_data.loc[data_index, 'Capacity_wh'] = \
-			dsc_data.loc[data_index, 'Capacity_Ah'] * dsc_data.loc[data_index, 'Voltage']
-		
-		#Calculate the capacity up to this point, and the voltage differential
-		if(data_index != 0):
-			dsc_data.loc[data_index, 'Capacity_Ah_Up_To'] = dsc_data['Capacity_Ah'].sum()
-			dsc_data.loc[data_index, 'Capacity_wh_Up_To'] = dsc_data['Capacity_wh'].sum()
-			
+	dsc_data = dsc_data.assign(Capacity_Ah = dsc_data['Current'] * dsc_data['SecsFromLastTimestamp'] / 3600)
+	#For some reason, can't assign 2 at the same time, but I think we should be able to
+	dsc_data = dsc_data.assign(Capacity_wh = dsc_data['Capacity_Ah'] * dsc_data['Voltage'])
+	
+	dsc_data['Capacity_Ah_Up_To'] = dsc_data['Capacity_Ah'].cumsum() #cumulative sum of the values
+	dsc_data['Capacity_wh_Up_To'] = dsc_data['Capacity_wh'].cumsum()
 	
 	dsc_data['Voltage_Diff'] = dsc_data['Voltage'].diff()
 	dsc_data = dsc_data.assign(dQ_dV = dsc_data['Capacity_Ah'] / dsc_data['Voltage_Diff'])
@@ -246,8 +243,8 @@ def dataframe_to_csv(df, filepath):
 #cycle start instead python's time.time
 def timestamp_to_cycle_start(df):
 	if df.size > 0:
-		start_time = df['Timestamp'].iloc[0]
-		df['Timestamp'] = df['Timestamp'] - start_time
+		start_time = df['Data_Timestamp'].iloc[0]
+		df['Data_Timestamp'] = df['Data_Timestamp'] - start_time
 	return df
 
 

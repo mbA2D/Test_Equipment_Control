@@ -14,10 +14,10 @@ class KEL10X:
 	read_termination = '\n'
 	query_delay = 0.05
 	
-	def __init__(self, resource_id = ""):
+	def __init__(self, resource_id = None):
 		rm = pyvisa.ResourceManager()
 		
-		if(resource_id == ""):
+		if(resource_id == None):
 			resources = rm.list_resources()
 			
 			################# IDN VERSION #################
@@ -107,7 +107,7 @@ class KEL10X:
 		return float(self.inst.query(":MEAS:VOLT?").strip('V\n'))
 
 	def measure_current(self):
-		return float(self.inst.query(":MEAS:CURR?").strip('A\n'))
+		return (float(self.inst.query(":MEAS:CURR?").strip('A\n')) * (-1))
 	
 	def measure_power(self):
 		return float(self.inst.query(":MEAS:POW?").strip('W\n'))

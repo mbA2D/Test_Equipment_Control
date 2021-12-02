@@ -8,10 +8,10 @@ import serial
 # E-Load
 class BK8600:
 	# Initialize the BK8600 E-Load
-	def __init__(self, resource_id = ""):
+	def __init__(self, resource_id = None):
 		rm = pyvisa.ResourceManager('@ivi')
 		
-		if(resource_id == ""):
+		if(resource_id == None):
 			resources = rm.list_resources('@ivi')
 			
 			################# IDN VERSION #################
@@ -81,7 +81,7 @@ class BK8600:
 		return float(self.inst.query("MEAS:VOLT:DC?"))
 
 	def measure_current(self):
-		return float(self.inst.query("MEAS:CURR:DC?"))
+		return (float(self.inst.query("MEAS:CURR:DC?")) * (-1))
 		
 	def __del__(self):
 		self.toggle_output(False)
