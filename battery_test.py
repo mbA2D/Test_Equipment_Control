@@ -33,8 +33,14 @@ class MainTestWindow(QMainWindow):
 			batt_ch_list[ch_num] = cdc.BatteryChannel()
 			
 			#choose a psu and eload for each channel
-			eload_ch_list[ch_num] = eq.eLoads.choose_eload()
-			psu_ch_list[ch_num] = eq.powerSupplies.choose_psu()
+			msg = "Do you want to connect a power supply for this channel?"
+			title = "Power Supply Connection"
+			if eg.ynbox(msg, title):
+				psu_ch_list[ch_num] = eq.powerSupplies.choose_psu()
+			msg = "Do you want to connect an eload for this channel?"
+			title = "Eload Connection"
+			if eg.ynbox(msg, title):
+				eload_ch_list[ch_num] = eq.eLoads.choose_eload()
 			
 			#Separate measurement devices
 			msg = "Do you want to use a separate device to measure voltage?"
