@@ -14,7 +14,7 @@ def get_directory(title = "Choose Directory"):
 
 def write_line(filepath, data_dict, first_line = True):
 
-	with open(filepath, 'a') as csvfile:
+	with open(filepath, 'a', newline = '') as csvfile:
 		writer = csv.DictWriter(csvfile, fieldnames = list(data_dict.keys()))
 		if first_line:
 			writer.writeheader()
@@ -29,13 +29,12 @@ def write_line(filepath, data_dict, first_line = True):
 
 def start_file(directory, name, headers_list = None):
 	dt = datetime.now().strftime("%Y-%m-%d %H-%M-%S")
-	filename = '{test_name} {date}.csv'.format(\
-				test_name = name, date = dt)
+	filename = '{test_name} {date}.csv'.format(test_name = name, date = dt)
 	
 	filepath = os.path.join(directory, filename)
 	
 	if headers_list != None:
-		with open(filepath, 'w') as csvfile:
+		with open(filepath, 'w', newline = '') as csvfile:
 			writer = csv.writer(csvfile)
 			writer.writerow(headers_list)
 	
