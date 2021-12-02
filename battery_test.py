@@ -20,9 +20,6 @@ class MainTestWindow(QMainWindow):
 		self.setCentralWidget(button)
 	
 	def setup_battery_channels(self):
-		eloads = eq.eLoads()
-		psus = eq.powerSupplies()
-		dmms = eq.dmms()
 		
 		batt_ch_list = [None for i in range(self.num_battery_channels)]
 		psu_ch_list = [None for i in range(self.num_battery_channels)]
@@ -36,18 +33,18 @@ class MainTestWindow(QMainWindow):
 			batt_ch_list[ch_num] = cdc.BatteryChannel()
 			
 			#choose a psu and eload for each channel
-			eload_ch_list[ch_num] = eloads.choose_eload()
-			psu_ch_list[ch_num] = psus.choose_psu()
+			eload_ch_list[ch_num] = eq.eLoads.choose_eload()
+			psu_ch_list[ch_num] = eq.powerSupplies.choose_psu()
 			
 			#Separate measurement devices
 			msg = "Do you want to use a separate device to measure voltage?"
 			title = "Voltage Measurement Device"
 			if eg.ynbox(msg, title):
-				dmm_v_ch_list[ch_num] = dmms.choose_dmm()
+				dmm_v_ch_list[ch_num] = eq.dmms.choose_dmm()
 			msg = "Do you want to use a separate device to measure current?"
 			title = "Current Measurement Device"
 			if eg.ynbox(msg, title):
-				dmm_i_ch_list[ch_num] = dmms.choose_dmm()
+				dmm_i_ch_list[ch_num] = eq.dmms.choose_dmm()
 
 		
 		#Start tests on each channel
@@ -62,6 +59,7 @@ class MainTestWindow(QMainWindow):
 									  dmm_v_to_assign = dmm_v, dmm_i_to_assign = dmm_i)
 		
 		res_ids_dict = batt_channel.get_assigned_eq_res_ids()
+		#disconnect form this process so we can pass to new process by pickle-able resource id.
 		batt_channel.disconnect_all_assigned_eq()
 		
 		process1 = Process(target=cdc.charge_discharge_control, args = (res_ids_dict,))

@@ -402,9 +402,6 @@ def ask_storage_charge():
 
 def charge_discharge_control(res_ids_dict):
 	
-	print("Resource IDs Dict:")
-	print(res_ids_dict)
-	
 	eq_dict = dict()
 	for key in res_ids_dict:
 		if res_ids_dict[key]['res_id'] != None:
@@ -525,5 +522,5 @@ class BatteryChannel:
 
 
 if __name__ == '__main__':
-	
-	charge_discharge_control()
+	print("Use the battery_test.py script")
+	#charge_discharge_control()
