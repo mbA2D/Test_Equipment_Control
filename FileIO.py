@@ -13,10 +13,12 @@ def get_directory(title = "Choose Directory"):
 	return eg.diropenbox(title)
 
 
-def write_line(filepath, data_dict):
+def write_line(filepath, data_dict, first_line = True):
 
 	with open(filepath, 'a') as csvfile:
-		writer = csv.DictWriter(csvfile, fieldnames = data_dict.keys.tolist())
+		writer = csv.DictWriter(csvfile, fieldnames = list(data_dict.keys()))
+		if first_line:
+			writer.writeheader()
 		writer.writerow(data_dict)
 		
 	#read into pandas dataframe - works, quick to code
@@ -26,12 +28,17 @@ def write_line(filepath, data_dict):
 	#save to csv - append, no index, no header
 	#df.to_csv(filepath, header=False, mode='a', index=False)
 
-def start_file(directory, name, headers_list):
+def start_file(directory, name, headers_list = None):
 	dt = datetime.now().strftime("%Y-%m-%d %H-%M-%S")
 	filename = '{test_name} {date}.csv'.format(\
 				test_name = name, date = dt)
 	
 	filepath = os.path.join(directory, filename)
+	
+	if headers_list != None:
+		with open(filepath, 'w') as csvfile:
+			writer = csv.writer(csvfile)
+			writer.writerow(headers_list)
 	
 	return filepath
 
@@ -50,13 +57,13 @@ def ensure_subdir_exists_dir(filedir, subdir_name):
 def ensure_subdir_exists_file(filepath, subdir_name):
 	return ensure_subdir_exists(os.path.dirname(filepath), subdir_name)
 
-def write_data(filepath, data, printout=False):
+def write_data(filepath, data, printout=False, first_line = False):
 	data["Log_Timestamp"] = time.time()
 	
 	if(printout):
 		print(data)
 	
-	write_line(filepath, data)
+	write_line(filepath, data, first_line = first_line)
 	
 def set_read_only(filepath):
 	#make the file read-only so we don't lose decimal places if the CSV is opened in excel
