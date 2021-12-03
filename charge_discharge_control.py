@@ -61,6 +61,8 @@ def start_discharge(constant_current, eload):
 	
 def start_step(step_settings, psu, eload, v_meas_eq, i_meas_eq):
 	#This function will set all the supplies to the settings given in the step
+	
+	#CURRENT DRIVEN
 	if step_settings["drive_style"] == 'current_a':
 		if step_settings["drive_value"] > 0:
 			#charge - turn off eload first if connected
@@ -85,15 +87,28 @@ def start_step(step_settings, psu, eload, v_meas_eq, i_meas_eq):
 		elif step_settings["drive_value"] == 0:
 			#rest
 			disable_equipment(psu, eload)
+	
+	#VOLTAGE DRIVEN
 	elif step_settings["drive_style"] == 'voltage_v':
+		#positive current
+		if step_settings["drive_value_other"] >= 0:
+			disable_equipment(eload = eload) #turn off eload
+			if psu != None:
+				psu.set_current(step_settings["drive_value_other"])
+				psu.set_voltage(step_settings["drive_value"])
+				psu.toggle_output(True)
 		#TODO - needs CV mode on eloads
-		print("Voltage Driven Step Not Yet Implemented. Exiting.")
-		#Ensure everything is off since not yet implemented.
-		disable_equipment(psu, eload)
-		return False
+		else:
+			print("Voltage Driven Step Not Yet Implemented for negative current. Exiting.")
+			#Ensure everything is off since not yet implemented.
+			disable_equipment(psu, eload)
+			return False
+	
+	#NOT DRIVEN
 	elif step_settings["drive_style"] == 'none':
 		#Ensure all sources and loads are off.
 		disable_equipment(psu, eload)
+	
 	
 	#return True for a successful step start.
 	return True
@@ -108,15 +123,15 @@ def evaluate_end_condition(step_settings, data):
 	
 	#SAFETY SETTINGS
 	#Voltage and current limits are always active
-	if data["Voltage"] < step_settings["safety_min_voltage_v"] or 
-	   data["Voltage"] > step_settings["safety_max_voltage_v"] or 
-	   data["Current"] < step_settings["safety_min_current_a"] or
-	   data["Current"] > step_settings["safety_max_current_a"]:
+	if (data["Voltage"] < step_settings["safety_min_voltage_v"] or 
+	    data["Voltage"] > step_settings["safety_max_voltage_v"] or 
+	    data["Current"] < step_settings["safety_min_current_a"] or
+	    data["Current"] > step_settings["safety_max_current_a"]):
 	
 		return 'safety_condition'
 		
-	if step_settings["safety_max_time_s"] > 0 and 
-       data["Data_Timestamp_From_Step_Start"] > step_settings["safety_max_time_s"]:
+	if (step_settings["safety_max_time_s"] > 0 and 
+        data["Data_Timestamp_From_Step_Start"] > step_settings["safety_max_time_s"]):
 		
 		return 'safety_condition'
 			
@@ -246,16 +261,16 @@ def step_cell(log_filepath, step_settings, psu = None, eload = None, v_meas_eq =
 		data["Data_Timestamp_From_Step_Start"] = 0
 		
 		#If we are charging to the end of a CC cycle, then we need to not exit immediately.
-		if step_settings["drive_style"] == 'voltage_v' and
-		   step_settings["end_style"] == 'current_a' and
-		   step_settings["end_condition"] == 'lesser':
+		if (step_settings["drive_style"] == 'voltage_v' and
+		    step_settings["end_style"] == 'current_a' and
+		    step_settings["end_condition"] == 'lesser'):
 		
 			data["Current"] = step_settings["drive_value_other"]
 		
 		end_condition = evaluate_end_condition(step_settings, data)
 		
 		#Do the measurements and check the end conditions at every logging interval
-		while end_condition == 'none'
+		while end_condition == 'none':
 			time.sleep(step_settings["meas_log_int_s"] - ((time.time() - step_start_time) % step_settings["meas_log_int_s"]))
 			data["Voltage"], data["Current"], data["Data_Timestamp"] = measure_battery(v_meas_eq, i_meas_eq)
 			data["Data_Timestamp_From_Step_Start"] = (data["Data_Timestamp"] - step_start_time)
@@ -384,15 +399,15 @@ def multi_step_cycle(directory, cell_name, step_settings_list, eload = None, psu
 	
 	#Go through all the steps to see which equipment we need connected
 	for step_settings in step_settings_list:
-		if step_settings["drive_style"] == 'current_a':
-			if step_settings["drive_value"] > 0:
+		if step_settings.settings["drive_style"] == 'current_a':
+			if step_settings.settings["drive_value"] > 0:
 				eq_req_dict['psu'] = True
-			elif step_settings["drive_value"] < 0:
+			elif step_settings.settings["drive_value"] < 0:
 				eq_req_dict['eload'] = True
-		elif step_settings["drive_style"] == 'voltage_v':
-			if step_settings["drive_value_other"] > 0:
+		elif step_settings.settings["drive_style"] == 'voltage_v':
+			if step_settings.settings["drive_value_other"] > 0:
 				eq_req_dict['psu'] = True
-			elif step_settings["drive_value_other"] < 0:
+			elif step_settings.settings["drive_value_other"] < 0:
 				eq_req_dict['eload'] = True
 	
 	#Checking that all the required driving equipment is connected
@@ -407,7 +422,7 @@ def multi_step_cycle(directory, cell_name, step_settings_list, eload = None, psu
 	filepath = FileIO.start_file(directory, cell_name)
 	
 	for step_settings in step_settings_list:
-		end_reason = single_step_cycle(filepath, step_settings, eload, psu, v_meas_eq, i_meas_eq)
+		end_reason = single_step_cycle(filepath, step_settings.settings, eload, psu, v_meas_eq, i_meas_eq)
 		if end_reason == 'safety_condition':
 			#If we ended due to a safety condition, then prevent execution of future steps as well
 			break
@@ -593,10 +608,10 @@ def charge_discharge_control(res_ids_dict):
 	
 	
 	#If we're doing steps, then use a different loop.
-	if isinstance(cycle_settings, Templates.StepSettings):
+	if isinstance(cycle_settings_list[0], Templates.StepSettings):
 		#Use Step Functions
 		print("Step Cycle Starting")
-		multi_step_cycle(directory, cell_name, cycle_settings.settings, eload = eq_dict['eload'], psu = eq_dict['psu'], v_meas_eq = eq_dict['dmm_v'], i_meas_eq = eq_dict['dmm_i'])
+		multi_step_cycle(directory, cell_name, cycle_settings_list, eload = eq_dict['eload'], psu = eq_dict['psu'], v_meas_eq = eq_dict['dmm_v'], i_meas_eq = eq_dict['dmm_i'])
 	
 	else:
 		#cycle x times
