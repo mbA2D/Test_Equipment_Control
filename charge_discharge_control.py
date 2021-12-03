@@ -11,6 +11,8 @@ import Templates
 import FileIO
 
 
+##################### EQUIPMENT SETUP ####################
+
 def init_eload(eload):
 	eload.toggle_output(False)
 	eload.remote_sense(True)
@@ -35,6 +37,14 @@ def init_dmm_i(dmm):
 	#test measurement to ensure everything is set up correctly
 	#and the fisrt measurement which often takes longer is out of the way
 
+def disable_equipment(psu = None, eload = None):
+	if psu != None:
+		psu.set_current(0) #Turn current to 0 first to try and eliminate arcing in a relay inside an eload that disconnects the output
+		psu.toggle_output(False)
+	if eload != None:
+		eload.set_current(0) #Turn current to 0 first to try and eliminate arcing in a relay inside a power supply that disconnects the output
+		eload.toggle_output(False)
+
 ####################### TEST CONTROL #####################
 
 def start_charge(end_voltage, constant_current, psu):
@@ -44,24 +54,17 @@ def start_charge(end_voltage, constant_current, psu):
 	time.sleep(0.01)
 	psu.toggle_output(True)
 
-def end_charge(psu):
-	psu.toggle_output(False)
-	psu.set_current(0)
-
 def start_discharge(constant_current, eload):
 	eload.set_current(constant_current)
 	time.sleep(0.01)
 	eload.toggle_output(True)
-
-def end_discharge(eload):
-	eload.toggle_output(False)
-	eload.set_current(0)
 	
 def start_step(step_settings, psu, eload, v_meas_eq, i_meas_eq):
 	#This function will set all the supplies to the settings given in the step
 	if step_settings["drive_style"] == 'current_a':
 		if step_settings["drive_value"] > 0:
-			#charge
+			#charge - turn off eload first if connected
+			disable_equipment(eload = eload)
 			if psu != None:
 				psu.set_current(step_settings["drive_value"])
 				psu.set_voltage(step_settings["drive_value_other"])
@@ -71,6 +74,7 @@ def start_step(step_settings, psu, eload, v_meas_eq, i_meas_eq):
 				return False
 		elif step_settings["drive_value"] < 0:
 			#discharge
+			disable_equipment(psu = psu)
 			if eload != None:
 				eload.set_current(step_settings["drive_value"])
 				eload.toggle_output(True)
@@ -80,30 +84,44 @@ def start_step(step_settings, psu, eload, v_meas_eq, i_meas_eq):
 				return False
 		elif step_settings["drive_value"] == 0:
 			#rest
-			if psu != None:
-				psu.set_current(0)
-			if eload != None:
-				eload.set_current(0)
+			disable_equipment(psu, eload)
 	elif step_settings["drive_style"] == 'voltage_v':
 		#TODO - needs CV mode on eloads
 		print("Voltage Driven Step Not Yet Implemented. Exiting.")
+		#Ensure everything is off since not yet implemented.
+		disable_equipment(psu, eload)
 		return False
 	elif step_settings["drive_style"] == 'none':
 		#Ensure all sources and loads are off.
-		if psu != None:
-			psu.set_current(0)
-			psu.toggle_output(False)
-		if eload != None:
-			eload.set_current(0)
-			eload.toggle_output(False)
+		disable_equipment(psu, eload)
 	
 	#return True for a successful step start.
 	return True
 
+def end_steps(psu, eload):
+	disable_equipment(psu, eload)
+
 def evaluate_end_condition(step_settings, data):
 	#evaluates different end conditions (voltage, current, time)
 	#returns true if the end condition has been met (e.g. voltage hits lower bound, current hits lower bound, etc.)
+	#also returns true if any of the safety settings have been exceeded
 	
+	#SAFETY SETTINGS
+	#Voltage and current limits are always active
+	if data["Voltage"] < step_settings["safety_min_voltage_v"] or 
+	   data["Voltage"] > step_settings["safety_max_voltage_v"] or 
+	   data["Current"] < step_settings["safety_min_current_a"] or
+	   data["Current"] > step_settings["safety_max_current_a"]:
+	
+		return 'safety_condition'
+		
+	if step_settings["safety_max_time_s"] > 0 and 
+       data["Data_Timestamp_From_Step_Start"] > step_settings["safety_max_time_s"]:
+		
+		return 'safety_condition'
+			
+	
+	#END CONDITIONS
 	if step_settings["end_style"] == 'current_a':
 		left_comparator = data["Current"]
 	elif step_settings["end_style"] == 'voltage_v':
@@ -112,12 +130,18 @@ def evaluate_end_condition(step_settings, data):
 		left_comparator = data["Data_Timestamp_From_Step_Start"]
 	
 	if step_settings["end_condition"] == 'greater':
-		return left_comparator > step_settings["end_value"]
+		if left_comparator > step_settings["end_value"]:
+			return 'end_condition'
+		else:
+			return 'none'
 	elif step_settings["end_condition"] == 'lesser':
-		return left_comparator < step_settings["end_value"]
+		if left_comparator < step_settings["end_value"]:
+			return 'end_condition'
+		else:
+			return 'none'
 	
 	#return True so that we end the step if the settings were incorrectly configured.
-	return True
+	return 'settings'
 
 
 ######################### MEASURING ######################
@@ -148,7 +172,7 @@ def charge_cell(log_filepath, cycle_settings, psu, v_meas_eq, i_meas_eq):
 		data["Voltage"], data["Current"], data["Data_Timestamp"] = measure_battery(v_meas_eq, i_meas_eq)
 		FileIO.write_data(log_filepath, data)
 		
-	end_charge(psu)
+	disable_equipment(psu = psu)
 
 def rest_cell(log_filepath, cycle_settings, v_meas_eq, after_charge = True):
 	#rest - do nothing for X time but continue monitoring voltage
@@ -209,7 +233,7 @@ def discharge_cell(log_filepath, cycle_settings, eload, v_meas_eq, i_meas_eq):
 		data["Voltage"], data["Current"], data["Data_Timestamp"] = measure_battery(v_meas_eq, i_meas_eq)
 		FileIO.write_data(log_filepath, data)
 	
-	end_discharge(eload)
+	disable_equipment(eload = eload)
 
 def step_cell(log_filepath, step_settings, psu = None, eload = None, v_meas_eq = None, i_meas_eq = None):
 	
@@ -221,21 +245,31 @@ def step_cell(log_filepath, step_settings, psu = None, eload = None, v_meas_eq =
 		data["Voltage"], data["Current"], data["Data_Timestamp"] = measure_battery(v_meas_eq)
 		data["Data_Timestamp_From_Step_Start"] = 0
 		
-		#TODO - this will exit immediately if we end on charge current less than value if current has not yet risen high enough
-		while not evaluate_end_condition(step_settings, data):
+		#If we are charging to the end of a CC cycle, then we need to not exit immediately.
+		if step_settings["drive_style"] == 'voltage_v' and
+		   step_settings["end_style"] == 'current_a' and
+		   step_settings["end_condition"] == 'lesser':
+		
+			data["Current"] = step_settings["drive_value_other"]
+		
+		end_condition = evaluate_end_condition(step_settings, data)
+		
+		#Do the measurements and check the end conditions at every logging interval
+		while end_condition == 'none'
 			time.sleep(step_settings["meas_log_int_s"] - ((time.time() - step_start_time) % step_settings["meas_log_int_s"]))
 			data["Voltage"], data["Current"], data["Data_Timestamp"] = measure_battery(v_meas_eq, i_meas_eq)
 			data["Data_Timestamp_From_Step_Start"] = (data["Data_Timestamp"] - step_start_time)
+			end_condition = evaluate_end_condition(step_settings, data)
 			FileIO.write_data(log_filepath, data)
+			
+		#Cycle is done, no we figure out the reason for exiting.
+		
+		#if the end condition is due to safety settings, then we want to end all future steps as well
+		return end_condition
 	
 	else:
 		print("Step Setup Failed")
-	
-	#TODO - for now just ensure to shut off both. Later we will need to ensure transition between steps is 'smooth'
-	if psu != None:
-		psu.toggle_output(False)
-	if eload != None:
-		eload.toggle_output(False)
+		return 'settings'
 
 ################################## SETTING CYCLE, CHARGE, DISCHARGE ############################
 
@@ -307,7 +341,7 @@ def discharge_cycle(directory, cell_name, charge_settings, eload, v_meas_eq = No
 	
 	discharge_cell(filepath, charge_settings, eload, v_meas_eq, i_meas_eq)
 
-def step_cycle(directory, cell_name, step_settings, eload = None, psu = None, v_meas_eq = None, i_meas_eq = None):
+def single_step_cycle(filepath, step_settings, eload = None, psu = None, v_meas_eq = None, i_meas_eq = None):
 	
 	#if we don't have separate voltage measurement equipment:
 	if v_meas_eq == None:
@@ -317,7 +351,7 @@ def step_cycle(directory, cell_name, step_settings, eload = None, psu = None, v_
 			v_meas_eq = psu
 		else:
 			print("No Voltage Measurement Equipment Connected! Exiting")
-			return
+			return 'settings'
 	
 	#if we don't have separate current measurement equipment:
 	if i_meas_eq == None:
@@ -336,18 +370,55 @@ def step_cycle(directory, cell_name, step_settings, eload = None, psu = None, v_
 			i_meas_eq = eload #current measurement during discharge
 		elif not resting:
 			print("No Current Measurement Equipment Connected and not Resting! Exiting")
-			return
+			return 'settings'
 		
+	return step_cell(filepath, step_settings, psu, eload, v_meas_eq, i_meas_eq)
+
+def multi_step_cycle(directory, cell_name, step_settings_list, eload = None, psu = None, v_meas_eq = None, i_meas_eq = None):
+	#This is created for a single cycle style - e.g. discharge a cell with varying current.
+	#But it should work for creating large test sequences as well - though all data will be put in one file
 	
-	#start a new file for the cycle
+	eq_req_dict = dict()
+	eq_req_dict['psu'] = False
+	eq_req_dict['eload'] = False
+	
+	#Go through all the steps to see which equipment we need connected
+	for step_settings in step_settings_list:
+		if step_settings["drive_style"] == 'current_a':
+			if step_settings["drive_value"] > 0:
+				eq_req_dict['psu'] = True
+			elif step_settings["drive_value"] < 0:
+				eq_req_dict['eload'] = True
+		elif step_settings["drive_style"] == 'voltage_v':
+			if step_settings["drive_value_other"] > 0:
+				eq_req_dict['psu'] = True
+			elif step_settings["drive_value_other"] < 0:
+				eq_req_dict['eload'] = True
+	
+	#Checking that all the required driving equipment is connected
+	if eq_req_dict['psu'] and psu == None:
+		print("No Power Supply Connected but one is required for the step cycles! Exiting.")
+		return
+	if eq_req_dict['eload'] and eload == None:
+		print("No Eload Connected but one is required for the step cycles! Exiting.")
+		return
+	
+	#Now we can start all the steps
 	filepath = FileIO.start_file(directory, cell_name)
 	
-	step_cell(filepath, step_settings, psu, eload, v_meas_eq, i_meas_eq)
+	for step_settings in step_settings_list:
+		end_reason = single_step_cycle(filepath, step_settings, eload, psu, v_meas_eq, i_meas_eq)
+		if end_reason == 'safety_condition':
+			#If we ended due to a safety condition, then prevent execution of future steps as well
+			break
+	
+	#End of all the cycles - turn off the supplies
+	end_steps(psu, eload)
 	
 	
 ################################## CHOOSING CYCLE SETTINGS TYPES ################################
 
-def single_cycle():
+def single_cc_cycle_info():
 	#charge then discharge
 	cycle_settings = Templates.CycleSettings()
 	cycle_settings.get_cycle_settings()
@@ -357,7 +428,7 @@ def single_cycle():
 	
 	return cycle_settings_list
 
-def one_level_continuous_cycles_with_rest():
+def one_level_continuous_cc_cycles_with_rest_info():
 	#cycles - e.g. charge at 1A, rest, discharge at 5A, rest, repeat X times.
 	#get user to enter number of cycles
 	cycle_settings = Templates.CycleSettings()
@@ -373,7 +444,7 @@ def one_level_continuous_cycles_with_rest():
 	
 	return cycle_settings_list
 
-def two_level_continuous_cycles_with_rest():
+def two_level_continuous_cc_cycles_with_rest_info():
 	#A battery degradation test where the degradation is done at one current
 	#and the capacity measurement is done at another current.
 	#e.g. 9 degradation cycles at current X, then 1 capacity measurement cycle at current Y.
@@ -437,11 +508,24 @@ def single_step_cell_info():
 	
 	return step_settings_list
 
+def multi_step_cell_info():
+	step_settings_list = list()
+	
+	msg = "Add another step to the cycle?"
+	title = "Add Step"
+	while eg.ynbox(msg = msg, title = title):
+		step_settings_list.extend(single_step_cell_info())
+	
+	return step_settings_list
+
 def ask_storage_charge():
 	return eg.ynbox(title = "Storage Charge",
 					msg = "Do you want to do a storage charge?\n\
 							Recommended to do one. Leaving a cell discharged increases\n\
 							risk of latent failures due to dendrite growth.")
+
+
+################################## BATTERY CYCLING SETUP FUNCTION ######################################
 
 def charge_discharge_control(res_ids_dict):
 	
@@ -463,12 +547,13 @@ def charge_discharge_control(res_ids_dict):
 	
 	#different cycle types that are available
 	cycle_types = Templates.CycleTypes.cycle_types
-	cycle_types["Single Cycle"]['func_call'] = single_cycle
-	cycle_types["One Setting Continuous Cycles With Rest"]['func_call'] = one_level_continuous_cycles_with_rest
-	cycle_types["Two Setting Continuous Cycles With Rest"]['func_call'] = two_level_continuous_cycles_with_rest
+	cycle_types["Single Cycle"]['func_call'] = single_cc_cycle_info
+	cycle_types["One Setting Continuous Cycles With Rest"]['func_call'] = one_level_continuous_cc_cycles_with_rest_info
+	cycle_types["Two Setting Continuous Cycles With Rest"]['func_call'] = two_level_continuous_cc_cycles_with_rest_info
 	cycle_types["Charge Only"]['func_call'] = charge_only_cycle_info
 	cycle_types["Discharge Only"]['func_call'] = discharge_only_cycle_info
 	cycle_types["Single Step"]['func_call'] = single_step_cell_info
+	cycle_types["Multiple Step"]['func_call'] = multi_step_cell_info #TODO - create this function!
 	
 	#choose the cycle type
 	msg = "Which cycle type do you want to do?"
@@ -492,11 +577,11 @@ def charge_discharge_control(res_ids_dict):
 		print("Power Supply required for cycle type but none connected! Exiting")
 		return
 	
-	#extend adds two lists, append adds a single element to a list. We want extend here since charge_only_cycle() returns a list.
+	#extend adds two lists, append adds a single element to a list. We want extend here since charge_only_cycle_info() returns a list.
 	if do_a_storage_charge:
 		cycle_settings_list.extend(charge_only_cycle_info())
 	
-	#Now we choose the PSU, Eload, dmms to use
+	#Now initialize all the equipment that is connected
 	if eq_dict['eload'] != None:	
 		init_eload(eq_dict['eload'])
 	if eq_dict['psu'] != None:
@@ -505,35 +590,39 @@ def charge_discharge_control(res_ids_dict):
 		init_dmm_v(eq_dict['dmm_v'])
 	if eq_dict['dmm_i'] != None:
 		init_dmm_i(eq_dict['dmm_i'])
-		
-	#cycle x times
-	cycle_num = 0
-	for cycle_settings in cycle_settings_list:
-		print("Cycle {} Starting".format(cycle_num), flush=True)
-		try:
-			#Charge only - only using the power supply
-			if isinstance(cycle_settings, Templates.ChargeSettings):
-				charge_cycle(directory, cell_name, cycle_settings.settings, eq_dict['psu'], v_meas_eq = eq_dict['dmm_v'], i_meas_eq = eq_dict['dmm_i'])
+	
+	
+	#If we're doing steps, then use a different loop.
+	if isinstance(cycle_settings, Templates.StepSettings):
+		#Use Step Functions
+		print("Step Cycle Starting")
+		multi_step_cycle(directory, cell_name, cycle_settings.settings, eload = eq_dict['eload'], psu = eq_dict['psu'], v_meas_eq = eq_dict['dmm_v'], i_meas_eq = eq_dict['dmm_i'])
+	
+	else:
+		#cycle x times
+		cycle_num = 0
+		for cycle_settings in cycle_settings_list:
+			print("Cycle {} Starting".format(cycle_num), flush=True)
+			try:
+				#Charge only - only using the power supply
+				if isinstance(cycle_settings, Templates.ChargeSettings):
+					charge_cycle(directory, cell_name, cycle_settings.settings, eq_dict['psu'], v_meas_eq = eq_dict['dmm_v'], i_meas_eq = eq_dict['dmm_i'])
+					
+				#Discharge only - only using the eload
+				elif isinstance(cycle_settings, Templates.DischargeSettings):
+					discharge_cycle(directory, cell_name, cycle_settings.settings, eq_dict['eload'], v_meas_eq = eq_dict['dmm_v'], i_meas_eq = eq_dict['dmm_i'])
 				
-			#Discharge only - only using the eload
-			elif isinstance(cycle_settings, Templates.DischargeSettings):
-				discharge_cycle(directory, cell_name, cycle_settings.settings, eq_dict['eload'], v_meas_eq = eq_dict['dmm_v'], i_meas_eq = eq_dict['dmm_i'])
-			
-			#Use Step Functions
-			elif isinstance(cycle_settings, Templates.StepSettings):
-				step_cycle(directory, cell_name, cycle_settings.settings, eload = eq_dict['eload'], psu = eq_dict['psu'], v_meas_eq = eq_dict['dmm_v'], i_meas_eq = eq_dict['dmm_i'])
-			
-			#Cycle the cell - using both psu and eload
-			else:
-				cycle_cell(directory, cell_name, cycle_settings.settings, eq_dict['eload'], eq_dict['psu'], v_meas_eq = eq_dict['dmm_v'], i_meas_eq = eq_dict['dmm_i'])
-			
-		except KeyboardInterrupt:
-			if eq_dict['eload'] != None:	
-				eq_dict['eload'].toggle_output(False)
-			if eq_dict['psu'] != None:
-				eq_dict['psu'].toggle_output(False)
-			exit()
-		cycle_num += 1
+				#Cycle the cell - using both psu and eload
+				else:
+					cycle_cell(directory, cell_name, cycle_settings.settings, eq_dict['eload'], eq_dict['psu'], v_meas_eq = eq_dict['dmm_v'], i_meas_eq = eq_dict['dmm_i'])
+				
+			except KeyboardInterrupt:
+				if eq_dict['eload'] != None:	
+					eq_dict['eload'].toggle_output(False)
+				if eq_dict['psu'] != None:
+					eq_dict['psu'].toggle_output(False)
+				exit()
+			cycle_num += 1
 	
 	print("All Cycles Completed")
 
