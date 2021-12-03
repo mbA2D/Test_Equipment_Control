@@ -80,7 +80,6 @@ def start_step(step_settings, psu, eload, v_meas_eq, i_meas_eq):
 				return False
 		elif step_settings["drive_value"] == 0:
 			#rest
-			#TODO - for now just ensure to shut off both. Later we will need to ensure transition between steps is 'smooth'
 			if psu != None:
 				psu.set_current(0)
 			if eload != None:
@@ -232,6 +231,7 @@ def step_cell(log_filepath, step_settings, psu = None, eload = None, v_meas_eq =
 	else:
 		print("Step Setup Failed")
 	
+	#TODO - for now just ensure to shut off both. Later we will need to ensure transition between steps is 'smooth'
 	if psu != None:
 		psu.toggle_output(False)
 	if eload != None:
