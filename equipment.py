@@ -34,9 +34,9 @@ def connect_to_eq(key, class_name, res_id):
 
 class eLoads:
 	part_numbers = {
-		'BK8600': 'Eload_BK8600',
-		'DL3000': 'Eload_DL3000',
-		'KEL10X': 'Eload_KEL10X'
+		'BK8600': 	'Eload_BK8600',
+		'DL3000': 	'Eload_DL3000',
+		'KEL10X': 	'Eload_KEL10X'
 	}
 		
 	@classmethod
@@ -57,12 +57,12 @@ class eLoads:
 
 class powerSupplies:
 	part_numbers = {
-		'SPD1000': 'PSU_SPD1000',
-		'DP800': 'PSU_DP800',
-		'MP71025X': 'PSU_MP71025X',
-		'BK9100': 'PSU_BK9100',
-		'N8700': 'PSU_N8700',
-		'KAXXXXP': 'PSU_KAXXXXP'
+		'SPD1000': 				'PSU_SPD1000',
+		'DP800': 				'PSU_DP800',
+		'KWR10X or MP71025X': 	'PSU_MP71025X',
+		'BK9100': 				'PSU_BK9100',
+		'N8700': 				'PSU_N8700',
+		'KAXXXXP': 				'PSU_KAXXXXP'
 	}
 	
 	@classmethod
@@ -89,8 +89,8 @@ class powerSupplies:
 
 class dmms:
 	part_numbers = {
-		'DM3068': 'DMM_DM3068',
-		'SDM3065X': 'DMM_SDM3065X'
+		'DM3068': 		'DMM_DM3068',
+		'SDM3065X': 	'DMM_SDM3065X'
 	}
 	
 	@classmethod
