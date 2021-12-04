@@ -389,7 +389,7 @@ def single_step_cycle(filepath, step_settings, eload = None, psu = None, v_meas_
 		
 	return step_cell(filepath, step_settings, psu, eload, v_meas_eq, i_meas_eq)
 
-def multi_step_cycle(directory, cell_name, step_settings_list, eload = None, psu = None, v_meas_eq = None, i_meas_eq = None):
+def multi_step_cycle(directory, cell_name, step_settings, eload = None, psu = None, v_meas_eq = None, i_meas_eq = None):
 	#This is created for a single cycle style - e.g. discharge a cell with varying current.
 	#But it should work for creating large test sequences as well - though all data will be put in one file
 	
@@ -422,7 +422,7 @@ def multi_step_cycle(directory, cell_name, step_settings_list, eload = None, psu
 	filepath = FileIO.start_file(directory, cell_name)
 	
 	for step_settings in step_settings_list:
-		end_reason = single_step_cycle(filepath, step_settings.settings, eload, psu, v_meas_eq, i_meas_eq)
+		end_reason = single_step_cycle(filepath, step_settings, eload, psu, v_meas_eq, i_meas_eq)
 		if end_reason == 'safety_condition':
 			#If we ended due to a safety condition, then prevent execution of future steps as well
 			break
@@ -430,7 +430,11 @@ def multi_step_cycle(directory, cell_name, step_settings_list, eload = None, psu
 	#End of all the cycles - turn off the supplies
 	end_steps(psu, eload)
 	
-	
+#TODO - lifecycle testing with a step cycle for discharge
+#Discharge with a multi step cycle
+#We end this multi step cycle when there is a safety limit hit
+#After the safety limit, we need to charge again with another cycle type (either step or charge type)
+
 ################################## CHOOSING CYCLE SETTINGS TYPES ################################
 
 def single_cc_cycle_info():
@@ -439,7 +443,7 @@ def single_cc_cycle_info():
 	cycle_settings.get_cycle_settings()
 	
 	cycle_settings_list = list()
-	cycle_settings_list.append(cycle_settings)
+	cycle_settings_list.append((cycle_settings,))
 	
 	return cycle_settings_list
 
@@ -455,7 +459,7 @@ def one_level_continuous_cc_cycles_with_rest_info():
 	cycle_settings_list = list()
 
 	for i in range(num_cycles):
-		cycle_settings_list.append(cycle_settings)
+		cycle_settings_list.append((cycle_settings,))
 	
 	return cycle_settings_list
 
@@ -487,9 +491,9 @@ def two_level_continuous_cc_cycles_with_rest_info():
 
 	for j in range(num_test_cycles):
 		for i in range(num_cycles_type_1):
-			cycle_settings_list.append(cycle_1_settings)
+			cycle_settings_list.append((cycle_1_settings,))
 		for i in range(num_cycles_type_2):
-			cycle_settings_list.append(cycle_2_settings)
+			cycle_settings_list.append((cycle_2_settings,))
 	
 	return cycle_settings_list
 
@@ -499,7 +503,7 @@ def charge_only_cycle_info():
 	charge_only_settings = Templates.ChargeSettings()
 	charge_only_settings.get_cycle_settings("Charge Only")
 	
-	cycle_settings_list.append(charge_only_settings)
+	cycle_settings_list.append((charge_only_settings,))
 	
 	return cycle_settings_list
 	
@@ -509,7 +513,7 @@ def discharge_only_cycle_info():
 	discharge_only_settings = Templates.DischargeSettings()
 	discharge_only_settings.get_cycle_settings("Discharge Only")
 	
-	cycle_settings_list.append(discharge_only_settings)
+	cycle_settings_list.append((discharge_only_settings,))
 	
 	return cycle_settings_list
 
@@ -526,12 +530,24 @@ def single_step_cell_info():
 def multi_step_cell_info():
 	step_settings_list = list()
 	
-	msg = "Add another step to the cycle?"
+	msg = "Add a step to the cycle?"
 	title = "Add Step"
 	while eg.ynbox(msg = msg, title = title):
 		step_settings_list.extend(single_step_cell_info())
+		msg = "Add another step to the cycle?"
 	
 	return step_settings_list
+
+def continuous_step_cycles_info():
+	cycle_settings_list = list()
+	
+	msg = "Add ?"
+	title = "Add Cycle"
+	while eg.ynbox(msg = msg, title = title):
+		#append here since we want the multi step settings list to be a single element in this settings list
+		cycle_settings_list.append(multi_step_cell_info())
+	
+	return cycle_settings_list
 
 def ask_storage_charge():
 	return eg.ynbox(title = "Storage Charge",
@@ -562,12 +578,13 @@ def charge_discharge_control(res_ids_dict):
 	
 	#different cycle types that are available
 	cycle_types = Templates.CycleTypes.cycle_types
-	cycle_types["Single Cycle"]['func_call'] = single_cc_cycle_info
-	cycle_types["One Setting Continuous Cycles With Rest"]['func_call'] = one_level_continuous_cc_cycles_with_rest_info
-	cycle_types["Two Setting Continuous Cycles With Rest"]['func_call'] = two_level_continuous_cc_cycles_with_rest_info
-	cycle_types["Charge Only"]['func_call'] = charge_only_cycle_info
-	cycle_types["Discharge Only"]['func_call'] = discharge_only_cycle_info
+	cycle_types["Single CC Cycle"]['func_call'] = single_cc_cycle_info
+	cycle_types["One Setting Continuous CC Cycles With Rest"]['func_call'] = one_level_continuous_cc_cycles_with_rest_info
+	cycle_types["Two Setting Continuous CC Cycles With Rest"]['func_call'] = two_level_continuous_cc_cycles_with_rest_info
+	cycle_types["CC Charge Only"]['func_call'] = charge_only_cycle_info
+	cycle_types["CC Discharge Only"]['func_call'] = discharge_only_cycle_info
 	cycle_types["Step Cycle"]['func_call'] = multi_step_cell_info
+	cycle_types["Continuous Step Cycles"]['func_call'] = continuous_step_cycles_info
 	
 	#choose the cycle type
 	msg = "Which cycle type do you want to do?"
@@ -575,8 +592,8 @@ def charge_discharge_control(res_ids_dict):
 	cycle_type = eg.choicebox(msg, title, list(cycle_types.keys()))
 	
 	#gather the list settings based on the cycle type
-	cycle_settings_list = list()
-	cycle_settings_list = cycle_types[cycle_type]['func_call']()
+	cycle_settings_list_of_lists = list()
+	cycle_settings_list_of_lists = cycle_types[cycle_type]['func_call']()
 	
 	do_a_storage_charge = False
 	if(cycle_types[cycle_type]['str_chg_opt']):
@@ -591,9 +608,12 @@ def charge_discharge_control(res_ids_dict):
 		print("Power Supply required for cycle type but none connected! Exiting")
 		return
 	
+	if cycle_type in ("Step Cycle", "Continuous Step Cycles"):
+		#TODO - fix location that we check
+	
 	#extend adds two lists, append adds a single element to a list. We want extend here since charge_only_cycle_info() returns a list.
 	if do_a_storage_charge:
-		cycle_settings_list.extend(charge_only_cycle_info())
+		cycle_settings_list_of_lists.extend(charge_only_cycle_info())
 	
 	#Now initialize all the equipment that is connected
 	if eq_dict['eload'] != None:	
@@ -606,35 +626,32 @@ def charge_discharge_control(res_ids_dict):
 		init_dmm_i(eq_dict['dmm_i'])
 	
 	
-	#If we're doing steps, then use a different loop.
-	if isinstance(cycle_settings_list[0], Templates.StepSettings):
-		#Use Step Functions
-		print("Step Cycle Starting")
-		multi_step_cycle(directory, cell_name, cycle_settings_list, eload = eq_dict['eload'], psu = eq_dict['psu'], v_meas_eq = eq_dict['dmm_v'], i_meas_eq = eq_dict['dmm_i'])
-	
 	else:
 		#cycle x times
 		cycle_num = 0
-		for cycle_settings in cycle_settings_list:
+		for cycle_settings_list in cycle_settings_list_of_lists:
 			print("Cycle {} Starting".format(cycle_num), flush=True)
 			try:
-				#Charge only - only using the power supply
-				if isinstance(cycle_settings, Templates.ChargeSettings):
-					charge_cycle(directory, cell_name, cycle_settings.settings, eq_dict['psu'], v_meas_eq = eq_dict['dmm_v'], i_meas_eq = eq_dict['dmm_i'])
 					
-				#Discharge only - only using the eload
-				elif isinstance(cycle_settings, Templates.DischargeSettings):
-					discharge_cycle(directory, cell_name, cycle_settings.settings, eq_dict['eload'], v_meas_eq = eq_dict['dmm_v'], i_meas_eq = eq_dict['dmm_i'])
-				
-				#Cycle the cell - using both psu and eload
-				else:
-					cycle_cell(directory, cell_name, cycle_settings.settings, eq_dict['eload'], eq_dict['psu'], v_meas_eq = eq_dict['dmm_v'], i_meas_eq = eq_dict['dmm_i'])
+				for cycle_settings in cycle_settings_list:
+					#Charge only - only using the power supply
+					if isinstance(cycle_settings, Templates.ChargeSettings):
+						charge_cycle(directory, cell_name, cycle_settings.settings, eq_dict['psu'], v_meas_eq = eq_dict['dmm_v'], i_meas_eq = eq_dict['dmm_i'])
+						
+					#Discharge only - only using the eload
+					elif isinstance(cycle_settings, Templates.DischargeSettings):
+						discharge_cycle(directory, cell_name, cycle_settings.settings, eq_dict['eload'], v_meas_eq = eq_dict['dmm_v'], i_meas_eq = eq_dict['dmm_i'])
+					
+					#Step Functions
+					elif isinstance(cycle_settings, Templates.StepSettings):
+						multi_step_cycle(directory, cell_name, cycle_settings.settings, eload = eq_dict['eload'], psu = eq_dict['psu'], v_meas_eq = eq_dict['dmm_v'], i_meas_eq = eq_dict['dmm_i'])
+
+					#Cycle the cell - using both psu and eload
+					else:
+						cycle_cell(directory, cell_name, cycle_settings.settings, eq_dict['eload'], eq_dict['psu'], v_meas_eq = eq_dict['dmm_v'], i_meas_eq = eq_dict['dmm_i'])
 				
 			except KeyboardInterrupt:
-				if eq_dict['eload'] != None:	
-					eq_dict['eload'].toggle_output(False)
-				if eq_dict['psu'] != None:
-					eq_dict['psu'].toggle_output(False)
+				disable_equipment(psu = eq_dict['psu'], eload = eq_dict['eload'])
 				exit()
 			cycle_num += 1
 	

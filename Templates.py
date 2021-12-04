@@ -33,12 +33,13 @@ class CycleStats:
 class CycleTypes:
 	
 	cycle_types = {
-		"Single Cycle": 							{'func_call': '', 'str_chg_opt': True, 'load_req': True, 'supply_req': True},
-		"One Setting Continuous Cycles With Rest": 	{'func_call': '', 'str_chg_opt': True,'load_req': True, 'supply_req': True},
-		"Two Setting Continuous Cycles With Rest": 	{'func_call': '', 'str_chg_opt': True,'load_req': True, 'supply_req': True},
-		"Charge Only": 								{'func_call': '', 'str_chg_opt': False,'load_req': False, 'supply_req': True},
-		"Discharge Only": 							{'func_call': '', 'str_chg_opt': False,'load_req': True, 'supply_req': False},
-		"Step Cycle":								{'func_call': '', 'str_chg_opt': False,'load_req': False, 'supply_req': False}
+		"Single CC Cycle": 								{'func_call': '', 'str_chg_opt': True, 'load_req': True, 'supply_req': True},
+		"One Setting Continuous CC Cycles With Rest": 	{'func_call': '', 'str_chg_opt': True,'load_req': True, 'supply_req': True},
+		"Two Setting Continuous CC Cycles With Rest": 	{'func_call': '', 'str_chg_opt': True,'load_req': True, 'supply_req': True},
+		"CC Charge Only": 								{'func_call': '', 'str_chg_opt': False,'load_req': False, 'supply_req': True},
+		"CC Discharge Only": 							{'func_call': '', 'str_chg_opt': False,'load_req': True, 'supply_req': False},
+		"Step Cycle":									{'func_call': '', 'str_chg_opt': False,'load_req': False, 'supply_req': False},
+		"Continuous Step Cycles":						{'func_call': '', 'str_chg_opt': True, 'load_req': False, 'supply_req': False}
 	}
 	
 	#TODO - Step should not have its load and supply requirements given here - it should only be after the step values are chosen
