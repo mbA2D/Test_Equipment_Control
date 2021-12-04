@@ -567,8 +567,7 @@ def charge_discharge_control(res_ids_dict):
 	cycle_types["Two Setting Continuous Cycles With Rest"]['func_call'] = two_level_continuous_cc_cycles_with_rest_info
 	cycle_types["Charge Only"]['func_call'] = charge_only_cycle_info
 	cycle_types["Discharge Only"]['func_call'] = discharge_only_cycle_info
-	cycle_types["Single Step"]['func_call'] = single_step_cell_info
-	cycle_types["Multiple Step"]['func_call'] = multi_step_cell_info
+	cycle_types["Step Cycle"]['func_call'] = multi_step_cell_info
 	
 	#choose the cycle type
 	msg = "Which cycle type do you want to do?"

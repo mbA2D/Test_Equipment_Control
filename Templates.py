@@ -38,8 +38,7 @@ class CycleTypes:
 		"Two Setting Continuous Cycles With Rest": 	{'func_call': '', 'str_chg_opt': True,'load_req': True, 'supply_req': True},
 		"Charge Only": 								{'func_call': '', 'str_chg_opt': False,'load_req': False, 'supply_req': True},
 		"Discharge Only": 							{'func_call': '', 'str_chg_opt': False,'load_req': True, 'supply_req': False},
-		"Single Step":								{'func_call': '', 'str_chg_opt': False,'load_req': False, 'supply_req': False},
-		"Multiple Step":							{'func_call': '', 'str_chg_opt': False,'load_req': False, 'supply_req': False}
+		"Step Cycle":								{'func_call': '', 'str_chg_opt': False,'load_req': False, 'supply_req': False}
 	}
 	
 	#TODO - Step should not have its load and supply requirements given here - it should only be after the step values are chosen
