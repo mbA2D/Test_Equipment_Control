@@ -6,6 +6,7 @@ import easygui as eg
 from lab_equipment import Eload_BK8600
 from lab_equipment import Eload_DL3000
 from lab_equipment import Eload_KEL10X
+from lab_equipment import Eload_IT8500
 
 #Power Supplies
 from lab_equipment import PSU_DP800
@@ -27,7 +28,7 @@ def connect_to_eq(key, class_name, res_id):
 		return eLoads.choose_eload(class_name, res_id)[1]
 	if key == 'psu':
 		return powerSupplies.choose_psu(class_name, res_id)[1]
-	if key == 'dmm' or ('dmm' in key):
+	if key == 'dmm' or ('dmm' in key): #for dmm_i and dmm_v keys
 		return dmms.choose_dmm(class_name, res_id)[1]
 	return None
 
@@ -36,7 +37,8 @@ class eLoads:
 	part_numbers = {
 		'BK8600': 'Eload_BK8600',
 		'DL3000': 'Eload_DL3000',
-		'KEL10X': 'Eload_KEL10X'
+		'KEL10X': 'Eload_KEL10X',
+		'IT8500': 'Eload_IT8500'
 	}
 		
 	@classmethod
@@ -52,6 +54,8 @@ class eLoads:
 			eload = Eload_DL3000.DL3000(resource_id = resource_id)
 		elif(class_name == 'KEL10X'):
 			eload = Eload_KEL10X.KEL10X(resource_id = resource_id)
+		elif(class_name == 'IT8500'):
+			eload = Eload_IT8500.IT8500(resource_id = resource_id)
 		return class_name, eload
 
 

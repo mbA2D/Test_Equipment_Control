@@ -2,6 +2,7 @@
 
 from PyQt6.QtWidgets import QApplication, QMainWindow, QPushButton, QLabel, QVBoxLayout, QHBoxLayout, QWidget
 from multiprocessing import Process, Queue
+from functools import partial
 import queue #queue module required for exception handling of multiprocessing.Queue
 
 import charge_discharge_control as cdc
@@ -13,7 +14,7 @@ class MainTestWindow(QMainWindow):
 	def __init__(self):
 		super().__init__()
 		
-		self.num_battery_channels = 2
+		self.num_battery_channels = 3
 		
 		#Connected Equipment
 		self.batt_ch_list = [None for i in range(self.num_battery_channels)]
@@ -38,9 +39,9 @@ class MainTestWindow(QMainWindow):
 			
 			#setting up buttons
 			self.button_assign_eq_list[ch_num].setCheckable(False)
-			self.button_assign_eq_list[ch_num].clicked.connect(lambda: self.assign_equipment(ch_num))
+			self.button_assign_eq_list[ch_num].clicked.connect(partial(self.assign_equipment, ch_num))
 			self.button_start_test_list[ch_num].setCheckable(False)
-			self.button_start_test_list[ch_num].clicked.connect(lambda: self.start_test(ch_num))
+			self.button_start_test_list[ch_num].clicked.connect(partial(self.start_test, ch_num))
 			
 			#setting up a widget and layout for each channel
 			ch_layout = QHBoxLayout()
@@ -53,8 +54,6 @@ class MainTestWindow(QMainWindow):
 			
 			central_layout.addWidget(ch_widget)
 			self.batt_ch_list[ch_num] = cdc.BatteryChannel()
-		
-		
 		
 		central_widget = QWidget()
 		central_widget.setLayout(central_layout)

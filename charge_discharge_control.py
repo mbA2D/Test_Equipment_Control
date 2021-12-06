@@ -171,7 +171,7 @@ def measure_battery(v_meas_eq, i_meas_eq = None, data_out_queue = None):
 	
 	if data_out_queue != None:
 		#add the new data to the output queue
-		data_out_queue.put_no_wait(data_dict)
+		data_out_queue.put_nowait(data_dict)
 		
 	return data_dict
 
@@ -283,10 +283,8 @@ def step_cell(log_filepath, step_settings, psu = None, eload = None, v_meas_eq =
 			data["Data_Timestamp_From_Step_Start"] = (data["Data_Timestamp"] - step_start_time)
 			end_condition = evaluate_end_condition(step_settings, data)
 			FileIO.write_data(log_filepath, data)
-			
-		#Cycle is done, no we figure out the reason for exiting.
 		
-		#if the end condition is due to safety settings, then we want to end all future steps as well
+		#if the end condition is due to safety settings, then we want to end all future steps as well so return the exit reason
 		return end_condition
 	
 	else:
@@ -489,7 +487,7 @@ def multi_step_cell_info():
 	msg = "Add a step to the cycle?"
 	title = "Add Step"
 	while eg.ynbox(msg = msg, title = title):
-		step_settings_list.extend(single_step_cell_info())
+		step_settings_list.append(single_step_cell_info())
 		msg = "Add another step to the cycle?"
 	
 	return step_settings_list
@@ -551,10 +549,16 @@ def charge_discharge_control(res_ids_dict, data_out_queue = None):
 	cycle_settings_list_of_lists = list()
 	cycle_settings_list_of_lists = cycle_types[cycle_type]['func_call']()
 	
+	#STORAGE CHARGE
 	do_a_storage_charge = False
 	if(cycle_types[cycle_type]['str_chg_opt']):
 		do_a_storage_charge = ask_storage_charge()
 	
+	#extend adds two lists, append adds a single element to a list. We want extend here since charge_only_cycle_info() returns a list.
+	if do_a_storage_charge:
+		cycle_settings_list_of_lists.extend(charge_only_cycle_info())
+	
+	#REQUIRED EQUIPMENT
 	eq_req_dict = {'psu': False, 'eload': False}
 	
 	if cycle_type in ("Step Cycle", "Continuous Step Cycles"):
@@ -570,10 +574,8 @@ def charge_discharge_control(res_ids_dict, data_out_queue = None):
 	if eq_req_dict['psu'] and eq_dict['psu'] == None:
 		print("Power Supply required for cycle type but none connected! Exiting")
 		return
+	#TODO - check cycles with multiple types
 	
-	#extend adds two lists, append adds a single element to a list. We want extend here since charge_only_cycle_info() returns a list.
-	if do_a_storage_charge:
-		cycle_settings_list_of_lists.extend(charge_only_cycle_info())
 	
 	#Now initialize all the equipment that is connected
 	if eq_dict['eload'] != None:	
@@ -645,7 +647,7 @@ class BatteryChannel:
 	
 	def get_assigned_eq_res_ids(self):
 		eq_res_ids_dict = dict()
-		
+		#TODO - starting a second test - won't be able to use inst as the resource is already closed.
 		for key in self.eq_dict:
 			eq_res_ids_dict[key] = {'class_name': None, 'res_id': None}
 			if self.eq_dict[key] != None:

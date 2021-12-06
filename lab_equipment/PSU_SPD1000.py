@@ -51,8 +51,9 @@ class SPD1000:
 				idn = eg.choicebox(msg, title, idns_dict.values())
 			#Now we know which IDN we want to connect to
 			#swap keys and values and then connect
-			resources_dict = dict((v,k) for k,v in idns_dict.items())
-			resource_id = resources_dict[idn]
+			if idn != None:
+				resources_dict = dict((v,k) for k,v in idns_dict.items())
+				resource_id = resources_dict[idn]
 		
 		self.inst = rm.open_resource(resource_id)
 		self.inst.read_termination = SPD1000.read_termination
