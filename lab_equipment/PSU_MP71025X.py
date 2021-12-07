@@ -1,6 +1,6 @@
-#python pyvisa commands for controlling Multicomp Pro MP71025X series power supplies
-#MP710256 - 30V 30A 300W
-#MP710257 - 60V 15A 300W
+#python pyvisa commands for controlling KORAD KWR10X or Multicomp Pro MP71025X series power supplies
+#KWR102 - MP710256 - 30V 30A 300W
+#KWR103 - MP710257 - 60V 15A 300W
 
 import pyvisa
 import time
@@ -9,11 +9,11 @@ import serial
 
 # Power Supply
 class MP71025X:
-	# Initialize the MP71025X Power Supply (X is 6 or 7)
+	# Initialize the KWR102/3 MP710256/7 Power Supply
 	
 	baud_rate = 115200
 	read_termination = '\n'
-	query_delay = 0.05
+	query_delay = 0.04
 	
 	def __init__(self, resource_id = None):
 		

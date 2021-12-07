@@ -61,12 +61,12 @@ class eLoads:
 
 class powerSupplies:
 	part_numbers = {
-		'SPD1000': 'PSU_SPD1000',
-		'DP800': 'PSU_DP800',
-		'MP71025X': 'PSU_MP71025X',
-		'BK9100': 'PSU_BK9100',
-		'N8700': 'PSU_N8700',
-		'KAXXXXP': 'PSU_KAXXXXP'
+		'SPD1000': 				'PSU_SPD1000',
+		'DP800': 				'PSU_DP800',
+		'KWR10X or MP71025X': 	'PSU_MP71025X',
+		'BK9100': 				'PSU_BK9100',
+		'N8700': 				'PSU_N8700',
+		'KAXXXXP': 				'PSU_KAXXXXP'
 	}
 	
 	@classmethod
@@ -80,7 +80,7 @@ class powerSupplies:
 			psu = PSU_SPD1000.SPD1000(resource_id = resource_id)
 		elif(class_name == 'DP800'):
 			psu = PSU_DP800.DP800(resource_id = resource_id)
-		elif(class_name == 'MP71025X'):
+		elif(class_name == 'KWR10X or MP71025X'):
 			psu = PSU_MP71025X.MP71025X(resource_id = resource_id)
 		elif(class_name == 'BK9100'):
 			psu = PSU_BK9100.BK9100(resource_id = resource_id)
@@ -93,8 +93,8 @@ class powerSupplies:
 
 class dmms:
 	part_numbers = {
-		'DM3068': 'DMM_DM3068',
-		'SDM3065X': 'DMM_SDM3065X'
+		'DM3068': 		'DMM_DM3068',
+		'SDM3065X': 	'DMM_SDM3065X'
 	}
 	
 	@classmethod
