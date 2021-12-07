@@ -76,7 +76,7 @@ class powerSupplies:
 			psu = PSU_SPD1000.SPD1000(resource_id = resource_id)
 		elif(class_name == 'DP800'):
 			psu = PSU_DP800.DP800(resource_id = resource_id)
-		elif(class_name == 'MP71025X'):
+		elif(class_name == 'KWR10X or MP71025X'):
 			psu = PSU_MP71025X.MP71025X(resource_id = resource_id)
 		elif(class_name == 'BK9100'):
 			psu = PSU_BK9100.BK9100(resource_id = resource_id)
