@@ -48,7 +48,7 @@ def ensure_subdir_exists_dir(filedir, subdir_name):
 	return candidate_dir
 			
 def ensure_subdir_exists_file(filepath, subdir_name):
-	return ensure_subdir_exists(os.path.dirname(filepath), subdir_name)
+	return ensure_subdir_exists_dir(os.path.dirname(filepath), subdir_name)
 
 def write_data(filepath, data, printout=False, first_line = False):
 	data["Log_Timestamp"] = time.time()
