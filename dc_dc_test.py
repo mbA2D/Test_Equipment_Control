@@ -20,24 +20,24 @@ eload = eq.eLoads.choose_eload()[1]
 psu = eq.powerSupplies.choose_psu()[1]
 
 def init_instruments():
-	eload.remote_sense(True)
-	psu.remote_sense(True)
+	eload.remote_sense(False)
+	psu.remote_sense(False)
 
 def remove_extreme_values(list_to_remove, num_to_remove):
-	for i in range(remove_num):
+	for i in range(int(num_to_remove)):
 		list_to_remove.remove(max(list_to_remove))
 		list_to_remove.remove(min(list_to_remove))
 	return list_to_remove
 
 def gather_data(samples_to_avg):
-	data = list()
+	data = dict()
 	
 	input_voltage = list()
 	input_current = list()
 	output_voltage = list()
 	output_current = list()
 	
-	for i in range(samples_to_avg):
+	for i in range(int(samples_to_avg)):
 		#The current and voltage measurements are not simultaneous
 		#so we technically are not measuring true power
 		#we will average each term individually as the load conditions are not
@@ -66,10 +66,10 @@ def gather_data(samples_to_avg):
 	ov = sum(output_voltage) / len(output_voltage)
 	oc = sum(output_current) / len(output_current)	
 	
-	data.append(iv)
-	data.append(ic)
-	data.append(ov)
-	data.append(oc)
+	data['v_in']=(iv)
+	data['i_in']=(ic)
+	data['v_out']=(ov)
+	data['i_out']=(oc)
 	
 	return data
 
@@ -80,12 +80,12 @@ def sweep_load_current(filepath, test_name, settings):
 	
 	for current in np.linspace(settings["load_current_min"],
 								settings["load_current_max"],
-								settings["num_current_steps"]):
+								int(settings["num_current_steps"])):
 		eload.set_current(current)
 		time.sleep(settings["step_delay_s"])
 		data = gather_data(settings["measurement_samples_for_avg"])
-		data.append(settings["psu_voltage"])
-		FileIO.write_data(filepath, data)
+		data["v_in_set"] = settings["psu_voltage"]
+		FileIO.write_data(filepath, data, True)
 
 
 ################# MAIN PROGRAM ##################
@@ -96,16 +96,18 @@ if __name__ == '__main__':
 	test_name = test_name.replace(" ", "_")
 	
 	test_settings = Templates.DcdcTestSettings()
+	test_settings = test_settings.settings
 	test_settings = jsonIO.get_cycle_settings(test_settings, test_name)
 	
 	#generate a list of sweep settings - changing voltage for each sweep
 	voltage_list = np.linspace(test_settings["psu_voltage_min"],
 							   test_settings["psu_voltage_max"],
-							   test_settings["num_voltage_steps"])
+							   int(test_settings["num_voltage_steps"]))
 	
 	sweep_settings_list = list()
 	for voltage in voltage_list:
 		sweep_settings = Templates.DcdcSweepSettings()
+		sweep_settings = sweep_settings.settings
 		sweep_settings["psu_voltage"] = voltage
 		sweep_settings["psu_current_limit_a"] = test_settings["psu_current_limit_a"]
 		sweep_settings["load_current_min"] = test_settings["load_current_min"]
@@ -117,7 +119,7 @@ if __name__ == '__main__':
 	
 	#Headers - Timestamp is added by FileIO.write_data
 	headers = ['Timestamp', 'v_in', 'i_in', 'v_out', 'i_out', 'v_in_set']
-	filepath = FileIO.start_file(directory, test_name, headers)
+	filepath = FileIO.start_file(directory, test_name)
 	
 	#Turn on power supply and eload to get the converter started up
 	init_instruments()
@@ -129,7 +131,7 @@ if __name__ == '__main__':
 	
 	#run through each of the generated settings
 	for sweep_settings in sweep_settings_list:
-		sweep_load_current(directory, test_name, sweep_settings)
+		sweep_load_current(filepath, test_name, sweep_settings)
 	
 	#Turn off power supply and eload
 	eload.toggle_output(False)
