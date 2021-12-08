@@ -264,7 +264,7 @@ def step_cell(log_filepath, step_settings, psu = None, eload = None, v_meas_eq =
 		step_start_time = time.time()
 		
 		data = dict()
-		data.update(measure_battery(v_meas_eq))
+		data.update(measure_battery(v_meas_eq, i_meas_eq))
 		data["Data_Timestamp_From_Step_Start"] = 0
 		
 		#If we are charging to the end of a CC cycle, then we need to not exit immediately.
