@@ -85,7 +85,7 @@ def sweep_load_current(filepath, test_name, settings):
 		time.sleep(settings["step_delay_s"])
 		data = gather_data(settings["measurement_samples_for_avg"])
 		data["v_in_set"] = settings["psu_voltage"]
-		FileIO.write_data(filepath, data, True)
+		FileIO.write_data(filepath, data, printout = True)
 
 
 ################# MAIN PROGRAM ##################
@@ -117,8 +117,6 @@ if __name__ == '__main__':
 		sweep_settings["measurement_samples_for_avg"] = test_settings["measurement_samples_for_avg"]
 		sweep_settings_list.append(sweep_settings)
 	
-	#Headers - Timestamp is added by FileIO.write_data
-	headers = ['Timestamp', 'v_in', 'i_in', 'v_out', 'i_out', 'v_in_set']
 	filepath = FileIO.start_file(directory, test_name)
 	
 	#Turn on power supply and eload to get the converter started up
@@ -134,5 +132,6 @@ if __name__ == '__main__':
 		sweep_load_current(filepath, test_name, sweep_settings)
 	
 	#Turn off power supply and eload
+	eload.set_current(0)
 	eload.toggle_output(False)
 	psu.toggle_output(False)

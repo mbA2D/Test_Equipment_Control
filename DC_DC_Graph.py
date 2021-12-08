@@ -7,8 +7,9 @@ import os
 
 def calc_eff(df):
 	df['p_in'] = df['v_in'] * df['i_in']
-	df['p_out'] = df['v_out'] * abs(df['i_out'])
-	df['eff'] = df['p_out'] / df['p_in']
+	df['p_out'] = df['v_out'] * df['i_out'] #i_out is negative from the eloads - system (DC-DC Converter) is providing current
+	df['p_loss'] = df['p_in'] + df['p_out'] #p_out is negative - system (DC-DC Converter) is losing power
+	df['eff'] = abs(df['p_out'] / df['p_in'])
 
 def plot_eff(df, test_name, save_filepath = ''):
 	if df.size == 0:
