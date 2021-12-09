@@ -4,6 +4,7 @@ from PyQt6.QtWidgets import QApplication, QMainWindow, QPushButton, QLabel, QVBo
 from multiprocessing import Process, Queue
 from functools import partial
 import queue #queue module required for exception handling of multiprocessing.Queue
+import traceback
 
 import charge_discharge_control as cdc
 import equipment as eq
@@ -121,13 +122,17 @@ class MainTestWindow(QMainWindow):
 		
 	
 	def batt_test_process(self, res_ids_dict, data_out_queue = None, ch_num = None):
-		# TODO: Handle res_ids_dict = None
-		if self.mp_process_list[ch_num] is not None and self.mp_process_list[ch_num].is_alive():
-			print(f"There is a process already running")
-			return
-		self.mp_process_list[ch_num] = Process(target=cdc.charge_discharge_control, args = (res_ids_dict, data_out_queue))
-		self.mp_process_list[ch_num].start()
-		self.mp_process_list[ch_num].join()
+		try:
+			# TODO: Handle res_ids_dict = None
+			if self.mp_process_list[ch_num] is not None and self.mp_process_list[ch_num].is_alive():
+				print(f"There is a process already running")
+				return
+			self.mp_process_list[ch_num] = Process(target=cdc.charge_discharge_control, args = (res_ids_dict, data_out_queue))
+			self.mp_process_list[ch_num].start()
+		except:
+			traceback.print_exc()
+		finally:
+			self.mp_process_list[ch_num].join()
 
 
 def main():
