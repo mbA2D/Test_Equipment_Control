@@ -9,6 +9,7 @@ import easygui as eg
 import os
 import Templates
 import FileIO
+import traceback
 
 
 ##################### EQUIPMENT SETUP ####################
@@ -513,119 +514,120 @@ def ask_storage_charge():
 ################################## BATTERY CYCLING SETUP FUNCTION ######################################
 
 def charge_discharge_control(res_ids_dict, data_out_queue = None):
-	
 	eq_dict = dict()
-	for key in res_ids_dict:
-		if res_ids_dict[key]['res_id'] != None:
-			eq_dict[key] = eq.connect_to_eq(key, res_ids_dict[key]['class_name'], res_ids_dict[key]['res_id'])
-		else:
-			eq_dict[key] = None
-	
-	#get the cell name
-	cell_name = eg.enterbox(title = "Test Setup", msg = "Enter the Cell Name\n(Spaces will be replaced with underscores)",
-							default = "CELL_NAME", strip = True)
-	#replace the spaces to keep file names consistent
-	cell_name = cell_name.replace(" ", "_")
-	
-	#Get a directory to save the file
-	directory = FileIO.get_directory("Choose directory to save the cycle logs")
-	
-	#different cycle types that are available
-	cycle_types = Templates.CycleTypes.cycle_types
-	cycle_types["Single CC Cycle"]['func_call'] = single_cc_cycle_info
-	cycle_types["One Setting Continuous CC Cycles With Rest"]['func_call'] = one_level_continuous_cc_cycles_with_rest_info
-	cycle_types["Two Setting Continuous CC Cycles With Rest"]['func_call'] = two_level_continuous_cc_cycles_with_rest_info
-	cycle_types["CC Charge Only"]['func_call'] = charge_only_cycle_info
-	cycle_types["CC Discharge Only"]['func_call'] = discharge_only_cycle_info
-	cycle_types["Step Cycle"]['func_call'] = multi_step_cell_info
-	cycle_types["Continuous Step Cycles"]['func_call'] = continuous_step_cycles_info
-	
-	#choose the cycle type
-	msg = "Which cycle type do you want to do?"
-	title = "Choose Cycle Type"
-	cycle_type = eg.choicebox(msg, title, list(cycle_types.keys()))
-	
-	#gather the list settings based on the cycle type
-	cycle_settings_list_of_lists = list()
-	cycle_settings_list_of_lists = cycle_types[cycle_type]['func_call']()
-	
-	#STORAGE CHARGE
-	do_a_storage_charge = False
-	if(cycle_types[cycle_type]['str_chg_opt']):
-		do_a_storage_charge = ask_storage_charge()
-	
-	#extend adds two lists, append adds a single element to a list. We want extend here since charge_only_cycle_info() returns a list.
-	if do_a_storage_charge:
-		cycle_settings_list_of_lists.extend(charge_only_cycle_info())
-	
-	#REQUIRED EQUIPMENT
-	eq_req_dict = {'psu': False, 'eload': False}
-	
-	if cycle_type in ("Step Cycle", "Continuous Step Cycles"):
-		eq_req_dict = find_eq_req_steps(cycle_settings_list_of_lists)
-	else:
-		eq_req_dict['psu'] = cycle_types[cycle_type]['supply_req']
-		eq_req_dict['eload'] = cycle_types[cycle_type]['load_req']
-
-	if eq_req_dict['eload'] and eq_dict['eload'] == None:
-		print("Eload required for cycle but none connected! Exiting")
-		return
-	
-	if eq_req_dict['psu'] and eq_dict['psu'] == None:
-		print("Power Supply required for cycle type but none connected! Exiting")
-		return
-	#TODO - check cycles with multiple types
-	
-	
-	#Now initialize all the equipment that is connected
-	if eq_dict['eload'] != None:	
-		init_eload(eq_dict['eload'])
-	if eq_dict['psu'] != None:
-		init_psu(eq_dict['psu'])
-	if eq_dict['dmm_v'] != None:
-		init_dmm_v(eq_dict['dmm_v'])
-	if eq_dict['dmm_i'] != None:
-		init_dmm_i(eq_dict['dmm_i'])
-	
-	
-	#TODO - looping a current profile until safety limits are hit
-	#TODO - current step profiles to/from csv and/or JSON files
-	
-	#cycle x times
-	cycle_num = 0
-	for cycle_settings_list in cycle_settings_list_of_lists:
-		print("Cycle {} Starting".format(cycle_num), flush=True)
-		filepath = FileIO.start_file(directory, cell_name)
+	try:
+		for key in res_ids_dict:
+			if res_ids_dict[key]['res_id'] != None:
+				eq_dict[key] = eq.connect_to_eq(key, res_ids_dict[key]['class_name'], res_ids_dict[key]['res_id'])
+			else:
+				eq_dict[key] = None
+		#get the cell name
+		cell_name = eg.enterbox(title = "Test Setup", msg = "Enter the Cell Name\n(Spaces will be replaced with underscores)",
+								default = "CELL_NAME", strip = True)
+		#replace the spaces to keep file names consistent
+		cell_name = cell_name.replace(" ", "_")
 		
-		try:
+		#Get a directory to save the file
+		directory = FileIO.get_directory("Choose directory to save the cycle logs")
+		
+		#different cycle types that are available
+		cycle_types = Templates.CycleTypes.cycle_types
+		cycle_types["Single CC Cycle"]['func_call'] = single_cc_cycle_info
+		cycle_types["One Setting Continuous CC Cycles With Rest"]['func_call'] = one_level_continuous_cc_cycles_with_rest_info
+		cycle_types["Two Setting Continuous CC Cycles With Rest"]['func_call'] = two_level_continuous_cc_cycles_with_rest_info
+		cycle_types["CC Charge Only"]['func_call'] = charge_only_cycle_info
+		cycle_types["CC Discharge Only"]['func_call'] = discharge_only_cycle_info
+		cycle_types["Step Cycle"]['func_call'] = multi_step_cell_info
+		cycle_types["Continuous Step Cycles"]['func_call'] = continuous_step_cycles_info
+		
+		#choose the cycle type
+		msg = "Which cycle type do you want to do?"
+		title = "Choose Cycle Type"
+		cycle_type = eg.choicebox(msg, title, list(cycle_types.keys()))
+		
+		#gather the list settings based on the cycle type
+		cycle_settings_list_of_lists = list()
+		cycle_settings_list_of_lists = cycle_types[cycle_type]['func_call']()
+		
+		#STORAGE CHARGE
+		do_a_storage_charge = False
+		if(cycle_types[cycle_type]['str_chg_opt']):
+			do_a_storage_charge = ask_storage_charge()
+		
+		#extend adds two lists, append adds a single element to a list. We want extend here since charge_only_cycle_info() returns a list.
+		if do_a_storage_charge:
+			cycle_settings_list_of_lists.extend(charge_only_cycle_info())
+		
+		#REQUIRED EQUIPMENT
+		eq_req_dict = {'psu': False, 'eload': False}
+		
+		if cycle_type in ("Step Cycle", "Continuous Step Cycles"):
+			eq_req_dict = find_eq_req_steps(cycle_settings_list_of_lists)
+		else:
+			eq_req_dict['psu'] = cycle_types[cycle_type]['supply_req']
+			eq_req_dict['eload'] = cycle_types[cycle_type]['load_req']
+
+		if eq_req_dict['eload'] and eq_dict['eload'] == None:
+			print("Eload required for cycle but none connected! Exiting")
+			return
+		
+		if eq_req_dict['psu'] and eq_dict['psu'] == None:
+			print("Power Supply required for cycle type but none connected! Exiting")
+			return
+		#TODO - check cycles with multiple types
+		
+		
+		#Now initialize all the equipment that is connected
+		if eq_dict['eload'] != None:	
+			init_eload(eq_dict['eload'])
+		if eq_dict['psu'] != None:
+			init_psu(eq_dict['psu'])
+		if eq_dict['dmm_v'] != None:
+			init_dmm_v(eq_dict['dmm_v'])
+		if eq_dict['dmm_i'] != None:
+			init_dmm_i(eq_dict['dmm_i'])
+		
+		
+		#TODO - looping a current profile until safety limits are hit
+		#TODO - current step profiles to/from csv and/or JSON files
+		
+		#cycle x times
+		cycle_num = 0
+		for cycle_settings_list in cycle_settings_list_of_lists:
+			print("Cycle {} Starting".format(cycle_num), flush=True)
+			filepath = FileIO.start_file(directory, cell_name)
 			
-			for cycle_settings in cycle_settings_list:
-				#Charge only - only using the power supply
-				if isinstance(cycle_settings, Templates.ChargeSettings):
-					charge_cycle(filepath, cycle_settings.settings, eq_dict['psu'], v_meas_eq = eq_dict['dmm_v'], i_meas_eq = eq_dict['dmm_i'], data_out_queue = data_out_queue)
-					
-				#Discharge only - only using the eload
-				elif isinstance(cycle_settings, Templates.DischargeSettings):
-					discharge_cycle(filepath, cycle_settings.settings, eq_dict['eload'], v_meas_eq = eq_dict['dmm_v'], i_meas_eq = eq_dict['dmm_i'], data_out_queue = data_out_queue)
+			try:
 				
-				#Step Functions
-				elif isinstance(cycle_settings, Templates.StepSettings):
-					end_condition = single_step_cycle(filepath, cycle_settings.settings, eload = eq_dict['eload'], psu = eq_dict['psu'], v_meas_eq = eq_dict['dmm_v'], i_meas_eq = eq_dict['dmm_i'], data_out_queue = data_out_queue)
-					if end_condition == 'safety_condition':
-						break
+				for cycle_settings in cycle_settings_list:
+					#Charge only - only using the power supply
+					if isinstance(cycle_settings, Templates.ChargeSettings):
+						charge_cycle(filepath, cycle_settings.settings, eq_dict['psu'], v_meas_eq = eq_dict['dmm_v'], i_meas_eq = eq_dict['dmm_i'], data_out_queue = data_out_queue)
 						
-				#Cycle the cell - using both psu and eload
-				else:
-					cycle_cell(filepath, cycle_settings.settings, eq_dict['eload'], eq_dict['psu'], v_meas_eq = eq_dict['dmm_v'], i_meas_eq = eq_dict['dmm_i'], data_out_queue = data_out_queue)
-			
-		except KeyboardInterrupt:
-			disable_equipment(psu = eq_dict['psu'], eload = eq_dict['eload'])
-			exit()
-		cycle_num += 1
-	
-	disable_equipment(psu = eq_dict['psu'], eload = eq_dict['eload'])
-	
-	print("All Cycles Completed")
+					#Discharge only - only using the eload
+					elif isinstance(cycle_settings, Templates.DischargeSettings):
+						discharge_cycle(filepath, cycle_settings.settings, eq_dict['eload'], v_meas_eq = eq_dict['dmm_v'], i_meas_eq = eq_dict['dmm_i'], data_out_queue = data_out_queue)
+					
+					#Step Functions
+					elif isinstance(cycle_settings, Templates.StepSettings):
+						end_condition = single_step_cycle(filepath, cycle_settings.settings, eload = eq_dict['eload'], psu = eq_dict['psu'], v_meas_eq = eq_dict['dmm_v'], i_meas_eq = eq_dict['dmm_i'], data_out_queue = data_out_queue)
+						if end_condition == 'safety_condition':
+							break
+							
+					#Cycle the cell - using both psu and eload
+					else:
+						cycle_cell(filepath, cycle_settings.settings, eq_dict['eload'], eq_dict['psu'], v_meas_eq = eq_dict['dmm_v'], i_meas_eq = eq_dict['dmm_i'], data_out_queue = data_out_queue)
+				
+			except KeyboardInterrupt:
+				disable_equipment(psu = eq_dict['psu'], eload = eq_dict['eload'])
+				exit()
+			cycle_num += 1
+		
+		disable_equipment(psu = eq_dict['psu'], eload = eq_dict['eload'])
+
+		print("All Cycles Completed")
+	except Exception:
+		traceback.print_exc()
 
 ####################################### MAIN PROGRAM ######################################
 
