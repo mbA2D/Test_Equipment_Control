@@ -52,8 +52,9 @@ class KEL10X:
 				idn = eg.choicebox(msg, title, idns_dict.values())
 			#Now we know which IDN we want to connect to
 			#swap keys and values and then connect
-			resources_dict = dict((v,k) for k,v in idns_dict.items())
-			resource_id = resources_dict[idn]
+			if idn != None:
+				resources_dict = dict((v,k) for k,v in idns_dict.items())
+				resource_id = resources_dict[idn]
 		
 		self.inst = rm.open_resource(resource_id)
         
@@ -78,7 +79,9 @@ class KEL10X:
 		self.lock_front_panel(True)
 		
 	# To Set E-Load in Amps 
-	def set_current(self, current_setpoint_A):		
+	def set_current(self, current_setpoint_A):	
+		if current_setpoint_A < 0:
+			current_setpoint_A = -current_setpoint_A
 		self.inst.write(":CURR {}A".format(current_setpoint_A))
 		
 	def set_mode_current(self):

@@ -33,12 +33,13 @@ class CycleStats:
 class CycleTypes:
 	
 	cycle_types = {
-		"Single Cycle": 							{'func_call': '', 'str_chg_opt': True, 'load_req': True, 'supply_req': True},
-		"One Setting Continuous Cycles With Rest": 	{'func_call': '', 'str_chg_opt': True,'load_req': True, 'supply_req': True},
-		"Two Setting Continuous Cycles With Rest": 	{'func_call': '', 'str_chg_opt': True,'load_req': True, 'supply_req': True},
-		"Charge Only": 								{'func_call': '', 'str_chg_opt': False,'load_req': False, 'supply_req': True},
-		"Discharge Only": 							{'func_call': '', 'str_chg_opt': False,'load_req': True, 'supply_req': False},
-		"Single Step":								{'func_call': '', 'str_chg_opt': False,'load_req': True, 'supply_req': True}
+		"Single CC Cycle": 								{'func_call': '', 'str_chg_opt': True, 'load_req': True, 'supply_req': True},
+		"One Setting Continuous CC Cycles With Rest": 	{'func_call': '', 'str_chg_opt': True,'load_req': True, 'supply_req': True},
+		"Two Setting Continuous CC Cycles With Rest": 	{'func_call': '', 'str_chg_opt': True,'load_req': True, 'supply_req': True},
+		"CC Charge Only": 								{'func_call': '', 'str_chg_opt': False,'load_req': False, 'supply_req': True},
+		"CC Discharge Only": 							{'func_call': '', 'str_chg_opt': False,'load_req': True, 'supply_req': False},
+		"Step Cycle":									{'func_call': '', 'str_chg_opt': False,'load_req': False, 'supply_req': False},
+		"Continuous Step Cycles":						{'func_call': '', 'str_chg_opt': True, 'load_req': False, 'supply_req': False}
 	}
 	
 	#TODO - Step should not have its load and supply requirements given here - it should only be after the step values are chosen
@@ -191,19 +192,25 @@ class DischargeSettings(CycleSettings):
 class StepSettings(CycleSettings):
 	def __init__(self):
 		self.settings = {
-			"drive_style":				'current_a', #'current_a', 'voltage_v', 'none'
-			"drive_value":				1,
-			"drive_value_other":		4.0,
+			"drive_style":				'none', #'current_a', 'voltage_v', 'none'
+			"drive_value":				0,
+			"drive_value_other":		0,
 			"end_style":				'time_s', #'time_s', 'current_a', 'voltage_v'
 			"end_condition":			'greater', #'greater', 'lesser'
 			"end_value":				10,
-			"meas_log_int_s":			1
+			"meas_log_int_s":			1,
+			"safety_min_voltage_v":		2.45,
+			"safety_max_voltage_v":		4.25,
+			"safety_min_current_a":		-10,
+			"safety_max_current_a":		10,
+			"safety_max_time_s":		100 #positive values give a value in seconds, negative values and 0 will disable the time safety check
 		}
 		self.valid_strings = {
 			"drive_style":				{'current_a', 'voltage_v', 'none'},
 			"end_style":				{'time_s', 'current_a', 'voltage_v'},
 			"end_condition":			{'greater', 'lesser'}
 		}
+		#TODO add safety settings - figure out multi-step end values
 
 ####################  DC DC TESTING  ############
 

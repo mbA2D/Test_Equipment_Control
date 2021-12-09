@@ -22,7 +22,7 @@ def plot_iv(log_data, save_filepath = '', show_graph=False):
 	ax_curr.plot('Data_Timestamp', 'Current', data = log_data, color='b')
 	
 	fig.suptitle('Cell Cycle Graph')
-	ax_volt.set_ylabel('Votlage (V)', color = 'r')
+	ax_volt.set_ylabel('Voltage (V)', color = 'r')
 	ax_curr.set_ylabel('Current (A)', color = 'b')
 	ax_volt.set_xlabel('Seconds From Start of Test (S)')
 	

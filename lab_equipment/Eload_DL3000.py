@@ -43,8 +43,9 @@ class DL3000:
 				idn = eg.choicebox(msg, title, idns_dict.values())
 			#Now we know which IDN we want to connect to
 			#swap keys and values and then connect
-			resources_dict = dict((v,k) for k,v in idns_dict.items())
-			resource_id = resources_dict[idn]
+			if idn != None:
+				resources_dict = dict((v,k) for k,v in idns_dict.items())
+				resource_id = resources_dict[idn]
 		
 		#values specific to the DL3000 - will break out to another file later
 		self.ranges = {"low":4,"high":40}
@@ -61,6 +62,9 @@ class DL3000:
 		
 	# To Set E-Load in Amps 
 	def set_current(self, current_setpoint_A):		
+		if current_setpoint_A < 0:
+			current_setpoint_A = -current_setpoint_A
+		
 		#4A range
 		if(current_setpoint_A <= self.ranges["low"]):
 			if(self.range != "low"):
@@ -71,7 +75,7 @@ class DL3000:
 			if(self.range != "high"):
 				self.set_range("high")
 		
-		self.inst.write(":CURR:LEV %s" % current_setpoint_A)
+		self.inst.write(":CURR:LEV {}".format(current_setpoint_A))
 
 	def set_range(self, set_range):
 		#set_range is either "high" or "low"
