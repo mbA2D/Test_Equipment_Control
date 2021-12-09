@@ -27,6 +27,14 @@ class MainTestWindow(QMainWindow):
 		self.setWindowTitle("Battery Tester App")
 		central_layout = QVBoxLayout()
 		
+		
+		#Create a button at the top to connect multi-channel equipment
+		self.connect_multi_ch_button = QPushButton("Connect Multi Channel Equipment")
+		
+		multi_ch_widget = QWidget()
+		central_layout.addWidget(multi_ch_widget)
+		
+		
 		#Create a widget and some labels - voltage and current for each channel
 		#Update the widgets from the queues in each channel
 		self.data_label_list = [QLabel("CH: {}\nV: \nI:".format(i)) for i in range(self.num_battery_channels)]

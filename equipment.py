@@ -48,13 +48,13 @@ class eLoads:
 			title = "E-Load Series Selection"
 			class_name = eg.choicebox(msg, title, eLoads.part_numbers.keys())
 		
-		if(class_name == 'BK8600'):
+		if class_name == 'BK8600':
 			eload = Eload_BK8600.BK8600(resource_id = resource_id)
-		elif(class_name == 'DL3000'):
+		elif class_name == 'DL3000':
 			eload = Eload_DL3000.DL3000(resource_id = resource_id)
-		elif(class_name == 'KEL10X'):
+		elif class_name == 'KEL10X':
 			eload = Eload_KEL10X.KEL10X(resource_id = resource_id)
-		elif(class_name == 'IT8500'):
+		elif class_name == 'IT8500':
 			eload = Eload_IT8500.IT8500(resource_id = resource_id)
 		return class_name, eload
 
@@ -76,29 +76,30 @@ class powerSupplies:
 			title = "PSU Series Selection"
 			class_name = eg.choicebox(msg, title, powerSupplies.part_numbers.keys())
 		
-		if(class_name == 'SPD1000'):
+		if class_name == 'SPD1000':
 			psu = PSU_SPD1000.SPD1000(resource_id = resource_id)
-		elif(class_name == 'DP800'):
+		elif class_name == 'DP800':
 			psu = PSU_DP800.DP800(resource_id = resource_id)
-		elif(class_name == 'KWR10X or MP71025X'):
+		elif class_name == 'KWR10X or MP71025X':
 			psu = PSU_MP71025X.MP71025X(resource_id = resource_id)
-		elif(class_name == 'BK9100'):
+		elif class_name == 'BK9100':
 			psu = PSU_BK9100.BK9100(resource_id = resource_id)
-		elif(class_name == 'N8700'):
+		elif class_name == 'N8700':
 			psu = PSU_N8700.N8700(resource_id = resource_id)
-		elif(class_name == 'KAXXXXP'):
+		elif class_name == 'KAXXXXP':
 			psu = PSU_KAXXXXP.KAXXXXP(resource_id = resource_id)
 		return class_name, psu
 
 
 class dmms:
 	part_numbers = {
-		'DM3068': 		'DMM_DM3068',
-		'SDM3065X': 	'DMM_SDM3065X'
+		'DM3068': 					'DMM_DM3068',
+		'SDM3065X': 				'DMM_SDM3065X',
+		'MATICIAN_FET_BOARD_CH':	'DMM_FET_BOARD'
 	}
 	
 	@classmethod
-	def choose_dmm(self, class_name = None, resource_id = None):
+	def choose_dmm(self, class_name = None, resource_id = None, event_and_queue_dict = None, multi_ch_devices_dict = None):
 		if class_name == None:
 			msg = "In which series is the DMM?"
 			title = "DMM Series Selection"
@@ -106,6 +107,24 @@ class dmms:
 		
 		#if(class_name == 'DM3068'):
 		#	dmm = DMM_DM3068.DM3068(resource_id = resource_id)
-		if(class_name == 'SDM3065X'):
+		if class_name == 'SDM3065X':
 			dmm = DMM_SDM3065X.SDM3065X(resource_id = resource_id)
+		elif class_name == 'MATICIAN_FET_BOARD_CH':
+			if event_and_queue_dict == None:
+				#get the event and queue dict from the proper channel of the proper mcp device
+				#Figure out which devices are connected
+					#dict keyed by device name should be passed in
+				#Choose the device
+				msg = "Which Multi Channel Device to Use?"
+				title = "Multi Channel Device Selection"
+				multi_ch_device_name = eg.choicebox(msg, title, multi_ch_devices_dict.keys())
+				
+				#Choose the channel
+				msg = "Choose Which Channel of This Device to Use:"
+				title = "Multi Channel Device Channel Selection"
+				ch_num = eg.choicebox(msg, title, range(multi_ch_devices_dict[multi_ch_device_name].num_channels))
+				
+				event_and_queue_dict = multi_ch_devices_dict[multi_ch_device_name]['channels'][ch_num].ch_event_and_queue_dict
+			
+			dmm = DMM_FET_BOARD.FET_BOARD_EQ(event_and_queue_dict)
 		return class_name, dmm
