@@ -133,7 +133,7 @@ class MainTestWindow(QMainWindow):
 
 		try:
 			if self.mp_process_list[ch_num] is not None and self.mp_process_list[ch_num].is_alive():
-				print(f"There is a process already running")
+				print(f"There is a process already running in Channel {ch_num}")
 				return
 			self.mp_process_list[ch_num] = Process(target=cdc.charge_discharge_control, args = (res_ids_dict, data_out_queue))
 			self.mp_process_list[ch_num].start()
