@@ -60,9 +60,10 @@ class CycleSettings:
 			"rest_after_discharge_min": 20,
 			"meas_log_int_s": 			1
 		}
+		self.valid_strings = {}
 	
 	def get_cycle_settings(self, cycle_name = ""):
-		self.settings = jsonIO.get_cycle_settings(self.settings, cycle_name)
+		self.settings = jsonIO.get_cycle_settings(self.settings, self.valid_strings, cycle_name)
 	
 	def export_cycle_settings(self, cycle_name = ""):
 		jsonIO.export_cycle_settings(self.settings, cycle_name)
@@ -81,6 +82,7 @@ class ChargeSettings(CycleSettings):
 			"charge_end_a": 			0.3,
 			"meas_log_int_s": 			1
 		}
+		self.valid_strings = {}
 		
 ###############  DISCHARGE  #####################
 
@@ -92,6 +94,7 @@ class DischargeSettings(CycleSettings):
 			"discharge_a": 				52.5,
 			"meas_log_int_s": 			1
 		}
+		self.valid_strings = {}
 
 #################  STEPS FOR CONTROLLING BATTERY TEST  ############
 
@@ -133,6 +136,7 @@ class DcdcTestSettings():
 			"step_delay_s":					2,
 			"measurement_samples_for_avg":	10
 		}
+		self.valid_strings = {}
 
 class DcdcSweepSettings():
 	
@@ -146,3 +150,4 @@ class DcdcSweepSettings():
 			"step_delay_s":					2,
 			"measurement_samples_for_avg":	10
 		}
+		self.valid_strings = {}

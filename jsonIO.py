@@ -4,22 +4,30 @@ import os
 import json
 
 ##################### Checking User Input ##############
-def check_user_entry(entry):
-	if(entry == None):
+def check_user_entry(keys, entries, valid_strings):
+	if(entries == None):
 		return False
 	
-	for val in entry:
-		if not is_number_float(val):
+	entry_dict = dict(zip(keys, entries))
+	
+	for key in entry_dict:
+		if not is_entry_valid(key, entry_dict[key], valid_strings):
 			return False
 	
 	return True
 
-def is_number_float(string):
+def is_entry_valid(key, value, valid_strings):
 	try:
-		float(string)
+		float(value)
 		return True
 	except ValueError:
+		try:
+			if value in valid_strings[key]:
+				return True
+		except (AttributeError, KeyError):
+			return False
 		return False
+	return False
 
 def convert_to_float(settings):
 	#if possible, convert items to floats
@@ -86,7 +94,7 @@ def import_cycle_settings(cycle_name = ""):
 	
 	return settings
 
-def get_cycle_settings(settings, cycle_name = ""):
+def get_cycle_settings(settings, valid_strings = None, cycle_name = ""):
 	
 	if(cycle_name != ""):
 		cycle_name += " "
@@ -98,9 +106,9 @@ def get_cycle_settings(settings, cycle_name = ""):
 		while valid_entries == False:
 			response_list = eg.multenterbox(msg = "Enter Info for {}cycle".format(cycle_name), title = response,
 											fields = list(settings.keys()), values = list(settings.values()))
-			valid_entries = check_user_entry(response_list)
+			valid_entries = check_user_entry(list(settings.keys()), response_list, valid_strings)
 		
-		#update dict entries with the response
+		#update dict entries with the response - can't use the dict.update since we only have a list here.
 		settings = update_settings(settings, response_list)
 		
 		if (eg.ynbox(msg = "Would you like to save these settings for future use?", title = "Save Settings")):
