@@ -77,6 +77,7 @@ def import_cycle_settings(cycle_name = ""):
 	#get the file to import from
 	file_name = eg.fileopenbox(msg = "Choose a File to import {}cycle settings from".format(cycle_name),
 								title = "Cycle Settings", filetypes = ['*.json', 'JSON files'])
+	settings = None
 	
 	#import the file
 	if(file_name != None):
