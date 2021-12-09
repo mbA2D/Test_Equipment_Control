@@ -90,40 +90,48 @@ class MainTestWindow(QMainWindow):
 			
 	
 	def assign_equipment(self, ch_num):
-		#choose a psu and eload for each channel
-		msg = "Do you want to connect a power supply for channel {}?".format(ch_num)
-		title = "Power Supply Connection"
-		if eg.ynbox(msg, title):
-			self.psu_ch_list[ch_num] = eq.powerSupplies.choose_psu()
-		msg = "Do you want to connect an eload for channel {}?".format(ch_num)
-		title = "Eload Connection"
-		if eg.ynbox(msg, title):
-			self.eload_ch_list[ch_num] = eq.eLoads.choose_eload()
-		
-		#Separate measurement devices
-		msg = "Do you want to use a separate device to measure voltage on channel {}?".format(ch_num)
-		title = "Voltage Measurement Device"
-		if eg.ynbox(msg, title):
-			self.dmm_v_ch_list[ch_num] = eq.dmms.choose_dmm()
-		msg = "Do you want to use a separate device to measure current on channel {}?".format(ch_num)
-		title = "Current Measurement Device"
-		if eg.ynbox(msg, title):
-			self.dmm_i_ch_list[ch_num] = eq.dmms.choose_dmm()
+		try:
+			#choose a psu and eload for each channel
+			msg = "Do you want to connect a power supply for channel {}?".format(ch_num)
+			title = "Power Supply Connection"
+			if eg.ynbox(msg, title):
+				self.psu_ch_list[ch_num] = eq.powerSupplies.choose_psu()
+			msg = "Do you want to connect an eload for channel {}?".format(ch_num)
+			title = "Eload Connection"
+			if eg.ynbox(msg, title):
+				self.eload_ch_list[ch_num] = eq.eLoads.choose_eload()
+			
+			#Separate measurement devices
+			msg = "Do you want to use a separate device to measure voltage on channel {}?".format(ch_num)
+			title = "Voltage Measurement Device"
+			if eg.ynbox(msg, title):
+				self.dmm_v_ch_list[ch_num] = eq.dmms.choose_dmm()
+			msg = "Do you want to use a separate device to measure current on channel {}?".format(ch_num)
+			title = "Current Measurement Device"
+			if eg.ynbox(msg, title):
+				self.dmm_i_ch_list[ch_num] = eq.dmms.choose_dmm()
 
-		self.batt_ch_list[ch_num].assign_equipment(psu_to_assign = self.psu_ch_list[ch_num], eload_to_assign = self.eload_ch_list[ch_num],
-									  dmm_v_to_assign = self.dmm_v_ch_list[ch_num], dmm_i_to_assign = self.dmm_i_ch_list[ch_num])
-		
-		self.res_ids_dict_list[ch_num] = self.batt_ch_list[ch_num].get_assigned_eq_res_ids()
+			self.batt_ch_list[ch_num].assign_equipment(psu_to_assign = self.psu_ch_list[ch_num], eload_to_assign = self.eload_ch_list[ch_num],
+										dmm_v_to_assign = self.dmm_v_ch_list[ch_num], dmm_i_to_assign = self.dmm_i_ch_list[ch_num])
+			
+			self.res_ids_dict_list[ch_num] = self.batt_ch_list[ch_num].get_assigned_eq_res_ids()
 
-		self.batt_ch_list[ch_num].disconnect_all_assigned_eq()
+			self.batt_ch_list[ch_num].disconnect_all_assigned_eq()
+		except:
+			print("Something went wrong with assigning equipment. Please try again.")
+			return
+
 
 	def start_test(self, ch_num):
 		self.batt_test_process(self.res_ids_dict_list[ch_num], data_out_queue = self.data_from_ch_queue_list[ch_num], ch_num = ch_num)
 		
 	
 	def batt_test_process(self, res_ids_dict, data_out_queue = None, ch_num = None):
+		if res_ids_dict == None:
+			print("Please Assign Equipment to this Channel before starting a test!")
+			return
+
 		try:
-			# TODO: Handle res_ids_dict = None
 			if self.mp_process_list[ch_num] is not None and self.mp_process_list[ch_num].is_alive():
 				print(f"There is a process already running")
 				return
