@@ -139,8 +139,6 @@ class MainTestWindow(QMainWindow):
 			self.mp_process_list[ch_num].start()
 		except:
 			traceback.print_exc()
-		finally:
-			self.mp_process_list[ch_num].join()
 
 
 def main():
