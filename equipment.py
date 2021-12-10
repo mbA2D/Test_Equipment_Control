@@ -19,6 +19,7 @@ from lab_equipment import PSU_KAXXXXP
 #Digital Multimeters
 #from lab_equipment import DM3068
 from lab_equipment import DMM_SDM3065X
+from lab_equipment import DMM_FET_BOARD_EQ
 
 def connect_to_eq(key, class_name, res_id):
 	#Key should be 'eload', 'psu', or 'dmm'
@@ -29,7 +30,11 @@ def connect_to_eq(key, class_name, res_id):
 	if key == 'psu':
 		return powerSupplies.choose_psu(class_name, res_id)[1]
 	if key == 'dmm' or ('dmm' in key): #for dmm_i and dmm_v keys
-		return dmms.choose_dmm(class_name, res_id)[1]
+		if class_name == 'MATICIAN_FET_BOARD_CH':
+			dmm = dmms.choose_dmm(class_name = class_name, event_and_queue_dict = res_id)[1]
+		else:
+			dmm = dmms.choose_dmm(class_name, res_id)[1]
+		return dmm
 	return None
 
 
@@ -99,7 +104,7 @@ class dmms:
 	}
 	
 	@classmethod
-	def choose_dmm(self, class_name = None, resource_id = None, event_and_queue_dict = None, multi_ch_devices_dict = None):
+	def choose_dmm(self, class_name = None, resource_id = None, event_and_queue_dict = None, multi_ch_event_and_queue_dict = None):
 		if class_name == None:
 			msg = "In which series is the DMM?"
 			title = "DMM Series Selection"
@@ -117,14 +122,14 @@ class dmms:
 				#Choose the device
 				msg = "Which Multi Channel Device to Use?"
 				title = "Multi Channel Device Selection"
-				multi_ch_device_name = eg.choicebox(msg, title, multi_ch_devices_dict.keys())
+				multi_ch_device_name = int(eg.choicebox(msg, title, multi_ch_event_and_queue_dict.keys()))
 				
 				#Choose the channel
 				msg = "Choose Which Channel of This Device to Use:"
 				title = "Multi Channel Device Channel Selection"
-				ch_num = eg.choicebox(msg, title, range(multi_ch_devices_dict[multi_ch_device_name].num_channels))
+				ch_num = int(eg.choicebox(msg, title, multi_ch_event_and_queue_dict[multi_ch_device_name].keys()))
 				
-				event_and_queue_dict = multi_ch_devices_dict[multi_ch_device_name]['channels'][ch_num].ch_event_and_queue_dict
+				event_and_queue_dict = multi_ch_event_and_queue_dict[multi_ch_device_name][ch_num]
 			
-			dmm = DMM_FET_BOARD.FET_BOARD_EQ(event_and_queue_dict)
+			dmm = DMM_FET_BOARD_EQ.FET_BOARD_EQ(event_and_queue_dict)
 		return class_name, dmm

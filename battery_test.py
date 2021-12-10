@@ -1,10 +1,11 @@
 #Program to run the charge discharge control in different processes for each channel.
 
 from PyQt6.QtWidgets import QApplication, QMainWindow, QPushButton, QLabel, QVBoxLayout, QHBoxLayout, QWidget
-from multiprocessing import Process, Queue
+from multiprocessing import Process, Queue, Event
 from functools import partial
 import queue #queue module required for exception handling of multiprocessing.Queue
 
+from python_libraries import fet_board_management as fbm
 import charge_discharge_control as cdc
 import equipment as eq
 import easygui as eg
@@ -15,6 +16,8 @@ class MainTestWindow(QMainWindow):
 		super().__init__()
 		
 		self.num_battery_channels = 3
+		
+		self.dict_for_event_and_queue = {}
 		
 		#Connected Equipment
 		self.batt_ch_list = [None for i in range(self.num_battery_channels)]
@@ -30,9 +33,8 @@ class MainTestWindow(QMainWindow):
 		
 		#Create a button at the top to connect multi-channel equipment
 		self.connect_multi_ch_button = QPushButton("Connect Multi Channel Equipment")
-		
-		multi_ch_widget = QWidget()
-		central_layout.addWidget(multi_ch_widget)
+		self.connect_multi_ch_button.clicked.connect(self.multi_ch_devices_process)
+		central_layout.addWidget(self.connect_multi_ch_button)
 		
 		
 		#Create a widget and some labels - voltage and current for each channel
@@ -94,6 +96,30 @@ class MainTestWindow(QMainWindow):
 			QApplication.processEvents()
 			
 	
+	def multi_ch_devices_process(self):
+		#Create a new process to manage all the fet boards
+		
+		max_devices = 4
+		max_ch_per_device = 4
+		for device_num in range(max_devices):
+			self.dict_for_event_and_queue[device_num] = {}
+			for ch_num in range(max_ch_per_device):	
+				self.dict_for_event_and_queue[device_num][ch_num] = {
+					'v_event': Event(),
+					'v_queue': Queue(),
+					'i_event': Event(),
+					'i_queue': Queue(),
+					't_event': Event(),
+					't_queue': Queue()
+				}
+		
+		multi_ch_device_process = Process(target = fbm.fet_board_management, args = (self.dict_for_event_and_queue,))
+		multi_ch_device_process.start()
+		
+		
+	
+	#TODO - assign_equipment while another test is running - don't freeze the GUI. Make this a thread or process.
+	#       easier once we only connect via pickle-able results.
 	def assign_equipment(self, ch_num):
 		#choose a psu and eload for each channel
 		msg = "Do you want to connect a power supply for channel {}?".format(ch_num)
@@ -109,11 +135,11 @@ class MainTestWindow(QMainWindow):
 		msg = "Do you want to use a separate device to measure voltage on channel {}?".format(ch_num)
 		title = "Voltage Measurement Device"
 		if eg.ynbox(msg, title):
-			self.dmm_v_ch_list[ch_num] = eq.dmms.choose_dmm()
+			self.dmm_v_ch_list[ch_num] = eq.dmms.choose_dmm(multi_ch_event_and_queue_dict = self.dict_for_event_and_queue)
 		msg = "Do you want to use a separate device to measure current on channel {}?".format(ch_num)
 		title = "Current Measurement Device"
 		if eg.ynbox(msg, title):
-			self.dmm_i_ch_list[ch_num] = eq.dmms.choose_dmm()
+			self.dmm_i_ch_list[ch_num] = eq.dmms.choose_dmm(multi_ch_event_and_queue_dict = self.dict_for_event_and_queue)
 
 	def start_test(self, ch_num):
 		self.batt_test_process(self.batt_ch_list[ch_num], psu = self.psu_ch_list[ch_num], eload = self.eload_ch_list[ch_num],
