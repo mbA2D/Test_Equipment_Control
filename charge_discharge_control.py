@@ -649,7 +649,6 @@ class BatteryChannel:
 	
 	def get_assigned_eq_res_ids(self):
 		eq_res_ids_dict = dict()
-		#TODO - starting a second test - won't be able to use inst as the resource is already closed.
 		for key in self.eq_dict:
 			eq_res_ids_dict[key] = {'class_name': None, 'res_id': None}
 			if self.eq_dict[key] != None:
