@@ -97,8 +97,7 @@ class MainTestWindow(QMainWindow):
 			
 	
 	def multi_ch_devices_process(self):
-		#Create a new process to manage all the fet boards
-		
+		#create all the queues
 		max_devices = 4
 		max_ch_per_device = 4
 		for device_num in range(max_devices):
@@ -113,6 +112,7 @@ class MainTestWindow(QMainWindow):
 					't_queue': Queue()
 				}
 		
+		#Create a new process to manage all the fet boards
 		multi_ch_device_process = Process(target = fbm.fet_board_management, args = (self.dict_for_event_and_queue,))
 		multi_ch_device_process.start()
 		
