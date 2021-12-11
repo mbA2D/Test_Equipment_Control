@@ -1,6 +1,7 @@
 #class to hold the templates for input/outputs settings
 
 import easygui as eg
+import jsonIO
 import json
 import os
 
@@ -51,118 +52,24 @@ class CycleSettings:
 	def __init__(self):
 		self.settings = { 
 			"charge_end_v": 			4.2,
-			"charge_a": 				7.5,
+			"charge_a": 				1,
 			"charge_end_a": 			0.3,
 			"rest_after_charge_min": 	20, 
 			"discharge_end_v": 			2.5,
-			"discharge_a": 				52.5,
+			"discharge_a": 				1,
 			"rest_after_discharge_min": 20,
 			"meas_log_int_s": 			1
 		}
+		self.valid_strings = {}
 	
 	def get_cycle_settings(self, cycle_name = ""):
-		
-		if(cycle_name != ""):
-			cycle_name += " "
-		
-		response = eg.buttonbox(msg = "Would you like to import settings for {}cycle or create new settings?".format(cycle_name),
-										title = "Settings for {}cycle".format(cycle_name), choices = ("New Settings", "Import Settings"))
-		if(response == "New Settings"):
-			valid_entries = False
-			while valid_entries == False:
-				response_list = eg.multenterbox(msg = "Enter Info for {}cycle".format(cycle_name), title = response,
-												fields = list(self.settings.keys()), values = list(self.settings.values()))
-				valid_entries = self.check_user_entry(list(self.settings.keys()), response_list)
-			
-			#update dict entries with the response
-			self.update_settings(response_list)
-			
-			if (eg.ynbox(msg = "Would you like to save these settings for future use?", title = "Save Settings")):
-				self.export_cycle_settings(cycle_name)
-		elif (response == "Import Settings"):
-			self.import_cycle_settings(cycle_name)
-		
-		self.convert_to_float()
-	
-	def check_user_entry(self, keys, entries):
-		if(entries == None):
-			return False
-		
-		entry_dict = dict(zip(keys, entries))
-		
-		for key in entry_dict:
-			if not self.is_entry_valid(key, entry_dict[key]):
-				return False
-		
-		return True
-
-	def is_entry_valid(self, key, value):
-		try:
-			float(value)
-			return True
-		except ValueError:
-			try:
-				if value in self.valid_strings[key]:
-					return True
-			except AttributeError:
-				return False
-			return False
-		return False
-	
-	def convert_to_float(self):
-		#if possible, convert items to floats
-		for key in self.settings.keys():
-			try:
-				self.settings[key] = float(self.settings[key])
-			except ValueError:
-				pass
-	
-	def update_settings(self, new_value_list):
-		#assuming an ordered response list
-		#a bit hacky but it should work
-		index = 0
-		for key in self.settings.keys():
-			self.settings.update({key: new_value_list[index]})
-			index += 1
+		self.settings = jsonIO.get_cycle_settings(self.settings, self.valid_strings, cycle_name)
 	
 	def export_cycle_settings(self, cycle_name = ""):
-		#add extra space to get formatting correct
-		if (cycle_name != ""):
-			cycle_name += " "
-		
-		#get the file to export to
-		file_name = eg.filesavebox(msg = "Choose a File to export {}cycle settings to".format(cycle_name),
-									title = "Cycle Settings", filetypes = ['*.json', 'JSON files'])
-		
-		#force file name extension
-		file_name = self.force_extension(file_name, '.json')
-		
-		#export the file
-		if(file_name != None):
-			with open(file_name, "w") as write_file:
-				json.dump(self.settings, write_file, indent = 4)
+		jsonIO.export_cycle_settings(self.settings, cycle_name)
 	
 	def import_cycle_settings(self, cycle_name = ""):
-		#add extra space to get formatting correct
-		if (cycle_name != ""):
-			cycle_name += " "
-		
-		#get the file to import from
-		file_name = eg.fileopenbox(msg = "Choose a File to import {}cycle settings from".format(cycle_name),
-									title = "Cycle Settings", filetypes = ['*.json', 'JSON files'])
-		
-		#import the file
-		if(file_name != None):
-			with open(file_name, "r") as read_file:
-				self.settings = json.load(read_file)
-				
-	def force_extension(self, filename, extension):
-		#Checking the file type
-		file_root, file_extension = os.path.splitext(filename)
-		if(file_extension != extension):
-			file_extension = extension
-		file_name = file_root + file_extension
-		return file_name
+		self.settings = jsonIO.import_cycle_settings(cycle_name)
 
 ###############  CHARGE  #####################
 
@@ -175,6 +82,7 @@ class ChargeSettings(CycleSettings):
 			"charge_end_a": 			0.3,
 			"meas_log_int_s": 			1
 		}
+		self.valid_strings = {}
 		
 ###############  DISCHARGE  #####################
 
@@ -186,6 +94,7 @@ class DischargeSettings(CycleSettings):
 			"discharge_a": 				52.5,
 			"meas_log_int_s": 			1
 		}
+		self.valid_strings = {}
 
 #################  STEPS FOR CONTROLLING BATTERY TEST  ############
 
@@ -210,7 +119,6 @@ class StepSettings(CycleSettings):
 			"end_style":				{'time_s', 'current_a', 'voltage_v'},
 			"end_condition":			{'greater', 'lesser'}
 		}
-		#TODO add safety settings - figure out multi-step end values
 
 ####################  DC DC TESTING  ############
 
@@ -228,6 +136,7 @@ class DcdcTestSettings():
 			"step_delay_s":					2,
 			"measurement_samples_for_avg":	10
 		}
+		self.valid_strings = {}
 
 class DcdcSweepSettings():
 	
@@ -241,3 +150,4 @@ class DcdcSweepSettings():
 			"step_delay_s":					2,
 			"measurement_samples_for_avg":	10
 		}
+		self.valid_strings = {}

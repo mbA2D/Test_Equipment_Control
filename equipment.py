@@ -2,6 +2,7 @@
 #organized into which ones have common function calls
 import easygui as eg
 from python_libraries import fet_board_management as fbm
+from easygui.boxes.derived_boxes import msgbox
 
 #Eloads
 from lab_equipment import Eload_BK8600
@@ -53,6 +54,10 @@ class eLoads:
 			msg = "In which series is the E-Load?"
 			title = "E-Load Series Selection"
 			class_name = eg.choicebox(msg, title, eLoads.part_numbers.keys())
+
+		if class_name == None:
+			msgbox("Failed to select the equipment.")
+			return			
 		
 		if class_name == 'BK8600':
 			eload = Eload_BK8600.BK8600(resource_id = resource_id)
@@ -81,6 +86,10 @@ class powerSupplies:
 			msg = "In which series is the PSU?"
 			title = "PSU Series Selection"
 			class_name = eg.choicebox(msg, title, powerSupplies.part_numbers.keys())
+
+		if class_name == None:
+			msgbox("Failed to select the equipment.")
+			return
 		
 		if class_name == 'SPD1000':
 			psu = PSU_SPD1000.SPD1000(resource_id = resource_id)
@@ -110,6 +119,10 @@ class dmms:
 			msg = "In which series is the DMM?"
 			title = "DMM Series Selection"
 			class_name = eg.choicebox(msg, title, dmms.part_numbers.keys())
+
+		if class_name == None:
+			msgbox("Failed to select the equipment.")
+			return			
 		
 		#if(class_name == 'DM3068'):
 		#	dmm = DMM_DM3068.DM3068(resource_id = resource_id)
