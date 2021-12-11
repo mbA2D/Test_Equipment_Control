@@ -499,8 +499,7 @@ def continuous_step_cycles_info():
 	msg = "Add another cycle?"
 	title = "Add Cycle"
 	while eg.ynbox(msg = msg, title = title):
-		#append here since we want the multi step settings list to be a single element in this settings list
-		cycle_settings_list.append(multi_step_cell_info())
+		cycle_settings_list.extend(multi_step_cell_info())
 	
 	return cycle_settings_list
 
