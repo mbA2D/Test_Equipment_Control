@@ -11,14 +11,14 @@ class FET_BOARD_EQ:
 	def measure_voltage(self):
 		self.event_and_queue_dict['v_event'].set()
 		#2 second timeout for the voltage measurements
-		return float(self.event_and_queue_dict['v_queue'].get(timeout = 2))
+		return float(self.event_and_queue_dict['v_queue'].get(timeout = 10))
 	
 	def measure_current(self):
 		self.event_and_queue_dict['i_event'].set()
 		#2 second timeout for the current measurements
-		return float(self.event_and_queue_dict['i_queue'].get(timeout = 2))
+		return float(self.event_and_queue_dict['i_queue'].get(timeout = 10))
 	
 	def measure_temperature(self):
 		self.event_and_queue_dict['t_event'].set()
 		#2 second timeout for the temp measurements
-		return float(self.event_and_queue_dict['t_queue'].get(timeout = 2))
+		return float(self.event_and_queue_dict['t_queue'].get(timeout = 10))

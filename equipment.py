@@ -1,6 +1,7 @@
 #contains a list of all the equipment that there are libraries for
 #organized into which ones have common function calls
 import easygui as eg
+from python_libraries import fet_board_management as fbm
 
 #Eloads
 from lab_equipment import Eload_BK8600
@@ -116,6 +117,9 @@ class dmms:
 			dmm = DMM_SDM3065X.SDM3065X(resource_id = resource_id)
 		elif class_name == 'MATICIAN_FET_BOARD_CH':
 			if event_and_queue_dict == None:
+				if multi_ch_event_and_queue_dict == None:
+					multi_ch_event_and_queue_dict = fbm.create_event_and_queue_dicts(4,4)
+					
 				#get the event and queue dict from the proper channel of the proper mcp device
 				#Figure out which devices are connected
 					#dict keyed by device name should be passed in

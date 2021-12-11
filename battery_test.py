@@ -97,24 +97,7 @@ class MainTestWindow(QMainWindow):
 			
 	
 	def multi_ch_devices_process(self):
-		#create all the queues
-		max_devices = 4
-		max_ch_per_device = 4
-		for device_num in range(max_devices):
-			self.dict_for_event_and_queue[device_num] = {}
-			for ch_num in range(max_ch_per_device):	
-				self.dict_for_event_and_queue[device_num][ch_num] = {
-					'v_event': Event(),
-					'v_queue': Queue(),
-					'i_event': Event(),
-					'i_queue': Queue(),
-					't_event': Event(),
-					't_queue': Queue()
-				}
-		
-		#Create a new process to manage all the fet boards
-		multi_ch_device_process = Process(target = fbm.fet_board_management, args = (self.dict_for_event_and_queue,))
-		multi_ch_device_process.start()
+		self.dict_for_event_and_queue = fbm.create_event_and_queue_dicts(4,4)
 		
 		
 	
