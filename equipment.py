@@ -1,7 +1,7 @@
 #contains a list of all the equipment that there are libraries for
 #organized into which ones have common function calls
 import easygui as eg
-from python_libraries import fet_board_management as fbm
+from BATT_HIL import fet_board_management as fbm
 from easygui.boxes.derived_boxes import msgbox
 
 #Eloads

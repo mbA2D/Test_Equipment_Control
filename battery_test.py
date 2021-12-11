@@ -6,7 +6,7 @@ from functools import partial
 import queue #queue module required for exception handling of multiprocessing.Queue
 import traceback
 
-from python_libraries import fet_board_management as fbm
+from BATT_HIL import fet_board_management as fbm
 import charge_discharge_control as cdc
 import equipment as eq
 import easygui as eg
