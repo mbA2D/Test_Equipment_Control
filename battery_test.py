@@ -1,11 +1,12 @@
 #Program to run the charge discharge control in different processes for each channel.
 
 from PyQt6.QtWidgets import QApplication, QMainWindow, QPushButton, QLabel, QVBoxLayout, QHBoxLayout, QWidget
-from multiprocessing import Process, Queue
+from multiprocessing import Process, Queue, Event
 from functools import partial
 import queue #queue module required for exception handling of multiprocessing.Queue
 import traceback
 
+from BATT_HIL import fet_board_management as fbm
 import charge_discharge_control as cdc
 import equipment as eq
 import easygui as eg
@@ -16,6 +17,7 @@ class MainTestWindow(QMainWindow):
 		super().__init__()
 		
 		self.num_battery_channels = 3
+		self.dict_for_event_and_queue = {}
 
 		#Connected Equipment
 		self.batt_ch_list = [None for i in range(self.num_battery_channels)]
@@ -29,6 +31,13 @@ class MainTestWindow(QMainWindow):
 		
 		self.setWindowTitle("Battery Tester App")
 		central_layout = QVBoxLayout()
+		
+		
+		#Create a button at the top to connect multi-channel equipment
+		self.connect_multi_ch_button = QPushButton("Connect Multi Channel Equipment")
+		self.connect_multi_ch_button.clicked.connect(self.multi_ch_devices_process)
+		central_layout.addWidget(self.connect_multi_ch_button)
+		
 		
 		#Create a widget and some labels - voltage and current for each channel
 		#Update the widgets from the queues in each channel
@@ -89,6 +98,13 @@ class MainTestWindow(QMainWindow):
 			QApplication.processEvents()
 			
 	
+	def multi_ch_devices_process(self):
+		self.dict_for_event_and_queue = fbm.create_event_and_queue_dicts(4,4)
+		
+		
+	
+	#TODO - assign_equipment while another test is running - don't freeze the GUI. Make this a thread or process.
+	#       easier once we only connect via pickle-able results.
 	def assign_equipment(self, ch_num):
 		try:
 			#choose a psu and eload for each channel
@@ -105,11 +121,11 @@ class MainTestWindow(QMainWindow):
 			msg = "Do you want to use a separate device to measure voltage on channel {}?".format(ch_num)
 			title = "Voltage Measurement Device"
 			if eg.ynbox(msg, title):
-				self.dmm_v_ch_list[ch_num] = eq.dmms.choose_dmm()
+				self.dmm_v_ch_list[ch_num] = eq.dmms.choose_dmm(multi_ch_event_and_queue_dict = self.dict_for_event_and_queue)
 			msg = "Do you want to use a separate device to measure current on channel {}?".format(ch_num)
 			title = "Current Measurement Device"
 			if eg.ynbox(msg, title):
-				self.dmm_i_ch_list[ch_num] = eq.dmms.choose_dmm()
+				self.dmm_i_ch_list[ch_num] = eq.dmms.choose_dmm(multi_ch_event_and_queue_dict = self.dict_for_event_and_queue)
 
 			self.batt_ch_list[ch_num].assign_equipment(psu_to_assign = self.psu_ch_list[ch_num], eload_to_assign = self.eload_ch_list[ch_num],
 										dmm_v_to_assign = self.dmm_v_ch_list[ch_num], dmm_i_to_assign = self.dmm_i_ch_list[ch_num])
@@ -120,7 +136,6 @@ class MainTestWindow(QMainWindow):
 		except:
 			print("Something went wrong with assigning equipment. Please try again.")
 			return
-
 
 	def start_test(self, ch_num):
 		self.batt_test_process(self.res_ids_dict_list[ch_num], data_out_queue = self.data_from_ch_queue_list[ch_num], ch_num = ch_num)

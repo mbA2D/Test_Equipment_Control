@@ -16,12 +16,12 @@ import traceback
 
 def init_eload(eload):
 	eload.toggle_output(False)
-	eload.remote_sense(True)
+	eload.remote_sense(False)
 	eload.set_current(0)
 	
 def init_psu(psu):
 	psu.toggle_output(False)
-	psu.remote_sense(True)
+	psu.remote_sense(False)
 	psu.set_voltage(0)
 	psu.set_current(0)
 
@@ -496,11 +496,10 @@ def multi_step_cell_info():
 def continuous_step_cycles_info():
 	cycle_settings_list = list()
 	
-	msg = "Add ?"
+	msg = "Add another cycle?"
 	title = "Add Cycle"
 	while eg.ynbox(msg = msg, title = title):
-		#append here since we want the multi step settings list to be a single element in this settings list
-		cycle_settings_list.append(multi_step_cell_info())
+		cycle_settings_list.extend(multi_step_cell_info())
 	
 	return cycle_settings_list
 
@@ -652,17 +651,23 @@ class BatteryChannel:
 		for key in self.eq_dict:
 			eq_res_ids_dict[key] = {'class_name': None, 'res_id': None}
 			if self.eq_dict[key] != None:
-				eq_res_ids_dict[key] = {'class_name': self.eq_dict[key][0], 'res_id': self.eq_dict[key][1].inst.resource_name}
+				class_name = self.eq_dict[key][0]
+				if class_name == 'MATICIAN_FET_BOARD_CH':
+					eq_res_ids_dict[key] = {'class_name': class_name, 'res_id': self.eq_dict[key][1].event_and_queue_dict}
+				else:
+					eq_res_ids_dict[key] = {'class_name': class_name, 'res_id': self.eq_dict[key][1].inst.resource_name}
 		
-		return eq_res_ids_dict 
+		return eq_res_ids_dict
 		
 	def disconnect_all_assigned_eq(self):
 		#disconnect from equipment so that we can pass the resource ids to the
 		#charge_discharge_control function and reconnect to the devices there
 		for key in self.eq_dict:
 			if self.eq_dict[key] != None:
-				self.eq_dict[key][1].inst.close()
-
+				try:
+					self.eq_dict[key][1].inst.close()
+				except AttributeError:
+					pass #temporary fix for 'virtual instrument' - TODO - figure out a way to do this more properly
 
 if __name__ == '__main__':
 	print("Use the battery_test.py script")
