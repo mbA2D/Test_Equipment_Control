@@ -91,54 +91,39 @@ class MainTestWindow(QMainWindow):
 		self.setCentralWidget(central_widget)
 
 		self.timer = QtCore.QTimer()
-		self.timer.setInterval(50)
-		self.timer.timeout.connect(self.update_plot_data)
+		self.timer.setInterval(0)
+		self.timer.timeout.connect(self.update_loop)
 		self.timer.start()
+		self.last_update_time = time.time()
 
-	def update_plot_data(self):
-		for ch_num in range(self.num_battery_channels):
-			self.plot_list[ch_num].x = self.plot_list[ch_num].x[1:]
-			self.plot_list[ch_num].x.append(self.plot_list[ch_num].x[-1] + 1)
-			
-			self.plot_list[ch_num].y = self.plot_list[ch_num].y[1:]
-			self.plot_list[ch_num].y2 = self.plot_list[ch_num].y2[1:]
-			
-			try:
-				self.plot_list[ch_num].y.append(randint(0,100))
-				self.plot_list[ch_num].y2.append(randint(0,100))
-			except KeyError:
-				self.plot_list[ch_num].y.append(0)
-				pass
-
-			self.plot_list[ch_num].data_line.setData(self.plot_list[ch_num].x, self.plot_list[ch_num].y)
-			self.plot_list[ch_num].data_line2.setData(self.plot_list[ch_num].x, self.plot_list[ch_num].y2)
-		
-		
 	def update_loop(self):
-		#Loop the data updates forever - TODO: should use some Signals, Slots, Events for this maybe.
 		update_interval_s = 0.1
-		last_update_time = time.time()
-		while True:
-			#Always read new data
+
+		for ch_num in range(self.num_battery_channels):
+			try:
+				#Read from all queues if available
+				self.data_dict_list[ch_num] = self.data_from_ch_queue_list[ch_num].get_nowait()
+			except queue.Empty:
+				pass #No new data was available
+
+		if time.time() - self.last_update_time > update_interval_s:
 			for ch_num in range(self.num_battery_channels):
+				self.plot_list[ch_num].x = self.plot_list[ch_num].x[1:]
+				self.plot_list[ch_num].x.append(self.plot_list[ch_num].x[-1] + 1)
+				
+				self.plot_list[ch_num].y = self.plot_list[ch_num].y[1:]
+				self.plot_list[ch_num].y2 = self.plot_list[ch_num].y2[1:]
+				
 				try:
-					#Read from all queues if available
-					self.data_dict_list[ch_num] = self.data_from_ch_queue_list[ch_num].get_nowait()
-				except queue.Empty:
-					pass #No new data was available
-			
-			#Display New Data if time interval passed
-			if time.time() - last_update_time > update_interval_s:
-				for ch_num in range(self.num_battery_channels):
-					#Update all the widgets with the new data
-					try:
-						self.data_label_list[ch_num].setText("CH: {}\nV: {} V\nI: {} A".format(ch_num, self.data_dict_list[ch_num]["Voltage"], self.data_dict_list[ch_num]["Current"]))
-					except KeyError:
-						pass #No data in the dictionary
-				last_update_time = time.time()
-			
-			QApplication.processEvents()
-			
+					self.plot_list[ch_num].y.append(randint(0,100))
+					self.plot_list[ch_num].y2.append(randint(0,100))
+				except KeyError:
+					self.plot_list[ch_num].y.append(0)
+					pass
+
+				self.plot_list[ch_num].data_line.setData(self.plot_list[ch_num].x, self.plot_list[ch_num].y)
+				self.plot_list[ch_num].data_line2.setData(self.plot_list[ch_num].x, self.plot_list[ch_num].y2)
+			self.last_update_time = time.time()
 	
 	def multi_ch_devices_process(self):
 		self.dict_for_event_and_queue = fbm.create_event_and_queue_dicts(4,4)
@@ -202,7 +187,6 @@ def main():
 	app = QApplication([])
 	test_window = MainTestWindow()
 	test_window.show()
-	test_window.update_loop()
 	app.exec()
 	
 if __name__ == '__main__':
