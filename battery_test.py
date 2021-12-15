@@ -17,12 +17,12 @@ import easygui as eg
 import time
 
 class LivePlot:
-	def __init__(self):
+	def __init__(self, plot_widget):
 		self.x = list(range(100))  # 100 time points
-		self.y = [randint(0,100) for _ in range(100)]  # 100 data points
-		self.y2 = [randint(0,100) for _ in range(100)]
-		self.data_line = None
-		self.data_line2 = None
+		self.y = [0 for _ in range(100)]  # 100 data points
+		self.y2 = [0 for _ in range(100)]
+		self.data_line = plot_widget.plot(self.x, self.y, pen=pg.mkPen('r'))
+		self.data_line2 = plot_widget.plot(self.x, self.y2, pen=pg.mkPen('b'))
 
 class MainTestWindow(QMainWindow):
 	def __init__(self):
@@ -39,7 +39,7 @@ class MainTestWindow(QMainWindow):
 		self.dmm_i_ch_list = [None for i in range(self.num_battery_channels)]
 		self.res_ids_dict_list = [None for i in range(self.num_battery_channels)]
 		self.mp_process_list = [None for i in range(self.num_battery_channels)]
-		self.plot_list = [LivePlot() for i in range(self.num_battery_channels)]
+		self.plot_list = [None for i in range(self.num_battery_channels)]
 		
 		
 		self.setWindowTitle("Battery Tester App")
@@ -73,8 +73,7 @@ class MainTestWindow(QMainWindow):
 			ch_layout = QHBoxLayout()
 			ch_layout.addWidget(self.data_label_list[ch_num])
 			ch_layout.addWidget(self.ch_graph_widget[ch_num])
-			self.plot_list[ch_num].data_line = self.ch_graph_widget[ch_num].plot(self.plot_list[ch_num].x, self.plot_list[ch_num].y, pen=pg.mkPen('r'))
-			self.plot_list[ch_num].data_line2 = self.ch_graph_widget[ch_num].plot(self.plot_list[ch_num].x, self.plot_list[ch_num].y2, pen=pg.mkPen('b'))
+			self.plot_list[ch_num] = LivePlot(self.ch_graph_widget[ch_num])
 
 
 			ch_layout.addWidget(self.button_assign_eq_list[ch_num])
@@ -114,12 +113,12 @@ class MainTestWindow(QMainWindow):
 				self.plot_list[ch_num].y = self.plot_list[ch_num].y[1:]
 				self.plot_list[ch_num].y2 = self.plot_list[ch_num].y2[1:]
 				
-				try:
-					self.plot_list[ch_num].y.append(randint(0,100))
-					self.plot_list[ch_num].y2.append(randint(0,100))
-				except KeyError:
+				if "Voltage" and "Current" in self.data_dict_list[ch_num].keys():
+					self.plot_list[ch_num].y.append(self.data_dict_list[ch_num]["Voltage"])
+					self.plot_list[ch_num].y2.append(self.data_dict_list[ch_num]["Current"])
+				else:
 					self.plot_list[ch_num].y.append(0)
-					pass
+					self.plot_list[ch_num].y2.append(0)
 
 				self.plot_list[ch_num].data_line.setData(self.plot_list[ch_num].x, self.plot_list[ch_num].y)
 				self.plot_list[ch_num].data_line2.setData(self.plot_list[ch_num].x, self.plot_list[ch_num].y2)
