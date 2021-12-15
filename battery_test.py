@@ -96,7 +96,7 @@ class MainTestWindow(QMainWindow):
 		self.last_update_time = time.time()
 
 	def update_loop(self):
-		update_interval_s = 0.1
+		update_interval_s = 0.5
 
 		for ch_num in range(self.num_battery_channels):
 			try:
