@@ -574,7 +574,7 @@ def get_eq_rect_dict(cycle_type):
 		eq_req_dict['psu'] = cycle_types[cycle_type]['supply_req']
 		eq_req_dict['eload'] = cycle_types[cycle_type]['load_req']
 	
-	return eq_rect_dict
+	return eq_req_dict
 
 
 ################################## BATTERY CYCLING SETUP FUNCTION ######################################
