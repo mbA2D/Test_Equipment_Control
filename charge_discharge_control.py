@@ -603,7 +603,7 @@ def charge_discharge_control(res_ids_dict, data_out_queue = None, cell_name = No
 			cycle_settings_list_of_lists = get_cycle_settings_list_of_lists()
 		
 		if eq_rect_dict == None:
-			eq_rect_dict = get_eq_rect_dict(cycle_type)
+			eq_req_dict = get_eq_req_dict(cycle_type)
 		
 		#CHECKING CONNECTION OF REQUIRED EQUIPMENT
 		if eq_req_dict['eload'] and eq_dict['eload'] == None:
