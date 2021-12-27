@@ -563,7 +563,7 @@ def get_cycle_settings_list_of_lists(cycle_type):
 		
 	return cycle_settings_list_of_lists
 
-def get_eq_rect_dict(cycle_type):
+def get_eq_req_dict(cycle_type):
 	#REQUIRED EQUIPMENT
 	eq_req_dict = {'psu': False, 'eload': False}
 	
