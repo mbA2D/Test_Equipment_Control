@@ -534,6 +534,7 @@ def get_cycle_type():
 	msg = "Which cycle type do you want to do?"
 	title = "Choose Cycle Type"
 	cycle_type = eg.choicebox(msg, title, list(cycle_types.keys()))
+	return cycle_type
 
 def get_cycle_settings_list_of_lists():
 	cycle_types = Templates.CycleTypes.cycle_types
