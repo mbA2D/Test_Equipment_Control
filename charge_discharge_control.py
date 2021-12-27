@@ -600,7 +600,7 @@ def charge_discharge_control(res_ids_dict, data_out_queue = None, cell_name = No
 			cycle_type = get_cycle_type()
 		
 		if cycle_settings_list_of_lists == None:
-			cycle_settings_list_of_lists = get_cycle_settings_list_of_lists()
+			cycle_settings_list_of_lists = get_cycle_settings_list_of_lists(cycle_type)
 		
 		if eq_req_dict == None:
 			eq_req_dict = get_eq_req_dict(cycle_type)
