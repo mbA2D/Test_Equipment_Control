@@ -7,6 +7,9 @@ import serial
 
 # Power Supply
 class DP800:
+	
+	has_remote_sense = False
+	
 	# Initialize the DP800 Power Supply
 	def __init__(self, resource_id = None):
 		rm = pyvisa.ResourceManager('@ivi')
@@ -49,8 +52,18 @@ class DP800:
 		
 		self.inst = rm.open_resource(resource_id)
 		
-		print("Connected to {}\n".format(self.inst.query("*IDN?")))
+		self.inst_idn = self.inst.query("*IDN?")
+		print("Connected to {}\n".format(self.inst_idn))
 		self.inst.write("*RST")
+		
+		split_string = self.inst_idn.split(",")
+		self.manufacturer = split_string[0]
+		self.model = split_string[1]
+		self.serial_number = split_string[2]
+		self.version_number = split_string[3]
+		
+		if 'DP811' in self.model:
+			self.has_remote_sense = True
 		
 		#Choose channel 1 by default
 		self.select_channel(1)
@@ -77,12 +90,12 @@ class DP800:
 			self.inst.write(":OUTP OFF")
 	
 	def remote_sense(self, state):
-		pass
-		#only for DP811A
-		#if state:
-		#	self.inst.write(":OUTP:SENS ON")
-		#else:
-		#	self.inst.write(":OUTP:SENS OFF")
+		if self.has_remote_sense:
+			#only for DP811
+			if state:
+				self.inst.write(":OUTP:SENS ON")
+			else:
+				self.inst.write(":OUTP:SENS OFF")
 	
 	def lock_front_panel(self, state):
 		if state:

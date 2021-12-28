@@ -16,12 +16,10 @@ import traceback
 
 def init_eload(eload):
 	eload.toggle_output(False)
-	eload.remote_sense(False)
 	eload.set_current(0)
 	
 def init_psu(psu):
 	psu.toggle_output(False)
-	psu.remote_sense(False)
 	psu.set_voltage(0)
 	psu.set_current(0)
 
@@ -585,7 +583,7 @@ def charge_discharge_control(res_ids_dict, data_out_queue = None, cell_name = No
 	try:
 		for key in res_ids_dict:
 			if res_ids_dict[key]['res_id'] != None:
-				eq_dict[key] = eq.connect_to_eq(key, res_ids_dict[key]['class_name'], res_ids_dict[key]['res_id'])
+				eq_dict[key] = eq.connect_to_eq(key, res_ids_dict[key]['class_name'], res_ids_dict[key]['res_id'], res_ids_dict[key]['use_remote_sense'])
 			else:
 				eq_dict[key] = None
 		
@@ -684,9 +682,9 @@ class BatteryChannel:
 			if self.eq_dict[key] != None:
 				class_name = self.eq_dict[key][0]
 				if class_name == 'MATICIAN_FET_BOARD_CH':
-					eq_res_ids_dict[key] = {'class_name': class_name, 'res_id': self.eq_dict[key][1].event_and_queue_dict}
+					eq_res_ids_dict[key] = {'class_name': class_name, 'res_id': self.eq_dict[key][1].event_and_queue_dict, 'use_remote_sense': False}
 				else:
-					eq_res_ids_dict[key] = {'class_name': class_name, 'res_id': self.eq_dict[key][1].inst.resource_name}
+					eq_res_ids_dict[key] = {'class_name': class_name, 'res_id': self.eq_dict[key][1].inst.resource_name, 'use_remote_sense': self.eq_dict[key][2]}
 		
 		return eq_res_ids_dict
 		

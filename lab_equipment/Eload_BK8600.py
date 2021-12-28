@@ -7,6 +7,9 @@ import serial
 
 # E-Load
 class BK8600:
+	
+	has_remote_sense = True
+	
 	# Initialize the BK8600 E-Load
 	def __init__(self, resource_id = None):
 		rm = pyvisa.ResourceManager('@ivi')

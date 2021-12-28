@@ -23,21 +23,37 @@ from lab_equipment import PSU_KAXXXXP
 from lab_equipment import DMM_SDM3065X
 from lab_equipment import DMM_FET_BOARD_EQ
 
-def connect_to_eq(key, class_name, res_id):
+def setup_remote_sense(instrument, use_remote_sense):
+	try:
+		if instrument.has_remote_sense:
+			if use_remote_sense == None:
+				#ask to use remote sense
+				msg = "Do you want to use remote sense on this instrument?"
+				title = "Remote Sense"
+				use_remote_sense = eg.ynbox(msg, title)
+			instrument.remote_sense(use_remote_sense)
+			return use_remote_sense
+	except AttributeError:
+		pass
+	return None
+
+def connect_to_eq(key, class_name, res_id, use_remote_sense = None):
 	#Key should be 'eload', 'psu', or 'dmm'
 	#'dmm' with any following characters will be considered a dmm
+	instrument = None
 	
+	#return the actual equipment object instead of the equipment dictionary
 	if key == 'eload':
-		return eLoads.choose_eload(class_name, res_id)[1]
+		instrument = eLoads.choose_eload(class_name, res_id, use_remote_sense)[1]
 	if key == 'psu':
-		return powerSupplies.choose_psu(class_name, res_id)[1]
+		instrument = powerSupplies.choose_psu(class_name, res_id, use_remote_sense)[1]
 	if key == 'dmm' or ('dmm' in key): #for dmm_i and dmm_v keys
 		if class_name == 'MATICIAN_FET_BOARD_CH':
-			dmm = dmms.choose_dmm(class_name = class_name, event_and_queue_dict = res_id)[1]
+			instrument = dmms.choose_dmm(class_name, event_and_queue_dict = res_id)[1]
 		else:
-			dmm = dmms.choose_dmm(class_name, res_id)[1]
-		return dmm
-	return None
+			instrument = dmms.choose_dmm(class_name, res_id, use_remote_sense)[1]
+
+	return instrument
 
 
 class eLoads:
@@ -49,7 +65,7 @@ class eLoads:
 	}
 		
 	@classmethod
-	def choose_eload(self, class_name = None, resource_id = None):
+	def choose_eload(self, class_name = None, resource_id = None, use_remote_sense = None):
 		if class_name == None:
 			msg = "In which series is the E-Load?"
 			title = "E-Load Series Selection"
@@ -67,7 +83,9 @@ class eLoads:
 			eload = Eload_KEL10X.KEL10X(resource_id = resource_id)
 		elif class_name == 'IT8500':
 			eload = Eload_IT8500.IT8500(resource_id = resource_id)
-		return class_name, eload
+			
+		use_remote_sense = setup_remote_sense(eload, use_remote_sense)
+		return class_name, eload, use_remote_sense
 
 
 class powerSupplies:
@@ -103,7 +121,9 @@ class powerSupplies:
 			psu = PSU_N8700.N8700(resource_id = resource_id)
 		elif class_name == 'KAXXXXP':
 			psu = PSU_KAXXXXP.KAXXXXP(resource_id = resource_id)
-		return class_name, psu
+			
+		use_remote_sense = setup_remote_sense(eload, use_remote_sense)
+		return class_name, psu, use_remote_sense
 
 
 class dmms:

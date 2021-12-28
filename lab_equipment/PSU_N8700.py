@@ -8,6 +8,9 @@ import serial
 # Power Supply
 class N8700:
 	# Initialize the N8700 Power Supply
+	
+	has_remote_sense = False
+	
 	def __init__(self, resource_id = None):
 		rm = pyvisa.ResourceManager('@ivi')
 		
