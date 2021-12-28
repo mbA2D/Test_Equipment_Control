@@ -51,7 +51,7 @@ def connect_to_eq(key, class_name, res_id, use_remote_sense = None):
 		if class_name == 'MATICIAN_FET_BOARD_CH':
 			instrument = dmms.choose_dmm(class_name, event_and_queue_dict = res_id)[1]
 		else:
-			instrument = dmms.choose_dmm(class_name, res_id, use_remote_sense)[1]
+			instrument = dmms.choose_dmm(class_name, resource_id = res_id, use_remote_sense = use_remote_sense)[1]
 
 	return instrument
 
@@ -99,7 +99,7 @@ class powerSupplies:
 	}
 	
 	@classmethod
-	def choose_psu(self, class_name = None, resource_id = None):
+	def choose_psu(self, class_name = None, resource_id = None, use_remote_sense = None):
 		if class_name == None:
 			msg = "In which series is the PSU?"
 			title = "PSU Series Selection"
@@ -134,7 +134,8 @@ class dmms:
 	}
 	
 	@classmethod
-	def choose_dmm(self, class_name = None, resource_id = None, event_and_queue_dict = None, multi_ch_event_and_queue_dict = None):
+	def choose_dmm(self, class_name = None, resource_id = None, event_and_queue_dict = None, multi_ch_event_and_queue_dict = None, use_remote_sense = None):
+		#use_remote_sense is here to have similar interface to other functions, but does nothing in this case
 		if class_name == None:
 			msg = "In which series is the DMM?"
 			title = "DMM Series Selection"
