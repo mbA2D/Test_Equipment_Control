@@ -135,7 +135,7 @@ class MainTestWindow(QMainWindow):
 		self.dict_for_event_and_queue = fbm.create_event_and_queue_dicts(4,4)
 		
 		
-	
+	#Assigning equipment in a queue so that we don't block the main window
 	def assign_equipment_process(self, ch_num):
 		try:
 			if self.assign_eq_process_list[ch_num] is not None and self.assign_eq_process_list[ch_num].is_alive():
@@ -146,8 +146,6 @@ class MainTestWindow(QMainWindow):
 		except:
 			traceback.print_exc()
 	
-	#TODO - assign_equipment while another test is running - don't freeze the GUI. Make this a thread or process.
-	#       easier once we only connect via pickle-able results.
 	@staticmethod
 	def assign_equipment(ch_num, assignment_queue):
 		try:
