@@ -28,13 +28,16 @@ class MainTestWindow(QMainWindow):
 	def __init__(self):
 		super().__init__()
 		
-		self.num_battery_channels = 16
+		self.num_battery_channels = int(eg.enterbox(msg = "How many battery channels?", title = "Battery Channels", default = "1"))
 		self.dict_for_event_and_queue = {}
 
 		#Connected Equipment
 		self.res_ids_dict_list = [None for i in range(self.num_battery_channels)]
 		self.mp_process_list = [None for i in range(self.num_battery_channels)]
+		self.assign_eq_process_list = [None for i in range(self.num_battery_channels)]
 		self.plot_list = [None for i in range(self.num_battery_channels)]
+		
+		self.eq_assignment_queue = Queue()
 		
 		
 		self.setWindowTitle("Battery Tester App")
@@ -60,7 +63,7 @@ class MainTestWindow(QMainWindow):
 			
 			#setting up buttons
 			self.button_assign_eq_list[ch_num].setCheckable(False)
-			self.button_assign_eq_list[ch_num].clicked.connect(partial(self.assign_equipment, ch_num))
+			self.button_assign_eq_list[ch_num].clicked.connect(partial(self.assign_equipment_process, ch_num))
 			self.button_start_test_list[ch_num].setCheckable(False)
 			self.button_start_test_list[ch_num].clicked.connect(partial(self.start_test, ch_num))
 			
@@ -91,7 +94,17 @@ class MainTestWindow(QMainWindow):
 
 	def update_loop(self):
 		update_interval_s = 0.5
-
+		
+		
+		#Check the equipment assignment queue
+		try:
+			self.new_eq_assignment = self.eq_assignment_queue.get_nowait()
+			self.res_ids_dict_list[new_eq_assignment['ch_num']] = new_eq_assignment['res_ids_dict']
+		except queue.Empty:
+			pass #No new data was available
+		
+		
+		#Read from all the data queues
 		for ch_num in range(self.num_battery_channels):
 			try:
 				#Read from all queues if available
@@ -123,41 +136,54 @@ class MainTestWindow(QMainWindow):
 		
 		
 	
+	def assign_equipment_process(self, ch_num):
+		try:
+			if self.assign_eq_process_list[ch_num] is not None and self.assign_eq_process_list[ch_num].is_alive():
+				print("There is a process already running to assign equipment on Channel {}".format(ch_num))
+				return
+			self.assign_eq_process_list[ch_num] = Process(target=self.assign_equipment, args = (ch_num, self.eq_assignment_queue))
+			self.assign_eq_process_list[ch_num].start()
+		except:
+			traceback.print_exc()
+	
 	#TODO - assign_equipment while another test is running - don't freeze the GUI. Make this a thread or process.
 	#       easier once we only connect via pickle-able results.
-	def assign_equipment(self, ch_num):
+	@staticmethod
+	def assign_equipment(ch_num, assignment_queue):
 		try:
 			res_ids_dict = {'psu': None, 'eload': None, 'dmm_v': None, 'dmm_i': None}
 			
 			#choose a psu and eload for each channel
 			msg = "Do you want to connect a power supply for channel {}?".format(ch_num)
-			title = "Power Supply Connection"
+			title = "CH {} Power Supply Connection".format(ch_num)
 			if eg.ynbox(msg, title):
 				psu = eq.powerSupplies.choose_psu()
 				res_ids_dict['psu'] = eq.get_res_id_dict_and_disconnect(psu)
 			msg = "Do you want to connect an eload for channel {}?".format(ch_num)
-			title = "Eload Connection"
+			title = "CH {} Eload Connection".format(ch_num)
 			if eg.ynbox(msg, title):
 				eload = eq.eLoads.choose_eload()
 				res_ids_dict['eload'] = eq.get_res_id_dict_and_disconnect(eload)
 			
 			#Separate measurement devices
 			msg = "Do you want to use a separate device to measure voltage on channel {}?".format(ch_num)
-			title = "Voltage Measurement Device"
+			title = "CH {} Voltage Measurement Device".format(ch_num)
 			if eg.ynbox(msg, title):
 				dmm_v = eq.dmms.choose_dmm(multi_ch_event_and_queue_dict = self.dict_for_event_and_queue)
 				res_ids_dict['dmm_v'] = eq.get_res_id_dict_and_disconnect(dmm_v)
 			msg = "Do you want to use a separate device to measure current on channel {}?".format(ch_num)
-			title = "Current Measurement Device"
+			title = "CH {} Current Measurement Device".format(ch_num)
 			if eg.ynbox(msg, title):
 				dmm_i = eq.dmms.choose_dmm(multi_ch_event_and_queue_dict = self.dict_for_event_and_queue)
 				res_ids_dict['dmm_i'] = eq.get_res_id_dict_and_disconnect(dmm_i)
 			
-			self.res_ids_dict_list[ch_num] = res_ids_dict
+			dict_for_queue = {'ch_num': ch_num, 'res_ids_dict': res_ids_dict}
+			assignment_queue.put_nowait(dict_for_queue)
 			
 		except:
 			print("Something went wrong with assigning equipment. Please try again.")
 			return
+
 
 	def start_test(self, ch_num):
 		self.batt_test_process(self.res_ids_dict_list[ch_num], data_out_queue = self.data_from_ch_queue_list[ch_num], ch_num = ch_num)
@@ -170,7 +196,7 @@ class MainTestWindow(QMainWindow):
 
 		try:
 			if self.mp_process_list[ch_num] is not None and self.mp_process_list[ch_num].is_alive():
-				print(f"There is a process already running in Channel {ch_num}")
+				print("There is a process already running in Channel {}".format(ch_num))
 				return
 			self.mp_process_list[ch_num] = Process(target=cdc.charge_discharge_control, args = (res_ids_dict, data_out_queue))
 			self.mp_process_list[ch_num].start()
