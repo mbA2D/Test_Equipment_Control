@@ -32,11 +32,6 @@ class MainTestWindow(QMainWindow):
 		self.dict_for_event_and_queue = {}
 
 		#Connected Equipment
-		self.batt_ch_list = [None for i in range(self.num_battery_channels)]
-		self.psu_ch_list = [None for i in range(self.num_battery_channels)]
-		self.eload_ch_list = [None for i in range(self.num_battery_channels)]
-		self.dmm_v_ch_list = [None for i in range(self.num_battery_channels)]
-		self.dmm_i_ch_list = [None for i in range(self.num_battery_channels)]
 		self.res_ids_dict_list = [None for i in range(self.num_battery_channels)]
 		self.mp_process_list = [None for i in range(self.num_battery_channels)]
 		self.plot_list = [None for i in range(self.num_battery_channels)]
@@ -83,7 +78,6 @@ class MainTestWindow(QMainWindow):
 			ch_widget.setLayout(ch_layout)
 			
 			central_layout.addWidget(ch_widget, (ch_num % 8 + 1), (0 if ch_num < 8 else 1))
-			self.batt_ch_list[ch_num] = cdc.BatteryChannel()
 		
 		central_widget = QWidget()
 		central_widget.setLayout(central_layout)
@@ -133,32 +127,34 @@ class MainTestWindow(QMainWindow):
 	#       easier once we only connect via pickle-able results.
 	def assign_equipment(self, ch_num):
 		try:
+			res_ids_dict = {'psu': None, 'eload': None, 'dmm_v': None, 'dmm_i': None}
+			
 			#choose a psu and eload for each channel
 			msg = "Do you want to connect a power supply for channel {}?".format(ch_num)
 			title = "Power Supply Connection"
 			if eg.ynbox(msg, title):
-				self.psu_ch_list[ch_num] = eq.powerSupplies.choose_psu()
+				psu = eq.powerSupplies.choose_psu()
+				res_ids_dict['psu'] = eq.get_res_id_dict_and_disconnect(psu)
 			msg = "Do you want to connect an eload for channel {}?".format(ch_num)
 			title = "Eload Connection"
 			if eg.ynbox(msg, title):
-				self.eload_ch_list[ch_num] = eq.eLoads.choose_eload()
+				eload = eq.eLoads.choose_eload()
+				res_ids_dict['eload'] = eq.get_res_id_dict_and_disconnect(eload)
 			
 			#Separate measurement devices
 			msg = "Do you want to use a separate device to measure voltage on channel {}?".format(ch_num)
 			title = "Voltage Measurement Device"
 			if eg.ynbox(msg, title):
-				self.dmm_v_ch_list[ch_num] = eq.dmms.choose_dmm(multi_ch_event_and_queue_dict = self.dict_for_event_and_queue)
+				dmm_v = eq.dmms.choose_dmm(multi_ch_event_and_queue_dict = self.dict_for_event_and_queue)
+				res_ids_dict['dmm_v'] = eq.get_res_id_dict_and_disconnect(dmm_v)
 			msg = "Do you want to use a separate device to measure current on channel {}?".format(ch_num)
 			title = "Current Measurement Device"
 			if eg.ynbox(msg, title):
-				self.dmm_i_ch_list[ch_num] = eq.dmms.choose_dmm(multi_ch_event_and_queue_dict = self.dict_for_event_and_queue)
-
-			self.batt_ch_list[ch_num].assign_equipment(psu_to_assign = self.psu_ch_list[ch_num], eload_to_assign = self.eload_ch_list[ch_num],
-										dmm_v_to_assign = self.dmm_v_ch_list[ch_num], dmm_i_to_assign = self.dmm_i_ch_list[ch_num])
+				dmm_i = eq.dmms.choose_dmm(multi_ch_event_and_queue_dict = self.dict_for_event_and_queue)
+				res_ids_dict['dmm_i'] = eq.get_res_id_dict_and_disconnect(dmm_i)
 			
-			self.res_ids_dict_list[ch_num] = self.batt_ch_list[ch_num].get_assigned_eq_res_ids()
-
-			self.batt_ch_list[ch_num].disconnect_all_assigned_eq()
+			self.res_ids_dict_list[ch_num] = res_ids_dict
+			
 		except:
 			print("Something went wrong with assigning equipment. Please try again.")
 			return

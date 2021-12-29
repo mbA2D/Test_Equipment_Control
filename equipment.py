@@ -55,6 +55,24 @@ def connect_to_eq(key, class_name, res_id, use_remote_sense = None):
 
 	return instrument
 
+def get_res_id_dict_and_disconnect(eq_list):
+	#get resource id
+	eq_res_id_dict = {'class_name': None, 'res_id': None, 'use_remote_sense': None}
+	class_name = eq_list[0]
+	if class_name == 'MATICIAN_FET_BOARD_CH':
+		eq_res_id_dict = {'class_name': class_name, 'res_id': eq_list[1].event_and_queue_dict, 'use_remote_sense': False}
+	else:
+		eq_res_id_dict = {'class_name': class_name, 'res_id': eq_list[1].inst.resource_name, 'use_remote_sense': eq_list[2]}
+	
+	#disconnect from equipment
+	try:
+		eq_list[1].inst.close()
+	except AttributeError:
+		pass #temporary fix for 'virtual instrument' - TODO - figure out a way to do this more properly
+	
+	return eq_res_id_dict
+	
+def disconnect_eq
 
 class eLoads:
 	part_numbers = {

@@ -659,45 +659,6 @@ def charge_discharge_control(res_ids_dict, data_out_queue = None, cell_name = No
 
 ####################################### MAIN PROGRAM ######################################
 
-class BatteryChannel:
-	
-	def __init__(self, psu = None, eload = None, dmm_v = None, dmm_i = None):
-		self.eq_dict = dict()
-		self.eq_dict['eload'] = None
-		self.eq_dict['psu'] = None
-		self.eq_dict['dmm_v'] = None
-		self.eq_dict['dmm_i'] = None
-		self.assign_equipment(psu_to_assign = psu, eload_to_assign = eload, dmm_v_to_assign = dmm_v, dmm_i_to_assign = dmm_i)
-	
-	def assign_equipment(self, psu_to_assign = None, eload_to_assign = None, dmm_v_to_assign = None, dmm_i_to_assign = None):
-		self.eq_dict['eload'] = eload_to_assign
-		self.eq_dict['psu'] = psu_to_assign
-		self.eq_dict['dmm_v'] = dmm_v_to_assign
-		self.eq_dict['dmm_i'] = dmm_i_to_assign
-	
-	def get_assigned_eq_res_ids(self):
-		eq_res_ids_dict = dict()
-		for key in self.eq_dict:
-			eq_res_ids_dict[key] = {'class_name': None, 'res_id': None}
-			if self.eq_dict[key] != None:
-				class_name = self.eq_dict[key][0]
-				if class_name == 'MATICIAN_FET_BOARD_CH':
-					eq_res_ids_dict[key] = {'class_name': class_name, 'res_id': self.eq_dict[key][1].event_and_queue_dict, 'use_remote_sense': False}
-				else:
-					eq_res_ids_dict[key] = {'class_name': class_name, 'res_id': self.eq_dict[key][1].inst.resource_name, 'use_remote_sense': self.eq_dict[key][2]}
-		
-		return eq_res_ids_dict
-		
-	def disconnect_all_assigned_eq(self):
-		#disconnect from equipment so that we can pass the resource ids to the
-		#charge_discharge_control function and reconnect to the devices there
-		for key in self.eq_dict:
-			if self.eq_dict[key] != None:
-				try:
-					self.eq_dict[key][1].inst.close()
-				except AttributeError:
-					pass #temporary fix for 'virtual instrument' - TODO - figure out a way to do this more properly
-
 if __name__ == '__main__':
 	print("Use the battery_test.py script")
 	#charge_discharge_control()
