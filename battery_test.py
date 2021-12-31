@@ -56,6 +56,7 @@ class MainTestWindow(QMainWindow):
 		self.button_assign_eq_list = [QPushButton("Assign Equipment") for i in range(self.num_battery_channels)]
 		self.button_start_test_list = [QPushButton("Start Test") for i in range(self.num_battery_channels)]
 		self.data_from_ch_queue_list = [Queue() for i in range(self.num_battery_channels)]
+		self.data_to_ch_queue_list = [Queue() for i in range(self.num_battery_channels)]
 		self.data_dict_list = [dict() for i in range(self.num_battery_channels)]
 		self.ch_graph_widget = [pg.PlotWidget(background='w') for i in range(self.num_battery_channels)]
 		
@@ -185,10 +186,11 @@ class MainTestWindow(QMainWindow):
 
 
 	def start_test(self, ch_num):
-		self.batt_test_process(self.res_ids_dict_list[ch_num], data_out_queue = self.data_from_ch_queue_list[ch_num], ch_num = ch_num)
+		self.batt_test_process(self.res_ids_dict_list[ch_num], data_out_queue = self.data_from_ch_queue_list[ch_num],
+								data_in_queue = self.data_to_ch_queue_list[ch_num], ch_num = ch_num)
 		
 	
-	def batt_test_process(self, res_ids_dict, data_out_queue = None, ch_num = None):
+	def batt_test_process(self, res_ids_dict, data_out_queue = None, data_in_queue = None, ch_num = None):
 		if res_ids_dict == None:
 			print("Please Assign Equipment to this Channel before starting a test!")
 			return
@@ -197,7 +199,7 @@ class MainTestWindow(QMainWindow):
 			if self.mp_process_list[ch_num] is not None and self.mp_process_list[ch_num].is_alive():
 				print("There is a process already running in Channel {}".format(ch_num))
 				return
-			self.mp_process_list[ch_num] = Process(target=cdc.charge_discharge_control, args = (res_ids_dict, data_out_queue))
+			self.mp_process_list[ch_num] = Process(target=cdc.charge_discharge_control, args = (res_ids_dict, data_out_queue, data_in_queue))
 			self.mp_process_list[ch_num].start()
 		except:
 			traceback.print_exc()
