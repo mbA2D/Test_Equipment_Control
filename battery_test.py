@@ -185,10 +185,15 @@ class MainTestWindow(QMainWindow):
 			return
 
 
-	def start_test(self, ch_num):
+	def configure_test(self, ch_num):
 		self.batt_test_process(self.res_ids_dict_list[ch_num], data_out_queue = self.data_from_ch_queue_list[ch_num],
 								data_in_queue = self.data_to_ch_queue_list[ch_num], ch_num = ch_num)
-		
+								
+	def start_test(self, ch_num):
+		self.data_to_ch_queue_list[ch_num].put_nowait('start')
+	
+	def stop_test(self, ch_num):
+		self.data_to_ch_queue_list[ch_num].put_nowait('stop')
 	
 	def batt_test_process(self, res_ids_dict, data_out_queue = None, data_in_queue = None, ch_num = None):
 		if res_ids_dict == None:
