@@ -561,7 +561,7 @@ def get_cycle_settings_list_of_lists(cycle_type):
 		
 	return cycle_settings_list_of_lists
 
-def get_eq_req_dict(cycle_type):
+def get_eq_req_dict(cycle_type, cycle_settings_list_of_lists):
 	#REQUIRED EQUIPMENT
 	eq_req_dict = {'psu': False, 'eload': False}
 	
@@ -579,10 +579,11 @@ def get_eq_req_dict(cycle_type):
 
 def charge_discharge_control(res_ids_dict, data_out_queue = None, cell_name = None, directory = None, cycle_type = None, 
 								cycle_settings_list_of_lists = None, eq_req_dict = None):
+	
 	eq_dict = dict()
 	try:
 		for key in res_ids_dict:
-			if res_ids_dict[key]['res_id'] != None:
+			if res_ids_dict[key] != None and res_ids_dict[key]['res_id'] != None:
 				eq_dict[key] = eq.connect_to_eq(key, res_ids_dict[key]['class_name'], res_ids_dict[key]['res_id'], res_ids_dict[key]['use_remote_sense'])
 			else:
 				eq_dict[key] = None
@@ -601,7 +602,7 @@ def charge_discharge_control(res_ids_dict, data_out_queue = None, cell_name = No
 			cycle_settings_list_of_lists = get_cycle_settings_list_of_lists(cycle_type)
 		
 		if eq_req_dict == None:
-			eq_req_dict = get_eq_req_dict(cycle_type)
+			eq_req_dict = get_eq_req_dict(cycle_type, cycle_settings_list_of_lists)
 		
 		#CHECKING CONNECTION OF REQUIRED EQUIPMENT
 		if eq_req_dict['eload'] and eq_dict['eload'] == None:

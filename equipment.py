@@ -9,6 +9,7 @@ from lab_equipment import Eload_BK8600
 from lab_equipment import Eload_DL3000
 from lab_equipment import Eload_KEL10X
 from lab_equipment import Eload_IT8500
+from lab_equipment import Eload_Fake
 
 #Power Supplies
 from lab_equipment import PSU_DP800
@@ -17,11 +18,13 @@ from lab_equipment import PSU_MP71025X
 from lab_equipment import PSU_BK9100
 from lab_equipment import PSU_N8700
 from lab_equipment import PSU_KAXXXXP
+from lab_equipment import PSU_Fake
 
 #Digital Multimeters
 #from lab_equipment import DM3068
 from lab_equipment import DMM_SDM3065X
 from lab_equipment import DMM_FET_BOARD_EQ
+from lab_equipment import DMM_Fake
 
 def setup_remote_sense(instrument, use_remote_sense):
 	try:
@@ -57,29 +60,36 @@ def connect_to_eq(key, class_name, res_id, use_remote_sense = None):
 
 def get_res_id_dict_and_disconnect(eq_list):
 	#get resource id
-	eq_res_id_dict = {'class_name': None, 'res_id': None, 'use_remote_sense': None}
 	class_name = eq_list[0]
+	eq_res_id_dict = {'class_name': class_name, 'res_id': None, 'use_remote_sense': None}
 	if class_name == 'MATICIAN_FET_BOARD_CH':
-		eq_res_id_dict = {'class_name': class_name, 'res_id': eq_list[1].event_and_queue_dict, 'use_remote_sense': False}
+		eq_res_id_dict['res_id'] = eq_list[1].event_and_queue_dict
+		eq_res_id_dict['use_remote_sense'] = False
+	elif 'Fake' in class_name:
+		eq_res_id_dict['res_id'] = 'Fake'
+		eq_res_id_dict['use_remote_sense'] = eq_list[2]
 	else:
-		eq_res_id_dict = {'class_name': class_name, 'res_id': eq_list[1].inst.resource_name, 'use_remote_sense': eq_list[2]}
-	
+		try:
+			eq_res_id_dict['res_id'] = eq_list[1].inst.resource_name
+			eq_res_id_dict['use_remote_sense'] = eq_list[2]
+		except AttributeError:
+			print("No res_id for instrument")
+		
 	#disconnect from equipment
 	try:
 		eq_list[1].inst.close()
 	except AttributeError:
-		pass #temporary fix for 'virtual instrument' - TODO - figure out a way to do this more properly
+		pass #temporary fix for 'virtual and fake instruments' - TODO - figure out a way to do this more properly
 	
 	return eq_res_id_dict
-	
-def disconnect_eq
 
 class eLoads:
 	part_numbers = {
 		'BK8600': 'Eload_BK8600',
 		'DL3000': 'Eload_DL3000',
 		'KEL10X': 'Eload_KEL10X',
-		'IT8500': 'Eload_IT8500'
+		'IT8500': 'Eload_IT8500',
+		'Fake Test Eload': 'Eload_Fake'
 	}
 		
 	@classmethod
@@ -101,6 +111,8 @@ class eLoads:
 			eload = Eload_KEL10X.KEL10X(resource_id = resource_id)
 		elif class_name == 'IT8500':
 			eload = Eload_IT8500.IT8500(resource_id = resource_id)
+		elif class_name == 'Fake Test Eload':
+			eload = Eload_Fake.Fake_Eload(resource_id = resource_id)
 			
 		use_remote_sense = setup_remote_sense(eload, use_remote_sense)
 		return class_name, eload, use_remote_sense
@@ -113,7 +125,8 @@ class powerSupplies:
 		'KWR10X or MP71025X': 	'PSU_MP71025X',
 		'BK9100': 				'PSU_BK9100',
 		'N8700': 				'PSU_N8700',
-		'KAXXXXP': 				'PSU_KAXXXXP'
+		'KAXXXXP': 				'PSU_KAXXXXP',
+		'Fake Test PSU':        'PSU_Fake'
 	}
 	
 	@classmethod
@@ -139,8 +152,10 @@ class powerSupplies:
 			psu = PSU_N8700.N8700(resource_id = resource_id)
 		elif class_name == 'KAXXXXP':
 			psu = PSU_KAXXXXP.KAXXXXP(resource_id = resource_id)
+		elif class_name == 'Fake Test PSU':
+			psu = PSU_Fake.Fake_PSU(resource_id = resource_id)
 			
-		use_remote_sense = setup_remote_sense(eload, use_remote_sense)
+		use_remote_sense = setup_remote_sense(psu, use_remote_sense)
 		return class_name, psu, use_remote_sense
 
 
@@ -148,7 +163,8 @@ class dmms:
 	part_numbers = {
 		'DM3068': 					'DMM_DM3068',
 		'SDM3065X': 				'DMM_SDM3065X',
-		'MATICIAN_FET_BOARD_CH':	'DMM_FET_BOARD'
+		'MATICIAN_FET_BOARD_CH':	'DMM_FET_BOARD',
+		'Fake Test DMM': 			'DMM_Fake'
 	}
 	
 	@classmethod
@@ -167,6 +183,8 @@ class dmms:
 		#	dmm = DMM_DM3068.DM3068(resource_id = resource_id)
 		if class_name == 'SDM3065X':
 			dmm = DMM_SDM3065X.SDM3065X(resource_id = resource_id)
+		elif class_name == 'Fake Test DMM':
+			dmm = DMM_Fake.Fake_DMM(resource_id = resource_id)
 		elif class_name == 'MATICIAN_FET_BOARD_CH':
 			if event_and_queue_dict == None:
 				if multi_ch_event_and_queue_dict == None:

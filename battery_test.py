@@ -98,8 +98,9 @@ class MainTestWindow(QMainWindow):
 		
 		#Check the equipment assignment queue
 		try:
-			self.new_eq_assignment = self.eq_assignment_queue.get_nowait()
-			self.res_ids_dict_list[new_eq_assignment['ch_num']] = new_eq_assignment['res_ids_dict']
+			new_eq_assignment = self.eq_assignment_queue.get_nowait()
+			self.res_ids_dict_list[int(new_eq_assignment['ch_num'])] = new_eq_assignment['res_ids_dict']
+			print("Assigned New Equipment to Channel {}".format(new_eq_assignment['ch_num']))
 		except queue.Empty:
 			pass #No new data was available
 		
@@ -148,7 +149,7 @@ class MainTestWindow(QMainWindow):
 	
 	@staticmethod
 	def assign_equipment(ch_num, assignment_queue):
-		try:
+		#try:
 			res_ids_dict = {'psu': None, 'eload': None, 'dmm_v': None, 'dmm_i': None}
 			
 			#choose a psu and eload for each channel
@@ -178,7 +179,7 @@ class MainTestWindow(QMainWindow):
 			dict_for_queue = {'ch_num': ch_num, 'res_ids_dict': res_ids_dict}
 			assignment_queue.put_nowait(dict_for_queue)
 			
-		except:
+		#except:
 			print("Something went wrong with assigning equipment. Please try again.")
 			return
 
