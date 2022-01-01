@@ -80,11 +80,16 @@ class MainTestWindow(QMainWindow):
 			ch_layout.addWidget(self.ch_graph_widget[ch_num])
 			self.plot_list[ch_num] = LivePlot(self.ch_graph_widget[ch_num])
 
-
-			ch_layout.addWidget(self.button_assign_eq_list[ch_num])
-			ch_layout.addWidget(self.button_configure_test_list[ch_num])
-			ch_layout.addWidget(self.button_start_test_list[ch_num])
-			ch_layout.addWidget(self.button_stop_test_list[ch_num])
+			btn_grid_layout = QGridLayout()
+			btn_grid_layout.addWidget(self.button_assign_eq_list[ch_num], 0, 0)
+			btn_grid_layout.addWidget(self.button_configure_test_list[ch_num], 0, 1)
+			btn_grid_layout.addWidget(self.button_start_test_list[ch_num], 1, 0)
+			btn_grid_layout.addWidget(self.button_stop_test_list[ch_num], 1, 1)
+			
+			btn_grid_widget = QWidget()
+			btn_grid_widget.setLayout(btn_grid_layout)
+			
+			ch_layout.addWidget(btn_grid_widget)
 			
 			ch_widget = QWidget()
 			ch_widget.setLayout(ch_layout)
