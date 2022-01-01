@@ -54,7 +54,9 @@ class MainTestWindow(QMainWindow):
 		#Update the widgets from the queues in each channel
 		self.data_label_list = [QLabel("CH: {}\nV: \nI:".format(i)) for i in range(self.num_battery_channels)]
 		self.button_assign_eq_list = [QPushButton("Assign Equipment") for i in range(self.num_battery_channels)]
+		self.button_configure_test_list = [QPushButton("Configure Test") for i in range(self.num_battery_channels)]
 		self.button_start_test_list = [QPushButton("Start Test") for i in range(self.num_battery_channels)]
+		self.button_stop_test_list = [QPushButton("Stop Test") for i in range(self.num_battery_channels)]
 		self.data_from_ch_queue_list = [Queue() for i in range(self.num_battery_channels)]
 		self.data_to_ch_queue_list = [Queue() for i in range(self.num_battery_channels)]
 		self.data_dict_list = [dict() for i in range(self.num_battery_channels)]
@@ -65,6 +67,10 @@ class MainTestWindow(QMainWindow):
 			#setting up buttons
 			self.button_assign_eq_list[ch_num].setCheckable(False)
 			self.button_assign_eq_list[ch_num].clicked.connect(partial(self.assign_equipment_process, ch_num))
+			self.button_configure_test_list[ch_num].setCheckable(False)
+			self.button_configure_test_list[ch_num].clicked.connect(partial(self.configure_test, ch_num))
+			self.button_stop_test_list[ch_num].setCheckable(False)
+			self.button_stop_test_list[ch_num].clicked.connect(partial(self.stop_test, ch_num))
 			self.button_start_test_list[ch_num].setCheckable(False)
 			self.button_start_test_list[ch_num].clicked.connect(partial(self.start_test, ch_num))
 			
@@ -76,7 +82,9 @@ class MainTestWindow(QMainWindow):
 
 
 			ch_layout.addWidget(self.button_assign_eq_list[ch_num])
+			ch_layout.addWidget(self.button_configure_test_list[ch_num])
 			ch_layout.addWidget(self.button_start_test_list[ch_num])
+			ch_layout.addWidget(self.button_stop_test_list[ch_num])
 			
 			ch_widget = QWidget()
 			ch_widget.setLayout(ch_layout)
