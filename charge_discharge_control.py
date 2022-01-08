@@ -621,11 +621,23 @@ def get_eq_req_dict(cycle_type, cycle_settings_list_of_lists):
 	
 	return eq_req_dict
 
+def get_input_dict(ch_num = None, queue = None):
+	input_dict = {}
+	input_dict['cell_name'] = get_cell_name()
+	input_dict['directory'] = FileIO.get_directory("Choose directory to save the cycle logs")
+	input_dict['cycle_type'] = get_cycle_type()
+	input_dict['cycle_settings_list_of_lists'] = get_cycle_settings_list_of_lists(input_dict['cycle_type'])
+	input_dict['eq_req_dict'] = get_eq_req_dict(input_dict['cycle_type'], input_dict['cycle_settings_list_of_lists'])
+	
+	if queue != None:
+		dict_to_put = {'ch_num': ch_num, 'cdc_input_dict': input_dict}
+		queue.put_nowait(dict_to_put)
+	else:
+		return input_dict
 
 ################################## BATTERY CYCLING SETUP FUNCTION ######################################
 
-def charge_discharge_control(res_ids_dict, data_out_queue = None, data_in_queue = None, cell_name = None, directory = None, cycle_type = None, 
-								cycle_settings_list_of_lists = None, eq_req_dict = None):
+def charge_discharge_control(res_ids_dict, data_out_queue = None, data_in_queue = None, input_dict = None):
 	
 	eq_dict = {}
 	try:
@@ -635,28 +647,15 @@ def charge_discharge_control(res_ids_dict, data_out_queue = None, data_in_queue 
 			else:
 				eq_dict[key] = None
 		
-		if cell_name == None:
-			cell_name = get_cell_name()
-			
-		#Get a directory to save the file
-		if directory == None:
-			directory = FileIO.get_directory("Choose directory to save the cycle logs")
-		
-		if cycle_type == None:
-			cycle_type = get_cycle_type()
-		
-		if cycle_settings_list_of_lists == None:
-			cycle_settings_list_of_lists = get_cycle_settings_list_of_lists(cycle_type)
-		
-		if eq_req_dict == None:
-			eq_req_dict = get_eq_req_dict(cycle_type, cycle_settings_list_of_lists)
+		if input_dict == None:
+			input_dict = get_input_dict()
 		
 		#CHECKING CONNECTION OF REQUIRED EQUIPMENT
-		if eq_req_dict['eload'] and eq_dict['eload'] == None:
+		if input_dict['eq_req_dict']['eload'] and eq_dict['eload'] == None:
 			print("Eload required for cycle but none connected! Exiting")
 			return
 	
-		if eq_req_dict['psu'] and eq_dict['psu'] == None:
+		if input_dict['eq_req_dict']['psu'] and eq_dict['psu'] == None:
 			print("Power Supply required for cycle type but none connected! Exiting")
 			return
 		#TODO - check cycles with multiple types
@@ -665,28 +664,15 @@ def charge_discharge_control(res_ids_dict, data_out_queue = None, data_in_queue 
 		#Now initialize all the equipment that is connected
 		
 		
-		#Wait for a signal from the data in queue to start the test
-		start_test_signal = False
-		while not start_test_signal:
-			try:
-				signal = data_in_queue.get(timeout = 1)
-				if signal == 'start':
-					start_test_signal = True
-				elif signal == 'stop':
-					return
-			except queue.Empty:
-				pass
-		
-		
 		#TODO - looping a current profile until safety limits are hit
 		#TODO - current step profiles to/from csv and/or JSON files
 		
 		#cycle x times
 		cycle_num = 0
 		end_list_of_lists = False
-		for cycle_settings_list in cycle_settings_list_of_lists:
+		for cycle_settings_list in input_dict['cycle_settings_list_of_lists']:
 			print("Cycle {} Starting".format(cycle_num), flush=True)
-			filepath = FileIO.start_file(directory, cell_name)
+			filepath = FileIO.start_file(input_dict['directory'], input_dict['cell_name'])
 			
 			try:
 				

@@ -32,13 +32,15 @@ class MainTestWindow(QMainWindow):
 		self.dict_for_event_and_queue = {}
 
 		#Connected Equipment
-		self.res_ids_dict_list = [None for i in range(self.num_battery_channels)]
-		self.mp_process_list = [None for i in range(self.num_battery_channels)]
 		self.assign_eq_process_list = [None for i in range(self.num_battery_channels)]
+		self.res_ids_dict_list = [None for i in range(self.num_battery_channels)]
+		self.configure_test_process_list = [None for i in range(self.num_battery_channels)]
+		self.cdc_input_dict_list = [None for i in range(self.num_battery_channels)]
+		self.mp_process_list = [None for i in range(self.num_battery_channels)]
 		self.plot_list = [None for i in range(self.num_battery_channels)]
 		
 		self.eq_assignment_queue = Queue()
-		
+		self.test_configuration_queue = Queue()
 		
 		self.setWindowTitle("Battery Tester App")
 		central_layout = QGridLayout()
@@ -118,6 +120,14 @@ class MainTestWindow(QMainWindow):
 		except queue.Empty:
 			pass #No new data was available
 		
+		#Check test configuration queue
+		try:
+			new_test_configuration = self.test_configuration_queue.get_nowait()
+			self.cdc_input_dict_list[int(new_test_configuration['ch_num'])] = new_test_configuration['cdc_input_dict']
+			print("Configured Test for Channel {}".format(new_test_configuration['ch_num']))
+		except queue.Empty:
+			pass #No new data was available
+		
 		
 		#Read from all the data queues
 		for ch_num in range(self.num_battery_channels):
@@ -163,7 +173,7 @@ class MainTestWindow(QMainWindow):
 	
 	@staticmethod
 	def assign_equipment(ch_num, assignment_queue):
-		#try:
+		try:
 			res_ids_dict = {'psu': None, 'eload': None, 'dmm_v': None, 'dmm_i': None}
 			
 			#choose a psu and eload for each channel
@@ -193,34 +203,49 @@ class MainTestWindow(QMainWindow):
 			dict_for_queue = {'ch_num': ch_num, 'res_ids_dict': res_ids_dict}
 			assignment_queue.put_nowait(dict_for_queue)
 			
-		#except:
+		except:
 			print("Something went wrong with assigning equipment. Please try again.")
 			return
 
 
 	def configure_test(self, ch_num):
-		self.batt_test_process(self.res_ids_dict_list[ch_num], data_out_queue = self.data_from_ch_queue_list[ch_num],
-								data_in_queue = self.data_to_ch_queue_list[ch_num], ch_num = ch_num)
-								
+		self.configure_test_process(ch_num = ch_num)
+	
+	def configure_test_process(self, ch_num):
+		if self.configure_test_process_list[ch_num] is not None and self.configure_test_process_list[ch_num].is_alive():
+				print("There is a configuration already running in Channel {}".format(ch_num))
+				return
+		try:
+			self.configure_test_process_list[ch_num] = Process(target=cdc.get_input_dict, args = (ch_num, self.test_configuration_queue))
+			self.configure_test_process_list[ch_num].start()
+		except:
+			traceback.print_exc()
+	
+	
 	def start_test(self, ch_num):
-		self.data_to_ch_queue_list[ch_num].put_nowait('start')
-	
-	def stop_test(self, ch_num):
-		self.data_to_ch_queue_list[ch_num].put_nowait('stop')
-	
-	def batt_test_process(self, res_ids_dict, data_out_queue = None, data_in_queue = None, ch_num = None):
-		if res_ids_dict == None:
-			print("Please Assign Equipment to this Channel before starting a test!")
+		if self.res_ids_dict_list[ch_num] == None:
+			print("Please Assign Equipment to Channel {} before starting a test!".format(ch_num))
 			return
-
+		if self.cdc_input_dict_list[ch_num] == None:
+			print("Please Configure Test for Channel {} before starting a test!".format(ch_num))
+			return
+		self.batt_test_process(self.res_ids_dict_list[ch_num], data_out_queue = self.data_from_ch_queue_list[ch_num],
+								data_in_queue = self.data_to_ch_queue_list[ch_num], cdc_input_dict = self.cdc_input_dict_list[ch_num], ch_num = ch_num)
+	
+	def batt_test_process(self, res_ids_dict, data_out_queue = None, data_in_queue = None, cdc_input_dict = None, ch_num = None):
 		try:
 			if self.mp_process_list[ch_num] is not None and self.mp_process_list[ch_num].is_alive():
 				print("There is a process already running in Channel {}".format(ch_num))
 				return
-			self.mp_process_list[ch_num] = Process(target=cdc.charge_discharge_control, args = (res_ids_dict, data_out_queue, data_in_queue))
+			self.mp_process_list[ch_num] = Process(target=cdc.charge_discharge_control, args = (res_ids_dict, data_out_queue, data_in_queue, cdc_input_dict))
 			self.mp_process_list[ch_num].start()
 		except:
 			traceback.print_exc()
+	
+	
+	def stop_test(self, ch_num):
+		self.data_to_ch_queue_list[ch_num].put_nowait('stop')
+		#Need to properly close the process somehow
 
 
 def main():
