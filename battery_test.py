@@ -281,19 +281,40 @@ class MainTestWindow(QMainWindow):
 	
 	def stop_idle_process(self, ch_num):
 		self.data_to_idle_ch_queue_list[ch_num].put_nowait('stop')
-		#self.mp_idle_process_list[ch_num].join()
-		#self.mp_idle_process_list[ch_num].close()
+		if self.mp_idle_process_list[ch_num] != None:
+			try:
+				self.mp_idle_process_list[ch_num].join()
+				self.mp_idle_process_list[ch_num].close()
+			except ValueError:
+				pass
 		
-	def stop_test(self, ch_num, name):
+	def stop_test(self, ch_num):
 		self.data_to_ch_queue_list[ch_num].put_nowait('stop')
-		#self.mp_process_list[ch_num].join()
-		#self.mp_process_list[ch_num].close()
-
+		if self.mp_process_list[ch_num] != None:
+			try:
+				self.mp_process_list[ch_num].join()
+				self.mp_process_list[ch_num].close()
+			except ValueError:
+				pass
+		
+	def clean_up(self):
+		#close all threads
+		for ch_num in range(self.num_battery_channels):
+			if self.assign_eq_process_list[ch_num] != None:
+				self.assign_eq_process_list[ch_num].close()
+			if self.configure_test_process_list[ch_num] != None:
+				self.configure_test_process_list[ch_num].close()
+			self.stop_test(ch_num)
+			self.stop_idle_process(ch_num)
+			
+			
+	
 
 def main():
 	app = QApplication([])
 	test_window = MainTestWindow()
 	test_window.show()
+	app.aboutToQuit.connect(test_window.clean_up)
 	app.exec()
 	
 if __name__ == '__main__':
