@@ -28,9 +28,39 @@ class MainTestWindow(QMainWindow):
 	def __init__(self):
 		super().__init__()
 		
-		self.num_battery_channels = int(eg.enterbox(msg = "How many battery channels?", title = "Battery Channels", default = "1"))
+		self.num_battery_channels = 0
+		
 		self.dict_for_event_and_queue = {}
-
+	
+		self.eq_assignment_queue = Queue()
+		self.test_configuration_queue = Queue()
+		
+		self.setWindowTitle("Battery Tester App")
+		self.central_layout = QGridLayout()
+		
+		#Create a button at the top to connect multi-channel equipment
+		self.connect_multi_ch_button = QPushButton("Connect Multi Channel Equipment")
+		self.connect_multi_ch_button.clicked.connect(self.multi_ch_devices_process)
+		self.central_layout.addWidget(self.connect_multi_ch_button)
+		
+		central_widget = QWidget()
+		central_widget.setLayout(self.central_layout)
+		self.setCentralWidget(central_widget)
+		
+		self.timer = QtCore.QTimer()
+		self.timer.setInterval(0)
+		self.timer.timeout.connect(self.update_loop)
+		self.timer.start()
+		self.last_update_time = time.time()
+		
+		self.setup_channels()
+		
+	def setup_channels(self, num_ch = None):
+		
+		if num_ch == None:
+			num_ch = int(eg.enterbox(msg = "How many battery channels?", title = "Battery Channels", default = "1"))
+		self.num_battery_channels = num_ch
+		
 		#Connected Equipment
 		self.assign_eq_process_list = [None for i in range(self.num_battery_channels)]
 		self.res_ids_dict_list = [None for i in range(self.num_battery_channels)]
@@ -39,19 +69,6 @@ class MainTestWindow(QMainWindow):
 		self.mp_process_list = [None for i in range(self.num_battery_channels)]
 		self.mp_idle_process_list = [None for i in range(self.num_battery_channels)]
 		self.plot_list = [None for i in range(self.num_battery_channels)]
-		
-		self.eq_assignment_queue = Queue()
-		self.test_configuration_queue = Queue()
-		
-		self.setWindowTitle("Battery Tester App")
-		central_layout = QGridLayout()
-		
-		
-		#Create a button at the top to connect multi-channel equipment
-		self.connect_multi_ch_button = QPushButton("Connect Multi Channel Equipment")
-		self.connect_multi_ch_button.clicked.connect(self.multi_ch_devices_process)
-		central_layout.addWidget(self.connect_multi_ch_button)
-		
 		
 		#Create a widget and some labels - voltage and current for each channel
 		#Update the widgets from the queues in each channel
@@ -98,21 +115,11 @@ class MainTestWindow(QMainWindow):
 			ch_widget = QWidget()
 			ch_widget.setLayout(ch_layout)
 			
-			central_layout.addWidget(ch_widget, (ch_num % 8 + 1), (int(ch_num/8)))
+			self.central_layout.addWidget(ch_widget, (ch_num % 8 + 1), (int(ch_num/8)))
 		
-		central_widget = QWidget()
-		central_widget.setLayout(central_layout)
-		self.setCentralWidget(central_widget)
-
-		self.timer = QtCore.QTimer()
-		self.timer.setInterval(0)
-		self.timer.timeout.connect(self.update_loop)
-		self.timer.start()
-		self.last_update_time = time.time()
-
+		
 	def update_loop(self):
 		update_interval_s = 0.5
-		
 		
 		#Check the equipment assignment queue
 		try:
@@ -298,7 +305,7 @@ class MainTestWindow(QMainWindow):
 				pass
 		
 	def clean_up(self):
-		#close all threads
+		#close all threads - run this function just before the app closes
 		for ch_num in range(self.num_battery_channels):
 			if self.assign_eq_process_list[ch_num] != None:
 				self.assign_eq_process_list[ch_num].close()
