@@ -37,6 +37,7 @@ class MainTestWindow(QMainWindow):
 		self.configure_test_process_list = [None for i in range(self.num_battery_channels)]
 		self.cdc_input_dict_list = [None for i in range(self.num_battery_channels)]
 		self.mp_process_list = [None for i in range(self.num_battery_channels)]
+		self.mp_idle_process_list = [None for i in range(self.num_battery_channels)]
 		self.plot_list = [None for i in range(self.num_battery_channels)]
 		
 		self.eq_assignment_queue = Queue()
@@ -61,6 +62,7 @@ class MainTestWindow(QMainWindow):
 		self.button_stop_test_list = [QPushButton("Stop Test") for i in range(self.num_battery_channels)]
 		self.data_from_ch_queue_list = [Queue() for i in range(self.num_battery_channels)]
 		self.data_to_ch_queue_list = [Queue() for i in range(self.num_battery_channels)]
+		self.data_to_idle_ch_queue_list = [Queue() for i in range(self.num_battery_channels)]
 		self.data_dict_list = [dict() for i in range(self.num_battery_channels)]
 		self.ch_graph_widget = [pg.PlotWidget(background='w') for i in range(self.num_battery_channels)]
 		
@@ -96,7 +98,7 @@ class MainTestWindow(QMainWindow):
 			ch_widget = QWidget()
 			ch_widget.setLayout(ch_layout)
 			
-			central_layout.addWidget(ch_widget, (ch_num % 8 + 1), (0 if ch_num < 8 else 1))
+			central_layout.addWidget(ch_widget, (ch_num % 8 + 1), (int(ch_num/8)))
 		
 		central_widget = QWidget()
 		central_widget.setLayout(central_layout)
@@ -116,6 +118,8 @@ class MainTestWindow(QMainWindow):
 		try:
 			new_eq_assignment = self.eq_assignment_queue.get_nowait()
 			self.res_ids_dict_list[int(new_eq_assignment['ch_num'])] = new_eq_assignment['res_ids_dict']
+			#stop the idle test to re-start with new equipment
+			self.stop_idle_process(int(new_eq_assignment['ch_num']))
 			print("Assigned New Equipment to Channel {}".format(new_eq_assignment['ch_num']))
 		except queue.Empty:
 			pass #No new data was available
@@ -126,31 +130,47 @@ class MainTestWindow(QMainWindow):
 			self.cdc_input_dict_list[int(new_test_configuration['ch_num'])] = new_test_configuration['cdc_input_dict']
 			print("Configured Test for Channel {}".format(new_test_configuration['ch_num']))
 		except queue.Empty:
-			pass #No new data was available
-		
+			pass #No new data was available		
 		
 		#Read from all the data queues
 		for ch_num in range(self.num_battery_channels):
 			try:
+				#if main process does not exist, or exists and is dead
+				#and if idle process does not exist or exists and is dead
+				if  (self.mp_process_list[ch_num] == None or 
+					(self.mp_process_list[ch_num] != None and not self.mp_process_list[ch_num].is_alive())) and \
+					(self.mp_idle_process_list[ch_num] == None or
+					(self.mp_idle_process_list[ch_num] != None and not self.mp_idle_process_list[ch_num].is_alive())):
+						#start an idle process since nothing else is running
+						self.start_idle_process(ch_num)
+				
 				#Read from all queues if available
 				self.data_dict_list[ch_num] = self.data_from_ch_queue_list[ch_num].get_nowait()
+				
 			except queue.Empty:
 				pass #No new data was available
-
+		
+		#Update plots and displayed values
 		if time.time() - self.last_update_time > update_interval_s:
 			for ch_num in range(self.num_battery_channels):
+				voltage = 0
+				current = 0
+				if "Voltage" and "Current" in self.data_dict_list[ch_num].keys():
+					voltage = self.data_dict_list[ch_num]["Voltage"]
+					current = self.data_dict_list[ch_num]["Current"]
+				
+				#update data label
+				self.data_label_list[ch_num].setText("CH: {}\nV: {}\nI: {}".format(ch_num, voltage, current))
+				
+				#update plot
 				self.plot_list[ch_num].x = self.plot_list[ch_num].x[1:]
 				self.plot_list[ch_num].x.append(self.plot_list[ch_num].x[-1] + 1)
 				
 				self.plot_list[ch_num].y = self.plot_list[ch_num].y[1:]
 				self.plot_list[ch_num].y2 = self.plot_list[ch_num].y2[1:]
 				
-				if "Voltage" and "Current" in self.data_dict_list[ch_num].keys():
-					self.plot_list[ch_num].y.append(self.data_dict_list[ch_num]["Voltage"])
-					self.plot_list[ch_num].y2.append(self.data_dict_list[ch_num]["Current"])
-				else:
-					self.plot_list[ch_num].y.append(0)
-					self.plot_list[ch_num].y2.append(0)
+				self.plot_list[ch_num].y.append(voltage)
+				self.plot_list[ch_num].y2.append(current)
 
 				self.plot_list[ch_num].data_line.setData(self.plot_list[ch_num].x, self.plot_list[ch_num].y)
 				self.plot_list[ch_num].data_line2.setData(self.plot_list[ch_num].x, self.plot_list[ch_num].y2)
@@ -237,15 +257,37 @@ class MainTestWindow(QMainWindow):
 			if self.mp_process_list[ch_num] is not None and self.mp_process_list[ch_num].is_alive():
 				print("There is a process already running in Channel {}".format(ch_num))
 				return
+			if self.mp_idle_process_list[ch_num] is not None and self.mp_idle_process_list[ch_num].is_alive():
+				self.stop_idle_process(ch_num)
+				
 			self.mp_process_list[ch_num] = Process(target=cdc.charge_discharge_control, args = (res_ids_dict, data_out_queue, data_in_queue, cdc_input_dict))
 			self.mp_process_list[ch_num].start()
 		except:
 			traceback.print_exc()
 	
+	def start_idle_process(self, ch_num):
+		self.idle_process(self.res_ids_dict_list[ch_num], data_out_queue = self.data_from_ch_queue_list[ch_num],
+								data_in_queue = self.data_to_idle_ch_queue_list[ch_num], ch_num = ch_num)
 	
-	def stop_test(self, ch_num):
+	def idle_process(self, res_ids_dict, data_out_queue = None, data_in_queue = None, ch_num = None):
+		if res_ids_dict == None:
+			#no equipment assigned, don't start the test
+			return
+		try:
+			self.mp_idle_process_list[ch_num] = Process(target=cdc.idle_control, args = (res_ids_dict, data_out_queue, data_in_queue))
+			self.mp_idle_process_list[ch_num].start()
+		except:
+			traceback.print_exc()
+	
+	def stop_idle_process(self, ch_num):
+		self.data_to_idle_ch_queue_list[ch_num].put_nowait('stop')
+		#self.mp_idle_process_list[ch_num].join()
+		#self.mp_idle_process_list[ch_num].close()
+		
+	def stop_test(self, ch_num, name):
 		self.data_to_ch_queue_list[ch_num].put_nowait('stop')
-		#Need to properly close the process somehow
+		#self.mp_process_list[ch_num].join()
+		#self.mp_process_list[ch_num].close()
 
 
 def main():
