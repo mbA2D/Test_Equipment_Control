@@ -31,12 +31,15 @@ def is_entry_valid(key, value, valid_strings):
 
 def convert_to_float(settings):
 	#if possible, convert items to floats
-	for key in settings.keys():
-		try:
-			settings[key] = float(settings[key])
-		except ValueError:
-			pass
+	try:
+		settings = {k:float(v) for k,v in settings.items()}
+	except ValueError:
+		pass
 	
+	return settings
+	
+def convert_keys_to_int(settings):
+	settings = {int(k):v for k,v in settings.items()}
 	return settings
 
 def force_extension(filename, extension):
@@ -66,8 +69,8 @@ def export_cycle_settings(settings, cycle_name = ""):
 		cycle_name += " "
 	
 	#get the file to export to
-	file_name = eg.filesavebox(msg = "Choose a File to export {}cycle settings to".format(cycle_name),
-								title = "Cycle Settings", filetypes = ['*.json', 'JSON files'])
+	file_name = eg.filesavebox(msg = "Choose a File to export {}settings to".format(cycle_name),
+								title = "Settings", filetypes = ['*.json', 'JSON files'])
 	
 	#force file name extension
 	file_name = force_extension(file_name, '.json')
@@ -83,8 +86,8 @@ def import_cycle_settings(cycle_name = ""):
 		cycle_name += " "
 	
 	#get the file to import from
-	file_name = eg.fileopenbox(msg = "Choose a File to import {}cycle settings from".format(cycle_name),
-								title = "Cycle Settings", filetypes = ['*.json', 'JSON files'])
+	file_name = eg.fileopenbox(msg = "Choose a File to import {}settings from".format(cycle_name),
+								title = "Settings", filetypes = ['*.json', 'JSON files'])
 	settings = None
 	
 	#import the file

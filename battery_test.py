@@ -14,6 +14,7 @@ from BATT_HIL import fet_board_management as fbm
 import charge_discharge_control as cdc
 import equipment as eq
 import easygui as eg
+import jsonIO
 import time
 
 class LivePlot:
@@ -36,12 +37,26 @@ class MainTestWindow(QMainWindow):
 		self.test_configuration_queue = Queue()
 		
 		self.setWindowTitle("Battery Tester App")
-		self.central_layout = QGridLayout()
+		self.central_layout = QVBoxLayout()
 		
 		#Create a button at the top to connect multi-channel equipment
 		self.connect_multi_ch_button = QPushButton("Connect Multi Channel Equipment")
 		self.connect_multi_ch_button.clicked.connect(self.multi_ch_devices_process)
 		self.central_layout.addWidget(self.connect_multi_ch_button)
+		#Button for Export Equipment setup
+		self.export_equipment_assignment_btn = QPushButton("Export Equipment Assignment")
+		self.export_equipment_assignment_btn.clicked.connect(self.export_equipment_assignment)
+		self.central_layout.addWidget(self.export_equipment_assignment_btn)
+		#Button for Import Equipment setup
+		self.import_equipment_assignment_btn = QPushButton("Import Equipment Assignment")
+		self.import_equipment_assignment_btn.clicked.connect(self.import_equipment_assignment)
+		self.central_layout.addWidget(self.import_equipment_assignment_btn)
+		
+		self.channels_layout = QGridLayout()
+		channels_widget = QWidget()
+		channels_widget.setLayout(self.channels_layout)
+		self.central_layout.addWidget(channels_widget)
+		
 		
 		central_widget = QWidget()
 		central_widget.setLayout(self.central_layout)
@@ -62,28 +77,50 @@ class MainTestWindow(QMainWindow):
 		self.num_battery_channels = num_ch
 		
 		#Connected Equipment
-		self.assign_eq_process_list = [None for i in range(self.num_battery_channels)]
-		self.res_ids_dict_list = [None for i in range(self.num_battery_channels)]
-		self.configure_test_process_list = [None for i in range(self.num_battery_channels)]
-		self.cdc_input_dict_list = [None for i in range(self.num_battery_channels)]
-		self.mp_process_list = [None for i in range(self.num_battery_channels)]
-		self.mp_idle_process_list = [None for i in range(self.num_battery_channels)]
-		self.plot_list = [None for i in range(self.num_battery_channels)]
+		self.assign_eq_process_list = {}
+		self.res_ids_dict_list = {}
+		self.configure_test_process_list = {}
+		self.cdc_input_dict_list = {}
+		self.mp_process_list = {}
+		self.mp_idle_process_list = {}
+		self.plot_list = {}
 		
 		#Create a widget and some labels - voltage and current for each channel
 		#Update the widgets from the queues in each channel
-		self.data_label_list = [QLabel("CH: {}\nV: \nI:".format(i)) for i in range(self.num_battery_channels)]
-		self.button_assign_eq_list = [QPushButton("Assign Equipment") for i in range(self.num_battery_channels)]
-		self.button_configure_test_list = [QPushButton("Configure Test") for i in range(self.num_battery_channels)]
-		self.button_start_test_list = [QPushButton("Start Test") for i in range(self.num_battery_channels)]
-		self.button_stop_test_list = [QPushButton("Stop Test") for i in range(self.num_battery_channels)]
-		self.data_from_ch_queue_list = [Queue() for i in range(self.num_battery_channels)]
-		self.data_to_ch_queue_list = [Queue() for i in range(self.num_battery_channels)]
-		self.data_to_idle_ch_queue_list = [Queue() for i in range(self.num_battery_channels)]
-		self.data_dict_list = [dict() for i in range(self.num_battery_channels)]
-		self.ch_graph_widget = [pg.PlotWidget(background='w') for i in range(self.num_battery_channels)]
+		self.data_label_list = {}
+		self.button_assign_eq_list = {}
+		self.button_configure_test_list = {}
+		self.button_start_test_list = {}
+		self.button_stop_test_list = {}
+		self.data_from_ch_queue_list = {}
+		self.data_to_ch_queue_list = {}
+		self.data_to_idle_ch_queue_list = {}
+		self.data_dict_list = {}
+		self.ch_graph_widget = {}
 		
 		for ch_num in range(self.num_battery_channels):
+			
+			#Connected Equipment
+			self.assign_eq_process_list[ch_num] = None
+			self.res_ids_dict_list[ch_num] = None
+			self.configure_test_process_list[ch_num] = None
+			self.cdc_input_dict_list[ch_num] = None
+			self.mp_process_list[ch_num] = None
+			self.mp_idle_process_list[ch_num] = None
+			self.plot_list[ch_num] = None
+			
+			#Create a widget and some labels - voltage and current for each channel
+			#Update the widgets from the queues in each channel
+			self.data_label_list[ch_num] = QLabel("CH: {}\nV: \nI:".format(ch_num))
+			self.button_assign_eq_list[ch_num] = QPushButton("Assign Equipment")
+			self.button_configure_test_list[ch_num] = QPushButton("Configure Test")
+			self.button_start_test_list[ch_num] = QPushButton("Start Test")
+			self.button_stop_test_list[ch_num] = QPushButton("Stop Test")
+			self.data_from_ch_queue_list[ch_num] = Queue()
+			self.data_to_ch_queue_list[ch_num] = Queue()
+			self.data_to_idle_ch_queue_list[ch_num] = Queue()
+			self.data_dict_list[ch_num] = {}
+			self.ch_graph_widget[ch_num] = pg.PlotWidget(background='w')
 			
 			#setting up buttons
 			self.button_assign_eq_list[ch_num].setCheckable(False)
@@ -115,7 +152,7 @@ class MainTestWindow(QMainWindow):
 			ch_widget = QWidget()
 			ch_widget.setLayout(ch_layout)
 			
-			self.central_layout.addWidget(ch_widget, (ch_num % 8 + 1), (int(ch_num/8)))
+			self.channels_layout.addWidget(ch_widget, (ch_num % 8 + 1), (int(ch_num/8)))
 		
 		
 	def update_loop(self):
@@ -199,33 +236,34 @@ class MainTestWindow(QMainWindow):
 			traceback.print_exc()
 	
 	@staticmethod
-	def assign_equipment(ch_num, assignment_queue):
+	def assign_equipment(ch_num, assignment_queue, res_ids_dict = None):
 		try:
-			res_ids_dict = {'psu': None, 'eload': None, 'dmm_v': None, 'dmm_i': None}
+			if res_ids_dict == None:
+				res_ids_dict = {'psu': None, 'eload': None, 'dmm_v': None, 'dmm_i': None}
 			
-			#choose a psu and eload for each channel
-			msg = "Do you want to connect a power supply for channel {}?".format(ch_num)
-			title = "CH {} Power Supply Connection".format(ch_num)
-			if eg.ynbox(msg, title):
-				psu = eq.powerSupplies.choose_psu()
-				res_ids_dict['psu'] = eq.get_res_id_dict_and_disconnect(psu)
-			msg = "Do you want to connect an eload for channel {}?".format(ch_num)
-			title = "CH {} Eload Connection".format(ch_num)
-			if eg.ynbox(msg, title):
-				eload = eq.eLoads.choose_eload()
-				res_ids_dict['eload'] = eq.get_res_id_dict_and_disconnect(eload)
-			
-			#Separate measurement devices
-			msg = "Do you want to use a separate device to measure voltage on channel {}?".format(ch_num)
-			title = "CH {} Voltage Measurement Device".format(ch_num)
-			if eg.ynbox(msg, title):
-				dmm_v = eq.dmms.choose_dmm(multi_ch_event_and_queue_dict = self.dict_for_event_and_queue)
-				res_ids_dict['dmm_v'] = eq.get_res_id_dict_and_disconnect(dmm_v)
-			msg = "Do you want to use a separate device to measure current on channel {}?".format(ch_num)
-			title = "CH {} Current Measurement Device".format(ch_num)
-			if eg.ynbox(msg, title):
-				dmm_i = eq.dmms.choose_dmm(multi_ch_event_and_queue_dict = self.dict_for_event_and_queue)
-				res_ids_dict['dmm_i'] = eq.get_res_id_dict_and_disconnect(dmm_i)
+				#choose a psu and eload for each channel
+				msg = "Do you want to connect a power supply for channel {}?".format(ch_num)
+				title = "CH {} Power Supply Connection".format(ch_num)
+				if eg.ynbox(msg, title):
+					psu = eq.powerSupplies.choose_psu()
+					res_ids_dict['psu'] = eq.get_res_id_dict_and_disconnect(psu)
+				msg = "Do you want to connect an eload for channel {}?".format(ch_num)
+				title = "CH {} Eload Connection".format(ch_num)
+				if eg.ynbox(msg, title):
+					eload = eq.eLoads.choose_eload()
+					res_ids_dict['eload'] = eq.get_res_id_dict_and_disconnect(eload)
+				
+				#Separate measurement devices
+				msg = "Do you want to use a separate device to measure voltage on channel {}?".format(ch_num)
+				title = "CH {} Voltage Measurement Device".format(ch_num)
+				if eg.ynbox(msg, title):
+					dmm_v = eq.dmms.choose_dmm(multi_ch_event_and_queue_dict = self.dict_for_event_and_queue)
+					res_ids_dict['dmm_v'] = eq.get_res_id_dict_and_disconnect(dmm_v)
+				msg = "Do you want to use a separate device to measure current on channel {}?".format(ch_num)
+				title = "CH {} Current Measurement Device".format(ch_num)
+				if eg.ynbox(msg, title):
+					dmm_i = eq.dmms.choose_dmm(multi_ch_event_and_queue_dict = self.dict_for_event_and_queue)
+					res_ids_dict['dmm_i'] = eq.get_res_id_dict_and_disconnect(dmm_i)
 			
 			dict_for_queue = {'ch_num': ch_num, 'res_ids_dict': res_ids_dict}
 			assignment_queue.put_nowait(dict_for_queue)
@@ -233,8 +271,24 @@ class MainTestWindow(QMainWindow):
 		except:
 			print("Something went wrong with assigning equipment. Please try again.")
 			return
-
-
+	
+	def export_equipment_assignment(self):
+		jsonIO.export_cycle_settings(self.res_ids_dict_list)
+		
+	def import_equipment_assignment(self):
+		for ch_num in range(self.num_battery_channels):
+			self.stop_idle_process(ch_num)
+		
+		temp_dict_list = jsonIO.import_cycle_settings()
+		temp_dict_list = jsonIO.convert_keys_to_int(temp_dict_list)
+		
+		self.num_battery_channels = len(list(temp_dict_list.keys()))
+		self.setup_channels(self.num_battery_channels)
+		
+		for ch_num in range(self.num_battery_channels):
+			if temp_dict_list[ch_num] != None:
+				self.assign_equipment(ch_num, self.eq_assignment_queue, temp_dict_list[ch_num])
+	
 	def configure_test(self, ch_num):
 		self.configure_test_process(ch_num = ch_num)
 	
@@ -267,7 +321,7 @@ class MainTestWindow(QMainWindow):
 			if self.mp_idle_process_list[ch_num] is not None and self.mp_idle_process_list[ch_num].is_alive():
 				self.stop_idle_process(ch_num)
 				
-			self.mp_process_list[ch_num] = Process(target=cdc.charge_discharge_control, args = (res_ids_dict, data_out_queue, data_in_queue, cdc_input_dict))
+			self.mp_process_list[ch_num] = Process(target=cdc.charge_discharge_control, args = (res_ids_dict, data_out_queue, data_in_queue, cdc_input_dict, self.dict_for_event_and_queue))
 			self.mp_process_list[ch_num].start()
 		except:
 			traceback.print_exc()
@@ -281,7 +335,7 @@ class MainTestWindow(QMainWindow):
 			#no equipment assigned, don't start the test
 			return
 		try:
-			self.mp_idle_process_list[ch_num] = Process(target=cdc.idle_control, args = (res_ids_dict, data_out_queue, data_in_queue))
+			self.mp_idle_process_list[ch_num] = Process(target=cdc.idle_control, args = (res_ids_dict, data_out_queue, data_in_queue, self.dict_for_event_and_queue))
 			self.mp_idle_process_list[ch_num].start()
 		except:
 			traceback.print_exc()

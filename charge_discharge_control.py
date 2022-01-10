@@ -661,26 +661,26 @@ def get_input_dict(ch_num = None, queue = None):
 	else:
 		return input_dict
 
-def get_equipment_dict(res_ids_dict):
+def get_equipment_dict(res_ids_dict, multi_channel_event_and_queue_dict):
 	eq_dict = {}
 	for key in res_ids_dict:
-			if res_ids_dict[key] != None and res_ids_dict[key]['res_id'] != None:
-				eq_dict[key] = eq.connect_to_eq(key, res_ids_dict[key]['class_name'], res_ids_dict[key]['res_id'], res_ids_dict[key]['use_remote_sense'])
-			else:
-				eq_dict[key] = None
+		if res_ids_dict[key] != None and res_ids_dict[key]['res_id'] != None:
+			eq_dict[key] = eq.connect_to_eq(key, res_ids_dict[key]['class_name'], res_ids_dict[key]['res_id'], res_ids_dict[key]['use_remote_sense'], multi_channel_event_and_queue_dict)
+		else:
+			eq_dict[key] = None
 	return eq_dict
 
 ################################## BATTERY CYCLING SETUP FUNCTION ######################################
-def idle_control(res_ids_dict, data_out_queue = None, data_in_queue = None):
+def idle_control(res_ids_dict, data_out_queue = None, data_in_queue = None, multi_channel_event_and_queue_dict = None):
 	try:
-		eq_dict = get_equipment_dict(res_ids_dict)
+		eq_dict = get_equipment_dict(res_ids_dict, multi_channel_event_and_queue_dict)
 		idle_cell_cycle(eload = eq_dict['eload'], psu = eq_dict['psu'], v_meas_eq = eq_dict['dmm_v'], i_meas_eq = eq_dict['dmm_i'], data_out_queue = data_out_queue, data_in_queue = data_in_queue)
 	except Exception:
 		traceback.print_exc()
 	
-def charge_discharge_control(res_ids_dict, data_out_queue = None, data_in_queue = None, input_dict = None):
+def charge_discharge_control(res_ids_dict, data_out_queue = None, data_in_queue = None, input_dict = None, multi_channel_event_and_queue_dict = None):
 	try:
-		eq_dict = get_equipment_dict(res_ids_dict)
+		eq_dict = get_equipment_dict(res_ids_dict, multi_channel_event_and_queue_dict)
 		
 		if input_dict == None:
 			input_dict = get_input_dict()
