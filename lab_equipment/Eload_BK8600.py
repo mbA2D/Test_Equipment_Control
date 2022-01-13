@@ -12,10 +12,10 @@ class BK8600:
 	
 	# Initialize the BK8600 E-Load
 	def __init__(self, resource_id = None):
-		rm = pyvisa.ResourceManager('@ivi')
+		rm = pyvisa.ResourceManager()
 		
 		if(resource_id == None):
-			resources = rm.list_resources('@ivi')
+			resources = rm.list_resources()
 			
 			################# IDN VERSION #################
 			#Attempt to connect to each Visa Resource and get the IDN response
