@@ -341,23 +341,24 @@ class MainTestWindow(QMainWindow):
 			traceback.print_exc()
 	
 	def stop_idle_process(self, ch_num):
-		self.data_to_idle_ch_queue_list[ch_num].put_nowait('stop')
-		if self.mp_idle_process_list[ch_num] != None:
-			try:
-				self.mp_idle_process_list[ch_num].join()
-				self.mp_idle_process_list[ch_num].close()
-			except ValueError:
-				pass
+		self.stop_process(self.mp_idle_process_list[ch_num], self.data_to_idle_ch_queue_list[ch_num], ch_num)
+		self.mp_idle_process_list[ch_num] = None
 		
 	def stop_test(self, ch_num):
-		self.data_to_ch_queue_list[ch_num].put_nowait('stop')
-		if self.mp_process_list[ch_num] != None:
+		self.stop_process(self.mp_process_list[ch_num], self.data_to_ch_queue_list[ch_num], ch_num)
+		self.mp_process_list[ch_num] = None
+	
+	def stop_process(self, process_id, queue_id, ch_num):
+		if process_id != None:
 			try:
-				self.mp_process_list[ch_num].join()
-				self.mp_process_list[ch_num].close()
+				#only put stop command if the process exists and is running
+				if process_id.is_alive():
+					queue_id.put_nowait('stop')
+					process_id.join()
+					process_id.close()
 			except ValueError:
 				pass
-		
+	
 	def clean_up(self):
 		#close all threads - run this function just before the app closes
 		for ch_num in range(self.num_battery_channels):

@@ -31,11 +31,11 @@ def is_entry_valid(key, value, valid_strings):
 
 def convert_to_float(settings):
 	#if possible, convert items to floats
-	try:
-		settings = {k:float(v) for k,v in settings.items()}
-	except ValueError:
-		pass
-	
+	for key in settings:
+		try:
+			settings[key] = float(settings[key])
+		except ValueError:
+			pass
 	return settings
 	
 def convert_keys_to_int(settings):
@@ -106,7 +106,7 @@ def get_cycle_settings(settings, valid_strings = None, cycle_name = ""):
 									title = "Settings for {}cycle".format(cycle_name), choices = ("New Settings", "Import Settings"))
 	if(response == "New Settings"):
 		valid_entries = False
-		while valid_entries == False:
+		while not valid_entries:
 			response_list = eg.multenterbox(msg = "Enter Info for {}cycle".format(cycle_name), title = response,
 											fields = list(settings.keys()), values = list(settings.values()))
 			valid_entries = check_user_entry(list(settings.keys()), response_list, valid_strings)
