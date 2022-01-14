@@ -68,14 +68,6 @@ class MainTestWindow(QMainWindow):
 		self.timer.start()
 		self.last_update_time = time.time()
 		
-		self.setup_channels()
-		
-	def setup_channels(self, num_ch = None):
-		
-		if num_ch == None:
-			num_ch = int(eg.enterbox(msg = "How many battery channels?", title = "Battery Channels", default = "1"))
-		self.num_battery_channels = num_ch
-		
 		#Connected Equipment
 		self.assign_eq_process_list = {}
 		self.res_ids_dict_list = {}
@@ -97,6 +89,26 @@ class MainTestWindow(QMainWindow):
 		self.data_to_idle_ch_queue_list = {}
 		self.data_dict_list = {}
 		self.ch_graph_widget = {}
+		
+		self.setup_channels()
+	
+	def clear_layout(self, layout):
+		#https://stackoverflow.com/questions/4528347/clear-all-widgets-in-a-layout-in-pyqt
+		if layout is not None:
+			while layout.count():
+				child = layout.takeAt(0)
+				if child.widget() is not None:
+					child.widget().deleteLater()
+				elif child.layout() is not None:
+					clear_layout(child.layout())
+	
+	def setup_channels(self, num_ch = None):
+		
+		self.clear_layout(self.channels_layout)
+		
+		if num_ch == None:
+			num_ch = int(eg.enterbox(msg = "How many battery channels?", title = "Battery Channels", default = "1"))
+		self.num_battery_channels = num_ch
 		
 		for ch_num in range(self.num_battery_channels):
 			
