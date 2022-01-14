@@ -102,9 +102,17 @@ class MainTestWindow(QMainWindow):
 				elif child.layout() is not None:
 					clear_layout(child.layout())
 	
+	def remove_all_channels(self):
+		for ch_num in range(self.num_battery_channels):
+			self.stop_process(self.assign_eq_process_list[ch_num])
+			self.stop_process(self.mp_process_list[ch_num])
+			self.stop_process(self.mp_idle_process_list[ch_num])
+			
+		self.clear_layout(self.channels_layout)
+	
 	def setup_channels(self, num_ch = None):
 		
-		self.clear_layout(self.channels_layout)
+		self.remove_all_channels()
 		
 		if num_ch == None:
 			num_ch = int(eg.enterbox(msg = "How many battery channels?", title = "Battery Channels", default = "1"))
@@ -353,19 +361,20 @@ class MainTestWindow(QMainWindow):
 			traceback.print_exc()
 	
 	def stop_idle_process(self, ch_num):
-		self.stop_process(self.mp_idle_process_list[ch_num], self.data_to_idle_ch_queue_list[ch_num], ch_num)
+		self.stop_process(self.mp_idle_process_list[ch_num], self.data_to_idle_ch_queue_list[ch_num])
 		self.mp_idle_process_list[ch_num] = None
 		
 	def stop_test(self, ch_num):
-		self.stop_process(self.mp_process_list[ch_num], self.data_to_ch_queue_list[ch_num], ch_num)
+		self.stop_process(self.mp_process_list[ch_num], self.data_to_ch_queue_list[ch_num])
 		self.mp_process_list[ch_num] = None
 	
-	def stop_process(self, process_id, queue_id, ch_num):
+	def stop_process(self, process_id, queue_id = None):
 		if process_id != None:
 			try:
 				#only put stop command if the process exists and is running
 				if process_id.is_alive():
-					queue_id.put_nowait('stop')
+					if queue_id != None:
+						queue_id.put_nowait('stop')
 					process_id.join()
 					process_id.close()
 			except ValueError:

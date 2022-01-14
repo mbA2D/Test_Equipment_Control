@@ -559,7 +559,7 @@ def single_step_cell_info():
 	step_settings = Templates.StepSettings()
 	step_settings.get_cycle_settings("Step")
 	
-	step_settings_list.append(step_settings)
+	step_settings_list.append((step_settings,))
 	
 	return step_settings_list
 
@@ -569,8 +569,10 @@ def multi_step_cell_info():
 	msg = "Add a step to the cycle?"
 	title = "Add Step"
 	while eg.ynbox(msg = msg, title = title):
-		step_settings_list.extend(single_step_cell_info())
+		step_settings_list.append(single_step_cell_info()[0][0])
 		msg = "Add another step to the cycle?"
+	
+	step_settings_list = (step_settings_list,)
 	
 	return step_settings_list
 
@@ -580,7 +582,7 @@ def continuous_step_cycles_info():
 	msg = "Add another cycle?"
 	title = "Add Cycle"
 	while eg.ynbox(msg = msg, title = title):
-		cycle_settings_list.append(multi_step_cell_info())
+		cycle_settings_list.extend(multi_step_cell_info())
 	
 	return cycle_settings_list
 
@@ -638,6 +640,7 @@ def get_eq_req_dict(cycle_type, cycle_settings_list_of_lists):
 	#REQUIRED EQUIPMENT
 	eq_req_dict = {'psu': False, 'eload': False}
 	
+	print(cycle_settings_list_of_lists)
 	if cycle_type in ("Step Cycle", "Continuous Step Cycles"):
 		eq_req_dict = find_eq_req_steps(cycle_settings_list_of_lists)
 	else:
