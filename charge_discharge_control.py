@@ -678,6 +678,7 @@ def idle_control(res_ids_dict, data_out_queue = None, data_in_queue = None, mult
 	try:
 		eq_dict = get_equipment_dict(res_ids_dict, multi_channel_event_and_queue_dict)
 		idle_cell_cycle(eload = eq_dict['eload'], psu = eq_dict['psu'], v_meas_eq = eq_dict['dmm_v'], i_meas_eq = eq_dict['dmm_i'], data_out_queue = data_out_queue, data_in_queue = data_in_queue)
+		disable_equipment(psu = eq_dict['psu'], eload = eq_dict['eload'])
 	except Exception:
 		traceback.print_exc()
 	

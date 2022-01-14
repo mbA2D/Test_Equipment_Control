@@ -103,15 +103,14 @@ class MainTestWindow(QMainWindow):
 					clear_layout(child.layout())
 	
 	def remove_all_channels(self):
+		self.clear_layout(self.channels_layout)
+		
 		for ch_num in range(self.num_battery_channels):
 			self.stop_process(self.assign_eq_process_list[ch_num])
 			self.stop_process(self.mp_process_list[ch_num])
 			self.stop_process(self.mp_idle_process_list[ch_num])
-			
-		self.clear_layout(self.channels_layout)
 	
 	def setup_channels(self, num_ch = None):
-		
 		self.remove_all_channels()
 		
 		if num_ch == None:
@@ -211,7 +210,7 @@ class MainTestWindow(QMainWindow):
 				#Read from all queues if available
 				self.data_dict_list[ch_num] = self.data_from_ch_queue_list[ch_num].get_nowait()
 				
-			except queue.Empty:
+			except (queue.Empty, ValueError):
 				pass #No new data was available
 		
 		#Update plots and displayed values
@@ -295,15 +294,11 @@ class MainTestWindow(QMainWindow):
 	def export_equipment_assignment(self):
 		jsonIO.export_cycle_settings(self.res_ids_dict_list)
 		
-	def import_equipment_assignment(self):
-		for ch_num in range(self.num_battery_channels):
-			self.stop_idle_process(ch_num)
-		
+	def import_equipment_assignment(self):		
 		temp_dict_list = jsonIO.import_cycle_settings()
 		temp_dict_list = jsonIO.convert_keys_to_int(temp_dict_list)
 		
-		self.num_battery_channels = len(list(temp_dict_list.keys()))
-		self.setup_channels(self.num_battery_channels)
+		self.setup_channels(len(list(temp_dict_list.keys())))
 		
 		for ch_num in range(self.num_battery_channels):
 			if temp_dict_list[ch_num] != None:
@@ -384,9 +379,9 @@ class MainTestWindow(QMainWindow):
 		#close all threads - run this function just before the app closes
 		for ch_num in range(self.num_battery_channels):
 			if self.assign_eq_process_list[ch_num] != None:
-				self.assign_eq_process_list[ch_num].close()
+				self.stop_process(self.assign_eq_process_list[ch_num])
 			if self.configure_test_process_list[ch_num] != None:
-				self.configure_test_process_list[ch_num].close()
+				self.stop_process(self.configure_test_process_list[ch_num])
 			self.stop_test(ch_num)
 			self.stop_idle_process(ch_num)
 			
