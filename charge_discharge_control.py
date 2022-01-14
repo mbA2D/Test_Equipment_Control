@@ -569,7 +569,7 @@ def multi_step_cell_info():
 	msg = "Add a step to the cycle?"
 	title = "Add Step"
 	while eg.ynbox(msg = msg, title = title):
-		step_settings_list.append(single_step_cell_info())
+		step_settings_list.extend(single_step_cell_info())
 		msg = "Add another step to the cycle?"
 	
 	return step_settings_list
@@ -580,7 +580,7 @@ def continuous_step_cycles_info():
 	msg = "Add another cycle?"
 	title = "Add Cycle"
 	while eg.ynbox(msg = msg, title = title):
-		cycle_settings_list.extend(multi_step_cell_info())
+		cycle_settings_list.append(multi_step_cell_info())
 	
 	return cycle_settings_list
 
@@ -705,12 +705,12 @@ def charge_discharge_control(res_ids_dict, data_out_queue = None, data_in_queue 
 		#cycle x times
 		cycle_num = 0
 		end_list_of_lists = False
+		
 		for cycle_settings_list in input_dict['cycle_settings_list_of_lists']:
 			print("Cycle {} Starting".format(cycle_num), flush=True)
 			filepath = FileIO.start_file(input_dict['directory'], input_dict['cell_name'])
 			
 			try:
-				
 				for cycle_settings in cycle_settings_list:
 					end_condition = 'none'
 					
@@ -735,7 +735,6 @@ def charge_discharge_control(res_ids_dict, data_out_queue = None, data_in_queue 
 					if end_condition == 'end_request':
 						end_list_of_lists = True
 						break
-					
 				if end_list_of_lists:
 					break
 				
