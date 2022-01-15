@@ -80,7 +80,7 @@ def export_cycle_settings(settings, cycle_name = ""):
 		with open(file_name, "w") as write_file:
 			json.dump(settings, write_file, indent = 4)
 
-def import_cycle_settings(cycle_name = ""):
+def import_cycle_settings(cycle_name = "", queue = None, ch_num = None):
 	#add extra space to get formatting correct
 	if (cycle_name != ""):
 		cycle_name += " "
@@ -95,7 +95,11 @@ def import_cycle_settings(cycle_name = ""):
 		with open(file_name, "r") as read_file:
 			settings = json.load(read_file)
 	
-	return settings
+	if queue != None:
+		settings = {'ch_num': ch_num, 'cdc_input_dict': settings}
+		queue.put_nowait(settings)
+	else:
+		return settings
 
 def get_cycle_settings(settings, valid_strings = None, cycle_name = ""):
 	

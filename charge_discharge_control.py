@@ -457,15 +457,15 @@ def find_eq_req_steps(step_settings_list_of_lists):
 	#Go through all the steps to see which equipment we need connected
 	for step_settings_list in step_settings_list_of_lists:
 		for step_settings in step_settings_list:
-			if step_settings.settings["drive_style"] == 'current_a':
-				if step_settings.settings["drive_value"] > 0:
+			if step_settings["drive_style"] == 'current_a':
+				if step_settings["drive_value"] > 0:
 					eq_req_dict['psu'] = True
-				elif step_settings.settings["drive_value"] < 0:
+				elif step_settings["drive_value"] < 0:
 					eq_req_dict['eload'] = True
-			elif step_settings.settings["drive_style"] == 'voltage_v':
-				if step_settings.settings["drive_value_other"] > 0:
+			elif step_settings["drive_style"] == 'voltage_v':
+				if step_settings["drive_value_other"] > 0:
 					eq_req_dict['psu'] = True
-				elif step_settings.settings["drive_value_other"] < 0:
+				elif step_settings["drive_value_other"] < 0:
 					eq_req_dict['eload'] = True
 	
 	return eq_req_dict
@@ -479,7 +479,7 @@ def single_cc_cycle_info():
 	cycle_settings.get_cycle_settings()
 	
 	cycle_settings_list = list()
-	cycle_settings_list.append((cycle_settings,))
+	cycle_settings_list.append((cycle_settings.settings,))
 	
 	return cycle_settings_list
 
@@ -495,7 +495,7 @@ def one_level_continuous_cc_cycles_with_rest_info():
 	cycle_settings_list = list()
 
 	for i in range(num_cycles):
-		cycle_settings_list.append((cycle_settings,))
+		cycle_settings_list.append((cycle_settings.settings,))
 	
 	return cycle_settings_list
 
@@ -527,9 +527,9 @@ def two_level_continuous_cc_cycles_with_rest_info():
 
 	for j in range(num_test_cycles):
 		for i in range(num_cycles_type_1):
-			cycle_settings_list.append((cycle_1_settings,))
+			cycle_settings_list.append((cycle_1_settings.settings,))
 		for i in range(num_cycles_type_2):
-			cycle_settings_list.append((cycle_2_settings,))
+			cycle_settings_list.append((cycle_2_settings.settings,))
 	
 	return cycle_settings_list
 
@@ -539,7 +539,7 @@ def charge_only_cycle_info():
 	charge_only_settings = Templates.ChargeSettings()
 	charge_only_settings.get_cycle_settings("Charge Only")
 	
-	cycle_settings_list.append((charge_only_settings,))
+	cycle_settings_list.append((charge_only_settings.settings,))
 	
 	return cycle_settings_list
 	
@@ -549,7 +549,7 @@ def discharge_only_cycle_info():
 	discharge_only_settings = Templates.DischargeSettings()
 	discharge_only_settings.get_cycle_settings("Discharge Only")
 	
-	cycle_settings_list.append((discharge_only_settings,))
+	cycle_settings_list.append((discharge_only_settings.settings,))
 	
 	return cycle_settings_list
 
@@ -559,7 +559,7 @@ def single_step_cell_info():
 	step_settings = Templates.StepSettings()
 	step_settings.get_cycle_settings("Step")
 	
-	step_settings_list.append((step_settings,))
+	step_settings_list.append((step_settings.settings,))
 	
 	return step_settings_list
 
@@ -640,7 +640,6 @@ def get_eq_req_dict(cycle_type, cycle_settings_list_of_lists):
 	#REQUIRED EQUIPMENT
 	eq_req_dict = {'psu': False, 'eload': False}
 	
-	print(cycle_settings_list_of_lists)
 	if cycle_type in ("Step Cycle", "Continuous Step Cycles"):
 		eq_req_dict = find_eq_req_steps(cycle_settings_list_of_lists)
 	else:
@@ -719,22 +718,22 @@ def charge_discharge_control(res_ids_dict, data_out_queue = None, data_in_queue 
 					end_condition = 'none'
 					
 					#Charge only - only using the power supply
-					if isinstance(cycle_settings, Templates.ChargeSettings):
-						end_condition = charge_cycle(filepath, cycle_settings.settings, eq_dict['psu'], v_meas_eq = eq_dict['dmm_v'], i_meas_eq = eq_dict['dmm_i'], data_out_queue = data_out_queue, data_in_queue = data_in_queue)
+					if cycle_settings["cycle_type"] == 'charge':
+						end_condition = charge_cycle(filepath, cycle_settings, eq_dict['psu'], v_meas_eq = eq_dict['dmm_v'], i_meas_eq = eq_dict['dmm_i'], data_out_queue = data_out_queue, data_in_queue = data_in_queue)
 						
 					#Discharge only - only using the eload
-					elif isinstance(cycle_settings, Templates.DischargeSettings):
-						end_condition = discharge_cycle(filepath, cycle_settings.settings, eq_dict['eload'], v_meas_eq = eq_dict['dmm_v'], i_meas_eq = eq_dict['dmm_i'], data_out_queue = data_out_queue, data_in_queue = data_in_queue)
+					elif cycle_settings["cycle_type"] == 'discharge':
+						end_condition = discharge_cycle(filepath, cycle_settings, eq_dict['eload'], v_meas_eq = eq_dict['dmm_v'], i_meas_eq = eq_dict['dmm_i'], data_out_queue = data_out_queue, data_in_queue = data_in_queue)
 					
 					#Step Functions
-					elif isinstance(cycle_settings, Templates.StepSettings):
-						end_condition = single_step_cycle(filepath, cycle_settings.settings, eload = eq_dict['eload'], psu = eq_dict['psu'], v_meas_eq = eq_dict['dmm_v'], i_meas_eq = eq_dict['dmm_i'], data_out_queue = data_out_queue, data_in_queue = data_in_queue)
+					elif cycle_settings["cycle_type"] == 'step':
+						end_condition = single_step_cycle(filepath, cycle_settings, eload = eq_dict['eload'], psu = eq_dict['psu'], v_meas_eq = eq_dict['dmm_v'], i_meas_eq = eq_dict['dmm_i'], data_out_queue = data_out_queue, data_in_queue = data_in_queue)
 						if end_condition == 'safety_condition':
 							break
 							
 					#Cycle the cell - using both psu and eload
-					else:
-						end_condition = cycle_cell(filepath, cycle_settings.settings, eq_dict['eload'], eq_dict['psu'], v_meas_eq = eq_dict['dmm_v'], i_meas_eq = eq_dict['dmm_i'], data_out_queue = data_out_queue, data_in_queue = data_in_queue)
+					elif cycle_settings["cycle_type"] == 'cycle':
+						end_condition = cycle_cell(filepath, cycle_settings, eq_dict['eload'], eq_dict['psu'], v_meas_eq = eq_dict['dmm_v'], i_meas_eq = eq_dict['dmm_i'], data_out_queue = data_out_queue, data_in_queue = data_in_queue)
 					
 					if end_condition == 'end_request':
 						end_list_of_lists = True
