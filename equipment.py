@@ -21,7 +21,7 @@ from lab_equipment import PSU_KAXXXXP
 from lab_equipment import PSU_Fake
 
 #Digital Multimeters
-#from lab_equipment import DM3068
+from lab_equipment import DMM_DM3000
 from lab_equipment import DMM_SDM3065X
 from lab_equipment import DMM_FET_BOARD_EQ
 from lab_equipment import DMM_Fake
@@ -158,7 +158,7 @@ class powerSupplies:
 
 class dmms:
 	part_numbers = {
-		'DM3068': 					'DMM_DM3068',
+		'DM3000': 					'DMM_DM3000',
 		'SDM3065X': 				'DMM_SDM3065X',
 		'MATICIAN_FET_BOARD_CH':	'DMM_FET_BOARD',
 		'Fake Test DMM': 			'DMM_Fake'
@@ -176,8 +176,8 @@ class dmms:
 			msgbox("Failed to select the equipment.")
 			return			
 		
-		#if(class_name == 'DM3068'):
-		#	dmm = DMM_DM3068.DM3068(resource_id = resource_id)
+		if(class_name == 'DM3000'):
+			dmm = DMM_DM3000.DM3000(resource_id = resource_id)
 		if class_name == 'SDM3065X':
 			dmm = DMM_SDM3065X.SDM3065X(resource_id = resource_id)
 		elif class_name == 'Fake Test DMM':
