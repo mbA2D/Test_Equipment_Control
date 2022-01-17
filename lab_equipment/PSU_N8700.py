@@ -95,9 +95,9 @@ class N8700:
 		return self.measure_voltage()*self.measure_current()
 		
 	def __del__(self):
-		self.toggle_output(False)
-		self.lock_front_panel(False)
 		try:
+			self.toggle_output(False)
+			self.lock_front_panel(False)
 			self.inst.close()
-		except AttributeError:
+		except (AttributeError, pyvisa.errors.InvalidSession):
 			pass
