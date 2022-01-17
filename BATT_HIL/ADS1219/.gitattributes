@@ -1,0 +1,8 @@
+# Per default everything gets normalized and gets LF line endings on checkout.
+* text eol=lf
+
+# These should never be modified by git.
+*.png binary
+*.jpg binary
+*.dxf binary
+*.mpy binary

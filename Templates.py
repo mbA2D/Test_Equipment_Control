@@ -125,7 +125,7 @@ class StepSettings(CycleSettings):
 			"safety_max_time_s":		100 #positive values give a value in seconds, negative values and 0 will disable the time safety check
 		}
 		self.valid_strings = {
-			"cycle_type":				('step'),
+			"cycle_type":				('step',),
 			"drive_style":				('current_a', 'voltage_v', 'none'),
 			"end_style":				('time_s', 'current_a', 'voltage_v'),
 			"end_condition":			('greater', 'lesser')
