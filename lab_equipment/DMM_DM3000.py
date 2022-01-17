@@ -142,5 +142,5 @@ class DM3000:
 	def __del__(self):
 		try:
 			self.inst.close()
-		except AttributeError:
+		except (AttributeError, pyvisa.errors.InvalidSession):
 			pass

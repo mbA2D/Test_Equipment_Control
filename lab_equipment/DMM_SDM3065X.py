@@ -146,5 +146,5 @@ class SDM3065X:
 		#self.lock_front_panel(False)
 		try:
 			self.inst.close()
-		except AttributeError:
+		except (AttributeError, pyvisa.errors.InvalidSession):
 			pass
