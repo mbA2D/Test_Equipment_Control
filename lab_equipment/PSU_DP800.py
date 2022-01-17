@@ -74,7 +74,7 @@ class DP800:
 		
 	def select_channel(self, channel):
 		#channel is a number - 1,2,3
-		if(channel <= 3) and (channel >= 0):
+		if(channel <= 3) and (channel > 0):
 			self.inst.write(":INST:NSEL {}".format(channel))
 	
 	def set_current(self, current_setpoint_A):
@@ -113,11 +113,11 @@ class DP800:
 		return float(self.inst.query(":MEAS:POWE?"))
 		
 	def __del__(self):
-		for ch in range(3):
-			self.select_channel(ch+1)
-			self.toggle_output(False)
-			self.lock_front_panel(False)
 		try:
+			for ch in range(3):
+				self.select_channel(ch+1)
+				self.toggle_output(False)
+				self.lock_front_panel(False)
 			self.inst.close()
-		except AttributeError:
+		except (AttributeError, pyvisa.errors.InvalidSession):
 			pass

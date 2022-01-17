@@ -82,11 +82,11 @@ def get_res_id_dict_and_disconnect(eq_list):
 
 class eLoads:
 	part_numbers = {
-		'BK8600': 'Eload_BK8600',
-		'DL3000': 'Eload_DL3000',
-		'KEL10X': 'Eload_KEL10X',
-		'IT8500': 'Eload_IT8500',
-		'Fake Test Eload': 'Eload_Fake'
+		'BK8600': 			'Eload_BK8600',
+		'DL3000': 			'Eload_DL3000',
+		'KEL10X': 			'Eload_KEL10X',
+		'IT8500': 			'Eload_IT8500',
+		'Fake Test Eload': 	'Eload_Fake'
 	}
 		
 	@classmethod
@@ -206,4 +206,4 @@ class dmms:
 			event_and_queue_dict = multi_ch_event_and_queue_dict[resource_id['board_name']][resource_id['ch_num']]
 			
 			dmm = DMM_FET_BOARD_EQ.FET_BOARD_EQ(resource_id, event_and_queue_dict)
-		return class_name, dmm
+		return class_name, dmm, False #False since we will do no remote sense for dmms for now

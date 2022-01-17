@@ -109,9 +109,9 @@ class KAXXXXP:
 		return float(current*voltage)
 		
 	def __del__(self):
-		self.toggle_output(False)
-		self.lock_commands(False)
 		try:
+			self.toggle_output(False)
+			self.lock_commands(False)
 			self.inst.close()
-		except AttributeError:
+		except (AttributeError, pyvisa.errors.InvalidSession):
 			pass

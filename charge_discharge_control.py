@@ -451,22 +451,20 @@ def single_step_cycle(filepath, step_settings, eload = None, psu = None, v_meas_
 		
 	return step_cell(filepath, step_settings, psu, eload, v_meas_eq, i_meas_eq, data_out_queue = data_out_queue, data_in_queue = data_in_queue)
 
-def find_eq_req_steps(step_settings_list_of_lists):
+def find_eq_req_steps(step_settings):
 	eq_req_dict = {'psu': False, 'eload': False}
 	
 	#Go through all the steps to see which equipment we need connected
-	for step_settings_list in step_settings_list_of_lists:
-		for step_settings in step_settings_list:
-			if step_settings["drive_style"] == 'current_a':
-				if step_settings["drive_value"] > 0:
-					eq_req_dict['psu'] = True
-				elif step_settings["drive_value"] < 0:
-					eq_req_dict['eload'] = True
-			elif step_settings["drive_style"] == 'voltage_v':
-				if step_settings["drive_value_other"] > 0:
-					eq_req_dict['psu'] = True
-				elif step_settings["drive_value_other"] < 0:
-					eq_req_dict['eload'] = True
+	if step_settings["drive_style"] == 'current_a':
+		if step_settings["drive_value"] > 0:
+			eq_req_dict['psu'] = True
+		elif step_settings["drive_value"] < 0:
+			eq_req_dict['eload'] = True
+	elif step_settings["drive_style"] == 'voltage_v':
+		if step_settings["drive_value_other"] > 0:
+			eq_req_dict['psu'] = True
+		elif step_settings["drive_value_other"] < 0:
+			eq_req_dict['eload'] = True
 	
 	return eq_req_dict
 
@@ -640,12 +638,16 @@ def get_eq_req_dict(cycle_type, cycle_settings_list_of_lists):
 	#REQUIRED EQUIPMENT
 	eq_req_dict = {'psu': False, 'eload': False}
 	
-	if cycle_type in ("Step Cycle", "Continuous Step Cycles"):
-		eq_req_dict = find_eq_req_steps(cycle_settings_list_of_lists)
-	else:
-		cycle_types = Templates.CycleTypes.cycle_types
-		eq_req_dict['psu'] = cycle_types[cycle_type]['supply_req']
-		eq_req_dict['eload'] = cycle_types[cycle_type]['load_req']
+	for settings_list in cycle_settings_list_of_lists:
+		for settings in settings_list:
+			if settings["cycle_type"] == 'step':
+				eq_req_from_settings = find_eq_req_steps(settings)
+				eq_req_dict['psu'] = eq_req_dict['psu'] or eq_req_from_settings['psu']
+				eq_req_dict['eload'] = eq_req_dict['eload'] or eq_req_from_settings['eload']
+			else:
+				cycle_types = Templates.CycleTypes.cycle_types
+				eq_req_dict['psu'] = eq_req_dict['psu'] or cycle_types[cycle_type]['supply_req']
+				eq_req_dict['eload'] = eq_req_dict['eload'] or cycle_types[cycle_type]['load_req']
 	
 	return eq_req_dict
 

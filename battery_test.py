@@ -267,13 +267,13 @@ class MainTestWindow(QMainWindow):
 			if self.assign_eq_process_list[ch_num] is not None and self.assign_eq_process_list[ch_num].is_alive():
 				print("There is a process already running to assign equipment on Channel {}".format(ch_num))
 				return
-			self.assign_eq_process_list[ch_num] = Process(target=self.assign_equipment, args = (ch_num, self.eq_assignment_queue))
+			self.assign_eq_process_list[ch_num] = Process(target=self.assign_equipment, args = (ch_num, self.eq_assignment_queue, None, self.dict_for_event_and_queue))
 			self.assign_eq_process_list[ch_num].start()
 		except:
 			traceback.print_exc()
-	
+			
 	@staticmethod
-	def assign_equipment(ch_num, assignment_queue, res_ids_dict = None):
+	def assign_equipment(ch_num, assignment_queue, res_ids_dict = None, dict_for_event_and_queue = None):
 		try:
 			if res_ids_dict == None:
 				res_ids_dict = {'psu': None, 'eload': None, 'dmm_v': None, 'dmm_i': None}
@@ -294,12 +294,12 @@ class MainTestWindow(QMainWindow):
 				msg = "Do you want to use a separate device to measure voltage on channel {}?".format(ch_num)
 				title = "CH {} Voltage Measurement Device".format(ch_num)
 				if eg.ynbox(msg, title):
-					dmm_v = eq.dmms.choose_dmm(multi_ch_event_and_queue_dict = self.dict_for_event_and_queue)
+					dmm_v = eq.dmms.choose_dmm(multi_ch_event_and_queue_dict = dict_for_event_and_queue)
 					res_ids_dict['dmm_v'] = eq.get_res_id_dict_and_disconnect(dmm_v)
 				msg = "Do you want to use a separate device to measure current on channel {}?".format(ch_num)
 				title = "CH {} Current Measurement Device".format(ch_num)
 				if eg.ynbox(msg, title):
-					dmm_i = eq.dmms.choose_dmm(multi_ch_event_and_queue_dict = self.dict_for_event_and_queue)
+					dmm_i = eq.dmms.choose_dmm(multi_ch_event_and_queue_dict = dict_for_event_and_queue)
 					res_ids_dict['dmm_i'] = eq.get_res_id_dict_and_disconnect(dmm_i)
 			
 			dict_for_queue = {'ch_num': ch_num, 'res_ids_dict': res_ids_dict}
@@ -307,6 +307,7 @@ class MainTestWindow(QMainWindow):
 			
 		except:
 			print("Something went wrong with assigning equipment. Please try again.")
+			traceback.print_exc()
 			return
 	
 	def export_equipment_assignment(self):
@@ -320,17 +321,13 @@ class MainTestWindow(QMainWindow):
 		
 		for ch_num in range(self.num_battery_channels):
 			if temp_dict_list[ch_num] != None:
-				self.assign_equipment(ch_num, self.eq_assignment_queue, temp_dict_list[ch_num])
+				self.assign_equipment(ch_num, self.eq_assignment_queue, res_ids_dict = temp_dict_list[ch_num], dict_for_event_and_queue = self.dict_for_event_and_queue)
 		
 	def export_test_configuration_process(self, ch_num):	
 		if self.export_test_process_list[ch_num] is not None and self.export_test_process_list[ch_num].is_alive():
 			print("There is an export already running in Channel {}".format(ch_num))
 			return
-			
-		#need to convert the step settings to JSON
-		
 		try:
-			print(self.cdc_input_dict_list[ch_num])
 			self.export_test_process_list[ch_num] = Process(target=jsonIO.export_cycle_settings, args = (self.cdc_input_dict_list[ch_num],))
 			self.export_test_process_list[ch_num].start()
 		except:
