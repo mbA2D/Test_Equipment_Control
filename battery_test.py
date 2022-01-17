@@ -72,6 +72,8 @@ class MainTestWindow(QMainWindow):
 		self.assign_eq_process_list = {}
 		self.res_ids_dict_list = {}
 		self.configure_test_process_list = {}
+		self.import_test_process_list = {}
+		self.export_test_process_list = {}
 		self.cdc_input_dict_list = {}
 		self.mp_process_list = {}
 		self.mp_idle_process_list = {}
@@ -82,6 +84,8 @@ class MainTestWindow(QMainWindow):
 		self.data_label_list = {}
 		self.button_assign_eq_list = {}
 		self.button_configure_test_list = {}
+		self.button_import_test_list = {}
+		self.button_export_test_list = {}
 		self.button_start_test_list = {}
 		self.button_stop_test_list = {}
 		self.data_from_ch_queue_list = {}
@@ -123,6 +127,8 @@ class MainTestWindow(QMainWindow):
 			self.assign_eq_process_list[ch_num] = None
 			self.res_ids_dict_list[ch_num] = None
 			self.configure_test_process_list[ch_num] = None
+			self.import_test_process_list[ch_num] = None
+			self.export_test_process_list[ch_num] = None
 			self.cdc_input_dict_list[ch_num] = None
 			self.mp_process_list[ch_num] = None
 			self.mp_idle_process_list[ch_num] = None
@@ -133,6 +139,8 @@ class MainTestWindow(QMainWindow):
 			self.data_label_list[ch_num] = QLabel("CH: {}\nV: \nI:".format(ch_num))
 			self.button_assign_eq_list[ch_num] = QPushButton("Assign Equipment")
 			self.button_configure_test_list[ch_num] = QPushButton("Configure Test")
+			self.button_import_test_list[ch_num] = QPushButton("Import Test")
+			self.button_export_test_list[ch_num] = QPushButton("Export Test")
 			self.button_start_test_list[ch_num] = QPushButton("Start Test")
 			self.button_stop_test_list[ch_num] = QPushButton("Stop Test")
 			self.data_from_ch_queue_list[ch_num] = Queue()
@@ -146,6 +154,12 @@ class MainTestWindow(QMainWindow):
 			self.button_assign_eq_list[ch_num].clicked.connect(partial(self.assign_equipment_process, ch_num))
 			self.button_configure_test_list[ch_num].setCheckable(False)
 			self.button_configure_test_list[ch_num].clicked.connect(partial(self.configure_test, ch_num))
+			
+			self.button_import_test_list[ch_num].setCheckable(False)
+			self.button_import_test_list[ch_num].clicked.connect(partial(self.import_test_configuration_process, ch_num))
+			self.button_export_test_list[ch_num].setCheckable(False)
+			self.button_export_test_list[ch_num].clicked.connect(partial(self.export_test_configuration_process, ch_num))
+			
 			self.button_stop_test_list[ch_num].setCheckable(False)
 			self.button_stop_test_list[ch_num].clicked.connect(partial(self.stop_test, ch_num))
 			self.button_start_test_list[ch_num].setCheckable(False)
@@ -160,8 +174,12 @@ class MainTestWindow(QMainWindow):
 			btn_grid_layout = QGridLayout()
 			btn_grid_layout.addWidget(self.button_assign_eq_list[ch_num], 0, 0)
 			btn_grid_layout.addWidget(self.button_configure_test_list[ch_num], 0, 1)
-			btn_grid_layout.addWidget(self.button_start_test_list[ch_num], 1, 0)
-			btn_grid_layout.addWidget(self.button_stop_test_list[ch_num], 1, 1)
+			
+			btn_grid_layout.addWidget(self.button_import_test_list[ch_num], 1, 0)
+			btn_grid_layout.addWidget(self.button_export_test_list[ch_num], 1, 1)
+			
+			btn_grid_layout.addWidget(self.button_start_test_list[ch_num], 2, 0)
+			btn_grid_layout.addWidget(self.button_stop_test_list[ch_num], 2, 1)
 			
 			btn_grid_widget = QWidget()
 			btn_grid_widget.setLayout(btn_grid_layout)
@@ -303,6 +321,31 @@ class MainTestWindow(QMainWindow):
 		for ch_num in range(self.num_battery_channels):
 			if temp_dict_list[ch_num] != None:
 				self.assign_equipment(ch_num, self.eq_assignment_queue, temp_dict_list[ch_num])
+		
+	def export_test_configuration_process(self, ch_num):	
+		if self.export_test_process_list[ch_num] is not None and self.export_test_process_list[ch_num].is_alive():
+			print("There is an export already running in Channel {}".format(ch_num))
+			return
+			
+		#need to convert the step settings to JSON
+		
+		try:
+			print(self.cdc_input_dict_list[ch_num])
+			self.export_test_process_list[ch_num] = Process(target=jsonIO.export_cycle_settings, args = (self.cdc_input_dict_list[ch_num],))
+			self.export_test_process_list[ch_num].start()
+		except:
+			traceback.print_exc()
+		
+	def import_test_configuration_process(self, ch_num):
+		if self.import_test_process_list[ch_num] is not None and self.import_test_process_list[ch_num].is_alive():
+				print("There is an import already running in Channel {}".format(ch_num))
+				return
+		try:
+			self.import_test_process_list[ch_num] = Process(target=jsonIO.import_cycle_settings, args = ("", self.test_configuration_queue, ch_num))
+			self.import_test_process_list[ch_num].start()
+		except:
+			traceback.print_exc()
+			
 	
 	def configure_test(self, ch_num):
 		self.configure_test_process(ch_num = ch_num)

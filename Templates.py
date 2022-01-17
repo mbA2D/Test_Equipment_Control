@@ -51,6 +51,7 @@ class CycleSettings:
 
 	def __init__(self):
 		self.settings = { 
+			"cycle_type":				'cycle',
 			"charge_end_v": 			4.2,
 			"charge_a": 				1,
 			"charge_end_a": 			0.3,
@@ -60,7 +61,9 @@ class CycleSettings:
 			"rest_after_discharge_min": 20,
 			"meas_log_int_s": 			1
 		}
-		self.valid_strings = {}
+		self.valid_strings = {
+			"cycle_type":				('cycle',)
+		}
 	
 	def get_cycle_settings(self, cycle_name = ""):
 		self.settings = jsonIO.get_cycle_settings(self.settings, self.valid_strings, cycle_name)
@@ -76,13 +79,16 @@ class CycleSettings:
 class ChargeSettings(CycleSettings):
 
 	def __init__(self):
-		self.settings = { 
+		self.settings = {
+			"cycle_type":				'charge',
 			"charge_end_v": 			4.2,
 			"charge_a": 				7.5,
 			"charge_end_a": 			0.3,
 			"meas_log_int_s": 			1
 		}
-		self.valid_strings = {}
+		self.valid_strings = {
+			"cycle_type":				('charge',)
+		}
 		
 ###############  DISCHARGE  #####################
 
@@ -90,17 +96,21 @@ class DischargeSettings(CycleSettings):
 
 	def __init__(self):
 		self.settings = { 
+			"cycle_type":				'discharge',
 			"discharge_end_v": 			2.5,
 			"discharge_a": 				52.5,
 			"meas_log_int_s": 			1
 		}
-		self.valid_strings = {}
+		self.valid_strings = {
+			"cycle_type":				('discharge',)
+		}
 
 #################  STEPS FOR CONTROLLING BATTERY TEST  ############
 
 class StepSettings(CycleSettings):
 	def __init__(self):
 		self.settings = {
+			"cycle_type":				'step',
 			"drive_style":				'none', #'current_a', 'voltage_v', 'none'
 			"drive_value":				0,
 			"drive_value_other":		0,
@@ -115,9 +125,10 @@ class StepSettings(CycleSettings):
 			"safety_max_time_s":		100 #positive values give a value in seconds, negative values and 0 will disable the time safety check
 		}
 		self.valid_strings = {
-			"drive_style":				{'current_a', 'voltage_v', 'none'},
-			"end_style":				{'time_s', 'current_a', 'voltage_v'},
-			"end_condition":			{'greater', 'lesser'}
+			"cycle_type":				('step'),
+			"drive_style":				('current_a', 'voltage_v', 'none'),
+			"end_style":				('time_s', 'current_a', 'voltage_v'),
+			"end_condition":			('greater', 'lesser')
 		}
 
 ####################  DC DC TESTING  ############
