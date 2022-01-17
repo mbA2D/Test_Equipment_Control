@@ -559,7 +559,7 @@ def single_step_cell_info():
 	step_settings = Templates.StepSettings()
 	step_settings.get_cycle_settings("Step")
 	
-	step_settings_list.append(step_settings)
+	step_settings_list.append((step_settings,))
 	
 	return step_settings_list
 
@@ -569,8 +569,10 @@ def multi_step_cell_info():
 	msg = "Add a step to the cycle?"
 	title = "Add Step"
 	while eg.ynbox(msg = msg, title = title):
-		step_settings_list.append(single_step_cell_info())
+		step_settings_list.append(single_step_cell_info()[0][0])
 		msg = "Add another step to the cycle?"
+	
+	step_settings_list = (step_settings_list,)
 	
 	return step_settings_list
 
@@ -638,6 +640,7 @@ def get_eq_req_dict(cycle_type, cycle_settings_list_of_lists):
 	#REQUIRED EQUIPMENT
 	eq_req_dict = {'psu': False, 'eload': False}
 	
+	print(cycle_settings_list_of_lists)
 	if cycle_type in ("Step Cycle", "Continuous Step Cycles"):
 		eq_req_dict = find_eq_req_steps(cycle_settings_list_of_lists)
 	else:
@@ -661,26 +664,27 @@ def get_input_dict(ch_num = None, queue = None):
 	else:
 		return input_dict
 
-def get_equipment_dict(res_ids_dict):
+def get_equipment_dict(res_ids_dict, multi_channel_event_and_queue_dict):
 	eq_dict = {}
 	for key in res_ids_dict:
-			if res_ids_dict[key] != None and res_ids_dict[key]['res_id'] != None:
-				eq_dict[key] = eq.connect_to_eq(key, res_ids_dict[key]['class_name'], res_ids_dict[key]['res_id'], res_ids_dict[key]['use_remote_sense'])
-			else:
-				eq_dict[key] = None
+		if res_ids_dict[key] != None and res_ids_dict[key]['res_id'] != None:
+			eq_dict[key] = eq.connect_to_eq(key, res_ids_dict[key]['class_name'], res_ids_dict[key]['res_id'], res_ids_dict[key]['use_remote_sense'], multi_channel_event_and_queue_dict)
+		else:
+			eq_dict[key] = None
 	return eq_dict
 
 ################################## BATTERY CYCLING SETUP FUNCTION ######################################
-def idle_control(res_ids_dict, data_out_queue = None, data_in_queue = None):
+def idle_control(res_ids_dict, data_out_queue = None, data_in_queue = None, multi_channel_event_and_queue_dict = None):
 	try:
-		eq_dict = get_equipment_dict(res_ids_dict)
+		eq_dict = get_equipment_dict(res_ids_dict, multi_channel_event_and_queue_dict)
 		idle_cell_cycle(eload = eq_dict['eload'], psu = eq_dict['psu'], v_meas_eq = eq_dict['dmm_v'], i_meas_eq = eq_dict['dmm_i'], data_out_queue = data_out_queue, data_in_queue = data_in_queue)
+		disable_equipment(psu = eq_dict['psu'], eload = eq_dict['eload'])
 	except Exception:
 		traceback.print_exc()
 	
-def charge_discharge_control(res_ids_dict, data_out_queue = None, data_in_queue = None, input_dict = None):
+def charge_discharge_control(res_ids_dict, data_out_queue = None, data_in_queue = None, input_dict = None, multi_channel_event_and_queue_dict = None):
 	try:
-		eq_dict = get_equipment_dict(res_ids_dict)
+		eq_dict = get_equipment_dict(res_ids_dict, multi_channel_event_and_queue_dict)
 		
 		if input_dict == None:
 			input_dict = get_input_dict()
@@ -705,12 +709,12 @@ def charge_discharge_control(res_ids_dict, data_out_queue = None, data_in_queue 
 		#cycle x times
 		cycle_num = 0
 		end_list_of_lists = False
+		
 		for cycle_settings_list in input_dict['cycle_settings_list_of_lists']:
 			print("Cycle {} Starting".format(cycle_num), flush=True)
 			filepath = FileIO.start_file(input_dict['directory'], input_dict['cell_name'])
 			
 			try:
-				
 				for cycle_settings in cycle_settings_list:
 					end_condition = 'none'
 					
@@ -735,7 +739,6 @@ def charge_discharge_control(res_ids_dict, data_out_queue = None, data_in_queue 
 					if end_condition == 'end_request':
 						end_list_of_lists = True
 						break
-					
 				if end_list_of_lists:
 					break
 				

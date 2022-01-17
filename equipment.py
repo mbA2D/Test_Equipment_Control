@@ -40,7 +40,7 @@ def setup_remote_sense(instrument, use_remote_sense):
 		pass
 	return None
 
-def connect_to_eq(key, class_name, res_id, use_remote_sense = None):
+def connect_to_eq(key, class_name, res_id, use_remote_sense = None, multi_channel_event_and_queue_dict = None):
 	#Key should be 'eload', 'psu', or 'dmm'
 	#'dmm' with any following characters will be considered a dmm
 	instrument = None
@@ -51,10 +51,7 @@ def connect_to_eq(key, class_name, res_id, use_remote_sense = None):
 	if key == 'psu':
 		instrument = powerSupplies.choose_psu(class_name, res_id, use_remote_sense)[1]
 	if key == 'dmm' or ('dmm' in key): #for dmm_i and dmm_v keys
-		if class_name == 'MATICIAN_FET_BOARD_CH':
-			instrument = dmms.choose_dmm(class_name, event_and_queue_dict = res_id)[1]
-		else:
-			instrument = dmms.choose_dmm(class_name, resource_id = res_id, use_remote_sense = use_remote_sense)[1]
+		instrument = dmms.choose_dmm(class_name, resource_id = res_id, multi_ch_event_and_queue_dict = multi_channel_event_and_queue_dict, use_remote_sense = use_remote_sense)[1]
 
 	return instrument
 
@@ -63,7 +60,7 @@ def get_res_id_dict_and_disconnect(eq_list):
 	class_name = eq_list[0]
 	eq_res_id_dict = {'class_name': class_name, 'res_id': None, 'use_remote_sense': None}
 	if class_name == 'MATICIAN_FET_BOARD_CH':
-		eq_res_id_dict['res_id'] = eq_list[1].event_and_queue_dict
+		eq_res_id_dict['res_id'] = {'board_name': eq_list[1].board_name, 'ch_num': eq_list[1].ch_num}
 		eq_res_id_dict['use_remote_sense'] = False
 	elif 'Fake' in class_name:
 		eq_res_id_dict['res_id'] = 'Fake'
@@ -168,7 +165,7 @@ class dmms:
 	}
 	
 	@classmethod
-	def choose_dmm(self, class_name = None, resource_id = None, event_and_queue_dict = None, multi_ch_event_and_queue_dict = None, use_remote_sense = None):
+	def choose_dmm(self, class_name = None, resource_id = None, multi_ch_event_and_queue_dict = None, use_remote_sense = None):
 		#use_remote_sense is here to have similar interface to other functions, but does nothing in this case
 		if class_name == None:
 			msg = "In which series is the DMM?"
@@ -186,24 +183,27 @@ class dmms:
 		elif class_name == 'Fake Test DMM':
 			dmm = DMM_Fake.Fake_DMM(resource_id = resource_id)
 		elif class_name == 'MATICIAN_FET_BOARD_CH':
-			if event_and_queue_dict == None:
-				if multi_ch_event_and_queue_dict == None:
-					multi_ch_event_and_queue_dict = fbm.create_event_and_queue_dicts(4,4)
-					
+			#if running from this process then create the extra process from here.
+			if multi_ch_event_and_queue_dict == None:
+				multi_ch_event_and_queue_dict = fbm.create_event_and_queue_dicts(4,4)
+			
+			if resource_id == None:
 				#get the event and queue dict from the proper channel of the proper mcp device
 				#Figure out which devices are connected
-					#dict keyed by device name should be passed in
+				#dict keyed by device name should be passed in
 				#Choose the device
 				msg = "Which Multi Channel Device to Use?"
 				title = "Multi Channel Device Selection"
-				multi_ch_device_name = int(eg.choicebox(msg, title, multi_ch_event_and_queue_dict.keys()))
+				board_name = int(eg.choicebox(msg, title, multi_ch_event_and_queue_dict.keys()))
 				
 				#Choose the channel
 				msg = "Choose Which Channel of This Device to Use:"
 				title = "Multi Channel Device Channel Selection"
-				ch_num = int(eg.choicebox(msg, title, multi_ch_event_and_queue_dict[multi_ch_device_name].keys()))
+				ch_num = int(eg.choicebox(msg, title, multi_ch_event_and_queue_dict[board_name].keys()))
 				
-				event_and_queue_dict = multi_ch_event_and_queue_dict[multi_ch_device_name][ch_num]
+				resource_id = {'board_name': board_name, 'ch_num': ch_num}
 			
-			dmm = DMM_FET_BOARD_EQ.FET_BOARD_EQ(event_and_queue_dict)
+			event_and_queue_dict = multi_ch_event_and_queue_dict[resource_id['board_name']][resource_id['ch_num']]
+			
+			dmm = DMM_FET_BOARD_EQ.FET_BOARD_EQ(resource_id, event_and_queue_dict)
 		return class_name, dmm
