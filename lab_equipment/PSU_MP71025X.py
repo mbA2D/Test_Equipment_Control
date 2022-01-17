@@ -14,6 +14,7 @@ class MP71025X:
 	baud_rate = 115200
 	read_termination = '\n'
 	query_delay = 0.04
+	has_remote_sense = True
 	
 	def __init__(self, resource_id = None):
 		
@@ -32,9 +33,9 @@ class MP71025X:
 			for resource in resources:
 				try:
 					instrument = rm.open_resource(resource)
-					instrument.baud_rate = MP71025X.baud_rate
-					instrument.read_termination = MP71025X.read_termination
-					instrument.query_delay = MP71025X.query_delay
+					instrument.baud_rate = self.baud_rate
+					instrument.read_termination = self.read_termination
+					instrument.query_delay = self.query_delay
 					instrument_idn = instrument.query("*IDN?")
 					idns_dict[resource] = instrument_idn
 					instrument.close()
@@ -62,9 +63,9 @@ class MP71025X:
 			
 		self.inst = rm.open_resource(resource_id)
 		
-		self.inst.baud_rate = MP71025X.baud_rate
-		self.inst.read_termination = MP71025X.read_termination
-		self.inst.query_delay = MP71025X.query_delay
+		self.inst.baud_rate = self.baud_rate
+		self.inst.read_termination = self.read_termination
+		self.inst.query_delay = self.query_delay
         
 		self.inst_idn = self.inst.query("*IDN?")
 		print("Connected to {}\n".format(self.inst_idn))

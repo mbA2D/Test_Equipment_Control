@@ -7,6 +7,9 @@ import serial
 
 # Power Supply
 class BK9100:
+	
+	has_remote_sense = False
+	
 	# Initialize the BK9100 Power Supply
 	
 	baud_rate = 9600
@@ -28,9 +31,9 @@ class BK9100:
 				try:
 					instrument = rm.open_resource(resource)
 					#We'll at least try to communicate and read the output status
-					instrument.baud_rate = BK9100.baud_rate
-					instrument.write_termination = BK9100.write_termination
-					instrument.read_termination = BK9100.read_termination
+					instrument.baud_rate = self.baud_rate
+					instrument.write_termination = self.write_termination
+					instrument.read_termination = self.read_termination
 					instrument.query("GOUT")
 					instrument.query("") #clear output buffer
 					instrument.close()
@@ -54,9 +57,9 @@ class BK9100:
 		
 		self.inst = rm.open_resource(resource_id)
 		
-		self.inst.baud_rate = BK9100.baud_rate
-		self.inst.write_termination = BK9100.write_termination
-		self.inst.read_termination = BK9100.read_termination
+		self.inst.baud_rate = self.baud_rate
+		self.inst.write_termination = self.write_termination
+		self.inst.read_termination = self.read_termination
 		
 		#IDN and RST not implemented in this PSU
 		#print("Connected to %s\n" % self.inst.query("*IDN?"))

@@ -16,12 +16,10 @@ import traceback
 
 def init_eload(eload):
 	eload.toggle_output(False)
-	eload.remote_sense(False)
 	eload.set_current(0)
 	
 def init_psu(psu):
 	psu.toggle_output(False)
-	psu.remote_sense(False)
 	psu.set_voltage(0)
 	psu.set_current(0)
 
@@ -563,7 +561,7 @@ def get_cycle_settings_list_of_lists(cycle_type):
 		
 	return cycle_settings_list_of_lists
 
-def get_eq_req_dict(cycle_type):
+def get_eq_req_dict(cycle_type, cycle_settings_list_of_lists):
 	#REQUIRED EQUIPMENT
 	eq_req_dict = {'psu': False, 'eload': False}
 	
@@ -581,11 +579,12 @@ def get_eq_req_dict(cycle_type):
 
 def charge_discharge_control(res_ids_dict, data_out_queue = None, cell_name = None, directory = None, cycle_type = None, 
 								cycle_settings_list_of_lists = None, eq_req_dict = None):
+	
 	eq_dict = dict()
 	try:
 		for key in res_ids_dict:
-			if res_ids_dict[key]['res_id'] != None:
-				eq_dict[key] = eq.connect_to_eq(key, res_ids_dict[key]['class_name'], res_ids_dict[key]['res_id'])
+			if res_ids_dict[key] != None and res_ids_dict[key]['res_id'] != None:
+				eq_dict[key] = eq.connect_to_eq(key, res_ids_dict[key]['class_name'], res_ids_dict[key]['res_id'], res_ids_dict[key]['use_remote_sense'])
 			else:
 				eq_dict[key] = None
 		
@@ -603,7 +602,7 @@ def charge_discharge_control(res_ids_dict, data_out_queue = None, cell_name = No
 			cycle_settings_list_of_lists = get_cycle_settings_list_of_lists(cycle_type)
 		
 		if eq_req_dict == None:
-			eq_req_dict = get_eq_req_dict(cycle_type)
+			eq_req_dict = get_eq_req_dict(cycle_type, cycle_settings_list_of_lists)
 		
 		#CHECKING CONNECTION OF REQUIRED EQUIPMENT
 		if eq_req_dict['eload'] and eq_dict['eload'] == None:
@@ -660,45 +659,6 @@ def charge_discharge_control(res_ids_dict, data_out_queue = None, cell_name = No
 		traceback.print_exc()
 
 ####################################### MAIN PROGRAM ######################################
-
-class BatteryChannel:
-	
-	def __init__(self, psu = None, eload = None, dmm_v = None, dmm_i = None):
-		self.eq_dict = dict()
-		self.eq_dict['eload'] = None
-		self.eq_dict['psu'] = None
-		self.eq_dict['dmm_v'] = None
-		self.eq_dict['dmm_i'] = None
-		self.assign_equipment(psu_to_assign = psu, eload_to_assign = eload, dmm_v_to_assign = dmm_v, dmm_i_to_assign = dmm_i)
-	
-	def assign_equipment(self, psu_to_assign = None, eload_to_assign = None, dmm_v_to_assign = None, dmm_i_to_assign = None):
-		self.eq_dict['eload'] = eload_to_assign
-		self.eq_dict['psu'] = psu_to_assign
-		self.eq_dict['dmm_v'] = dmm_v_to_assign
-		self.eq_dict['dmm_i'] = dmm_i_to_assign
-	
-	def get_assigned_eq_res_ids(self):
-		eq_res_ids_dict = dict()
-		for key in self.eq_dict:
-			eq_res_ids_dict[key] = {'class_name': None, 'res_id': None}
-			if self.eq_dict[key] != None:
-				class_name = self.eq_dict[key][0]
-				if class_name == 'MATICIAN_FET_BOARD_CH':
-					eq_res_ids_dict[key] = {'class_name': class_name, 'res_id': self.eq_dict[key][1].event_and_queue_dict}
-				else:
-					eq_res_ids_dict[key] = {'class_name': class_name, 'res_id': self.eq_dict[key][1].inst.resource_name}
-		
-		return eq_res_ids_dict
-		
-	def disconnect_all_assigned_eq(self):
-		#disconnect from equipment so that we can pass the resource ids to the
-		#charge_discharge_control function and reconnect to the devices there
-		for key in self.eq_dict:
-			if self.eq_dict[key] != None:
-				try:
-					self.eq_dict[key][1].inst.close()
-				except AttributeError:
-					pass #temporary fix for 'virtual instrument' - TODO - figure out a way to do this more properly
 
 if __name__ == '__main__':
 	print("Use the battery_test.py script")

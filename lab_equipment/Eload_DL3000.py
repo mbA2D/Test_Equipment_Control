@@ -7,6 +7,9 @@ import serial
 
 # E-Load
 class DL3000:
+	
+	has_remote_sense = True
+	
 	# Initialize the DL3000 E-Load
 	def __init__(self, resource_id = None):
 		rm = pyvisa.ResourceManager()

@@ -6,7 +6,7 @@ import time
 import easygui as eg
 import serial
 
-# E-Load
+#DMM
 class SDM3065X:
 	# Initialize the SDM3065X E-Load
 	

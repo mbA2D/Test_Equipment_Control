@@ -12,6 +12,7 @@ class IT8500:
 	baud_rate = 115200
 	write_termination = '\n'
 	read_termination = '\n'
+	has_remote_sense = True
 	
 	def __init__(self, resource_id = None):
 		rm = pyvisa.ResourceManager('@py')
@@ -29,9 +30,9 @@ class IT8500:
 			for resource in resources:
 				try:
 					instrument = rm.open_resource(resource)
-					instrument.baud_rate = IT8500.baud_rate
-					instrument.read_termination = IT8500.read_termination
-					instrument.write_termination = IT8500.write_termination
+					instrument.baud_rate = self.baud_rate
+					instrument.read_termination = self.read_termination
+					instrument.write_termination = self.write_termination
 					instrument_idn = instrument.query("*IDN?")
 					idns_dict[resource] = instrument_idn
 					instrument.close()
@@ -59,9 +60,9 @@ class IT8500:
 		
 		self.inst = rm.open_resource(resource_id)
 		
-		self.inst.baud_rate = IT8500.baud_rate
-		self.inst.read_termination = IT8500.read_termination
-		self.inst.write_termination = IT8500.write_termination
+		self.inst.baud_rate = self.baud_rate
+		self.inst.read_termination = self.read_termination
+		self.inst.write_termination = self.write_termination
 		
 		print("Connected to {}\n".format(self.inst.query("*IDN?")))
 		#resets to Constant Current Mode

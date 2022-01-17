@@ -14,6 +14,7 @@ class KAXXXXP:
 	
 	baud_rate = 9600
 	query_delay = 0.01
+	has_remote_sense = False
 	
 	def __init__(self, resource_id = None):
 		rm = pyvisa.ResourceManager('@py')
@@ -31,8 +32,8 @@ class KAXXXXP:
 			for resource in resources:
 				try:
 					instrument = rm.open_resource(resource)
-					instrument.baud_rate = KAXXXXP.baud_rate
-					instrument.query_delay = KAXXXXP.query_delay
+					instrument.baud_rate = self.baud_rate
+					instrument.query_delay = self.query_delay
 					instrument_idn = instrument.query("*IDN?")
 					idns_dict[resource] = instrument_idn
 					instrument.close()
@@ -58,8 +59,8 @@ class KAXXXXP:
 		
 		self.inst = rm.open_resource(resource_id)
 		
-		self.inst.baud_rate = KAXXXXP.baud_rate
-		self.inst.query_delay = KAXXXXP.query_delay
+		self.inst.baud_rate = self.baud_rate
+		self.inst.query_delay = self.query_delay
         
 		print("Connected to {}\n".format(self.inst.query("*IDN?")))
 		#this unit does not have a reset command

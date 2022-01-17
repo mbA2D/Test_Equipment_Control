@@ -12,6 +12,7 @@ class SPD1000:
 	read_termination = '\n'
 	write_termination = '\n'
 	query_delay = 0.1
+	has_remote_sense = True
 	
 	def __init__(self, resource_id = None):
 		rm = pyvisa.ResourceManager('@ivi')
@@ -29,9 +30,9 @@ class SPD1000:
 			for resource in resources:
 				try:
 					instrument = rm.open_resource(resource)
-					instrument.read_termination = SPD1000.read_termination
-					instrument.write_termination = SPD1000.write_termination
-					instrument.query_delay = SPD1000.query_delay
+					instrument.read_termination = self.read_termination
+					instrument.write_termination = self.write_termination
+					instrument.query_delay = self.query_delay
 					instrument_idn = instrument.query("*IDN?")
 					idns_dict[resource] = instrument_idn
 					instrument.close()
@@ -56,9 +57,9 @@ class SPD1000:
 				resource_id = resources_dict[idn]
 		
 		self.inst = rm.open_resource(resource_id)
-		self.inst.read_termination = SPD1000.read_termination
-		self.inst.write_termination = SPD1000.write_termination
-		self.inst.query_delay = SPD1000.query_delay
+		self.inst.read_termination = self.read_termination
+		self.inst.write_termination = self.write_termination
+		self.inst.query_delay = self.query_delay
 		
 		print("Connected to {}\n".format(self.inst.query("*IDN?")))
 		self.inst.write("*RST")

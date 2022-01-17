@@ -13,6 +13,7 @@ class KEL10X:
 	baud_rate = 115200
 	read_termination = '\n'
 	query_delay = 0.05
+	has_remote_sense = True
 	
 	def __init__(self, resource_id = None):
 		rm = pyvisa.ResourceManager()
@@ -30,9 +31,9 @@ class KEL10X:
 			for resource in resources:
 				try:
 					instrument = rm.open_resource(resource)
-					instrument.baud_rate = KEL10X.baud_rate
-					instrument.read_termination = KEL10X.read_termination
-					instrument.query_delay = KEL10X.query_delay
+					instrument.baud_rate = self.baud_rate
+					instrument.read_termination = self.read_termination
+					instrument.query_delay = self.query_delay
 					instrument_idn = instrument.query("*IDN?")
 					idns_dict[resource] = instrument_idn
 					instrument.close()
@@ -58,9 +59,9 @@ class KEL10X:
 		
 		self.inst = rm.open_resource(resource_id)
         
-		self.inst.baud_rate = KEL10X.baud_rate
-		self.inst.read_termination = KEL10X.read_termination
-		self.inst.query_delay = KEL10X.query_delay
+		self.inst.baud_rate = self.baud_rate
+		self.inst.read_termination = self.read_termination
+		self.inst.query_delay = self.query_delay
         
 		self.instrument_idn = self.inst.query("*IDN?")
 		print("Connected to {}\n".format(self.instrument_idn))
