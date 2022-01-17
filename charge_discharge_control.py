@@ -176,9 +176,11 @@ def evaluate_end_condition(step_settings, data, data_in_queue):
 
 ######################### MEASURING ######################
 
-def measure_battery(v_meas_eq, i_meas_eq = None, data_out_queue = None):
+def measure_battery(v_meas_eq = None, i_meas_eq = None, data_out_queue = None):
 	data_dict = dict()
-	data_dict["Voltage"] = v_meas_eq.measure_voltage()
+	data_dict["Voltage"] = 0
+	if v_meas_eq != None:
+		data_dict["Voltage"] = v_meas_eq.measure_voltage()
 	data_dict["Current"] = 0
 	if i_meas_eq != None:
 		data_dict['Current'] = i_meas_eq.measure_current()
@@ -228,6 +230,11 @@ def charge_cell(log_filepath, cycle_settings, psu, v_meas_eq, i_meas_eq, data_ou
 	disable_equipment(psu = psu)
 	return end_reason
 
+def idle_cell(v_meas_eq, i_meas_eq, data_out_queue = None, data_in_queue = None):
+	#Measures voltage (and current if available) when no other process is running to have live voltage updates
+	while not end_signal(data_in_queue):
+		measure_battery(v_meas_eq, i_meas_eq = i_meas_eq, data_out_queue = data_out_queue)
+		time.sleep(1)
 
 def rest_cell(log_filepath, cycle_settings, v_meas_eq, after_charge = True, data_out_queue = None, data_in_queue = None):
 	#rest - do nothing for X time but continue monitoring voltage
@@ -391,7 +398,26 @@ def discharge_cycle(filepath, charge_settings, eload, v_meas_eq = None, i_meas_e
 	end_reason = 'none'
 	end_reason = discharge_cell(filepath, charge_settings, eload, v_meas_eq, i_meas_eq, data_out_queue = data_out_queue, data_in_queue = data_in_queue)
 	return end_reason
+
+def idle_cell_cycle(eload = None, psu = None, v_meas_eq = None, i_meas_eq = None, data_out_queue = None, data_in_queue = None):
 	
+	if v_meas_eq == None:
+		if eload != None:
+			v_meas_eq = eload
+		elif psu != None:
+			v_meas_eq = psu
+		else:
+			print("No Voltage Measurement Equipment Connected! Exiting")
+			return 'settings'
+	
+	if i_meas_eq == None:
+		if eload != None:
+			i_meas_eq = eload
+		elif psu != None:
+			i_meas_eq = psu
+			
+	idle_cell(v_meas_eq, i_meas_eq, data_out_queue = data_out_queue, data_in_queue = data_in_queue)
+
 def single_step_cycle(filepath, step_settings, eload = None, psu = None, v_meas_eq = None, i_meas_eq = None, data_out_queue = None, data_in_queue = None):
 	
 	#if we don't have separate voltage measurement equipment, then choose what to use:
@@ -635,17 +661,26 @@ def get_input_dict(ch_num = None, queue = None):
 	else:
 		return input_dict
 
-################################## BATTERY CYCLING SETUP FUNCTION ######################################
-
-def charge_discharge_control(res_ids_dict, data_out_queue = None, data_in_queue = None, input_dict = None):
-	
+def get_equipment_dict(res_ids_dict):
 	eq_dict = {}
-	try:
-		for key in res_ids_dict:
+	for key in res_ids_dict:
 			if res_ids_dict[key] != None and res_ids_dict[key]['res_id'] != None:
 				eq_dict[key] = eq.connect_to_eq(key, res_ids_dict[key]['class_name'], res_ids_dict[key]['res_id'], res_ids_dict[key]['use_remote_sense'])
 			else:
 				eq_dict[key] = None
+	return eq_dict
+
+################################## BATTERY CYCLING SETUP FUNCTION ######################################
+def idle_control(res_ids_dict, data_out_queue = None, data_in_queue = None):
+	try:
+		eq_dict = get_equipment_dict(res_ids_dict)
+		idle_cell_cycle(eload = eq_dict['eload'], psu = eq_dict['psu'], v_meas_eq = eq_dict['dmm_v'], i_meas_eq = eq_dict['dmm_i'], data_out_queue = data_out_queue, data_in_queue = data_in_queue)
+	except Exception:
+		traceback.print_exc()
+	
+def charge_discharge_control(res_ids_dict, data_out_queue = None, data_in_queue = None, input_dict = None):
+	try:
+		eq_dict = get_equipment_dict(res_ids_dict)
 		
 		if input_dict == None:
 			input_dict = get_input_dict()
