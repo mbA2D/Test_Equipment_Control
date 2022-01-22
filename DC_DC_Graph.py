@@ -53,8 +53,6 @@ def create_graphs(filepaths = None, save_dir = None):
 		save_dir = FileIO.get_directory(title = "Choose a location to save the graphs")
 		
 	for filepath in filepaths:
-		#Ensure a directory to store the graphs exists
-		
 		dir_name, file_name = os.path.split(filepath)
 		
 		split_path = filename.split(" ")
