@@ -129,10 +129,10 @@ if __name__ == '__main__':
 	#Turn on power supply and eload to get the converter started up
 	init_instruments()
 	psu.set_voltage(test_settings["psu_voltage_min"])
-	time.sleep(0.1)
+	time.sleep(0.05)
 	psu.set_current(test_settings["psu_current_limit_a"])
 	eload.set_current(0)
-	time.sleep(0.1)
+	time.sleep(0.05)
 	psu.toggle_output(True)
 	eload.toggle_output(True)
 	
