@@ -44,21 +44,31 @@ def plot_eff(df, test_name, save_filepath = ''):
 	plt.show()
 	
 
+def create_graphs(filepaths = None, save_dir = None):
+	if filepaths == None:
+		#get all the files to graph
+		filepaths = FileIO.get_multiple_filepaths()
+	
+	if save_dir == None:
+		save_dir = FileIO.get_directory(title = "Choose a location to save the graphs")
+		
+	for filepath in filepaths:
+		#Ensure a directory to store the graphs exists
+		
+		dir_name, file_name = os.path.split(filepath)
+		
+		split_path = filename.split(" ")
+		test_name = split_path[0]
+		graph_filename = os.path.join(graph_dir, "{}_Graph".format(test_name))
+		
+		#get the input voltage for this test
+		df = pd.read_csv(filepaths)
+		
+		calc_eff(df)
+		plot_eff(df, test_name, graph_filename)
+
 ################ PROGRAM ###################
 
 if __name__ == '__main__':
-	#get all the files to graph
-	filepaths = FileIO.get_filepath()
-	
-	#Ensure a directory to store the graphs exists
-	graph_dir = FileIO.ensure_subdir_exists_file(filepaths[0], "Graphs")
-	split_path = filepaths[0].split(" ")
-	test_name = split_path[0]
-	graph_filename = os.path.join(graph_dir, "{}_Graph".format(test_name))
-	
-	#get the input voltage for this test
-	df = pd.read_csv(filepaths)
-	
-	calc_eff(df)
-	plot_eff(df, test_name, graph_filename)
+	create_graphs()
 	
