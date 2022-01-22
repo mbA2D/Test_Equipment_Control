@@ -11,14 +11,14 @@ class SPD1000:
 	
 	read_termination = '\n'
 	write_termination = '\n'
-	query_delay = 0.1
+	query_delay = 0.05
 	has_remote_sense = True
 	
 	def __init__(self, resource_id = None):
-		rm = pyvisa.ResourceManager('@ivi')
+		rm = pyvisa.ResourceManager()
 		
 		if(resource_id == None):
-			resources = rm.list_resources('@ivi')
+			resources = rm.list_resources()
 			
 			################# IDN VERSION #################
 			#Attempt to connect to each Visa Resource and get the IDN response
