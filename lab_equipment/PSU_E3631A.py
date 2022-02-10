@@ -1,4 +1,5 @@
 #python pyvisa commands for controlling Keysight E3631A series power supplies
+#Commands: https://www.keysight.com/ca/en/assets/9018-01308/user-manuals/9018-01308.pdf?success=true
 
 import pyvisa
 import time
