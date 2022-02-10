@@ -19,6 +19,7 @@ from lab_equipment import PSU_MP71025X
 from lab_equipment import PSU_BK9100
 from lab_equipment import PSU_N8700
 from lab_equipment import PSU_KAXXXXP
+from lab_equipment import PSU_E3631A
 from lab_equipment import PSU_Fake
 
 #Digital Multimeters
@@ -136,6 +137,7 @@ class powerSupplies:
 		'BK9100': 				'PSU_BK9100',
 		'N8700': 				'PSU_N8700',
 		'KAXXXXP': 				'PSU_KAXXXXP',
+		'E3631A':				'PSU_E3631A',
 		'Fake Test PSU':        'PSU_Fake'
 	}
 	
@@ -162,6 +164,8 @@ class powerSupplies:
 			psu = PSU_N8700.N8700(resource_id = resource_id)
 		elif class_name == 'KAXXXXP':
 			psu = PSU_KAXXXXP.KAXXXXP(resource_id = resource_id)
+		elif class_name == 'E3631A':
+			psu = PSU_E3631A.E3631A(resource_id = resource_id)
 		elif class_name == 'Fake Test PSU':
 			psu = PSU_Fake.Fake_PSU(resource_id = resource_id)
 			
