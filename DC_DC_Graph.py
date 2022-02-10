@@ -10,6 +10,7 @@ def calc_eff(df):
 	df['p_out'] = df['v_out'] * df['i_out'] #i_out is negative from the eloads - system (DC-DC Converter) is providing current
 	df['p_loss'] = df['p_in'] + df['p_out'] #p_out is negative - system (DC-DC Converter) is losing power
 	df['eff'] = abs(df['p_out'] / df['p_in'])
+	df['i_out_pos'] = -1 * df['i_out']
 
 def plot_eff(df, test_name, save_filepath = ''):
 	if df.size == 0:
@@ -26,7 +27,7 @@ def plot_eff(df, test_name, save_filepath = ''):
 
 	for voltage in set_voltages:
 		df_mask = df[df['v_in_set'] == voltage]
-		ax.plot('i_out', 'eff', data = df_mask, label = voltage)
+		ax.plot('i_out_pos', 'eff', data = df_mask, label = voltage)
 	
 	title = "{} Efficiency".format(test_name)
 	
@@ -34,7 +35,7 @@ def plot_eff(df, test_name, save_filepath = ''):
 	ax.set_ylabel('Efficiency')
 	ax.set_xlabel('Load Current (A)')
 
-	fig.legend(loc='lower right')
+	fig.legend(loc='lower right', title = 'Input Voltage')
 	ax.grid(b=True, axis='both')
 	
 	#save the file if specified
@@ -44,21 +45,29 @@ def plot_eff(df, test_name, save_filepath = ''):
 	plt.show()
 	
 
+def create_graphs(filepaths = None, save_dir = None):
+	if filepaths == None:
+		#get all the files to graph
+		filepaths = FileIO.get_multiple_filepaths()
+	
+	if save_dir == None:
+		save_dir = FileIO.get_directory(title = "Choose a location to save the graphs")
+		
+	for filepath in filepaths:
+		dir_name, filename = os.path.split(filepath)
+		
+		split_path = filename.split(" ")
+		test_name = split_path[0]
+		graph_filename = os.path.join(save_dir, "{}_Graph".format(test_name))
+		
+		#get the input voltage for this test
+		df = pd.read_csv(filepath)
+		
+		calc_eff(df)
+		plot_eff(df, test_name, graph_filename)
+
 ################ PROGRAM ###################
 
 if __name__ == '__main__':
-	#get all the files to graph
-	filepaths = FileIO.get_filepath()
-	
-	#Ensure a directory to store the graphs exists
-	graph_dir = FileIO.ensure_subdir_exists_file(filepaths[0], "Graphs")
-	split_path = filepaths[0].split(" ")
-	test_name = split_path[0]
-	graph_filename = os.path.join(graph_dir, "{}_Graph".format(test_name))
-	
-	#get the input voltage for this test
-	df = pd.read_csv(filepaths)
-	
-	calc_eff(df)
-	plot_eff(df, test_name, graph_filename)
+	create_graphs()
 	

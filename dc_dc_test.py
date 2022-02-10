@@ -16,12 +16,18 @@ import jsonIO
 
 #sweep the load current of an E-load from X to Y A in increments and log to CSV
 
-eload = eq.eLoads.choose_eload()[1]
-psu = eq.powerSupplies.choose_psu()[1]
+res_ids_dict = {}
+psu = eq.powerSupplies.choose_psu()
+res_ids_dict['psu'] = eq.get_res_id_dict_and_disconnect(psu)
+eload = eq.eLoads.choose_eload()
+res_ids_dict['eload'] = eq.get_res_id_dict_and_disconnect(eload)
+
+eq_dict = eq.get_equipment_dict(res_ids_dict)
+psu = eq_dict['psu']
+eload = eq_dict['eload']
 
 def init_instruments():
-	eload.remote_sense(False)
-	psu.remote_sense(False)
+	pass
 
 def remove_extreme_values(list_to_remove, num_to_remove):
 	for i in range(int(num_to_remove)):
@@ -76,6 +82,7 @@ def gather_data(samples_to_avg):
 def sweep_load_current(filepath, test_name, settings):
 
 	psu.set_voltage(settings["psu_voltage"])
+	time.sleep(0.1)
 	psu.set_current(settings["psu_current_limit_a"])
 	
 	for current in np.linspace(settings["load_current_min"],
@@ -97,7 +104,7 @@ if __name__ == '__main__':
 	
 	test_settings = Templates.DcdcTestSettings()
 	test_settings = test_settings.settings
-	test_settings = jsonIO.get_cycle_settings(test_settings, test_name)
+	test_settings = jsonIO.get_cycle_settings(test_settings, cycle_name = test_name)
 	
 	#generate a list of sweep settings - changing voltage for each sweep
 	voltage_list = np.linspace(test_settings["psu_voltage_min"],
@@ -122,8 +129,10 @@ if __name__ == '__main__':
 	#Turn on power supply and eload to get the converter started up
 	init_instruments()
 	psu.set_voltage(test_settings["psu_voltage_min"])
+	time.sleep(0.05)
 	psu.set_current(test_settings["psu_current_limit_a"])
 	eload.set_current(0)
+	time.sleep(0.05)
 	psu.toggle_output(True)
 	eload.toggle_output(True)
 	

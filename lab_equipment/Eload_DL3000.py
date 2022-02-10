@@ -59,6 +59,7 @@ class DL3000:
 		self.inst.write("*RST")
 		self.set_mode_current()
 		self.set_current(0)
+		self.set_range("high")
 				
 		#set to remote mode (disable front panel)
 		#self.lock_front_panel(True)
@@ -69,14 +70,14 @@ class DL3000:
 			current_setpoint_A = -current_setpoint_A
 		
 		#4A range
-		if(current_setpoint_A <= self.ranges["low"]):
-			if(self.range != "low"):
-				self.set_range("low")
+		#if(current_setpoint_A <= self.ranges["low"]):
+		#	if(self.range != "low"):
+		#		self.set_range("low")
 		
 		#40A range
-		elif(current_setpoint_A <= self.ranges["high"]):
-			if(self.range != "high"):
-				self.set_range("high")
+		#elif(current_setpoint_A <= self.ranges["high"]):
+		#	if(self.range != "high"):
+		#		self.set_range("high")
 		
 		self.inst.write(":CURR:LEV {}".format(current_setpoint_A))
 

@@ -3,6 +3,7 @@
 import easygui as eg
 from BATT_HIL import fet_board_management as fbm
 from easygui.boxes.derived_boxes import msgbox
+import time
 
 #Eloads
 from lab_equipment import Eload_BK8600
@@ -34,11 +35,23 @@ def setup_remote_sense(instrument, use_remote_sense):
 				msg = "Do you want to use remote sense on this instrument?"
 				title = "Remote Sense"
 				use_remote_sense = eg.ynbox(msg, title)
+			time.sleep(0.1) #delay to allow the instrument to process commands after re-booting.
+							#Ran into an issue with the DL3000 where it would display 'sense' on the screen, but
+							#the sensing relay would not be on. Adding a delay here seems to have fixed it.
 			instrument.remote_sense(use_remote_sense)
 			return use_remote_sense
 	except AttributeError:
 		pass
 	return None
+
+def get_equipment_dict(res_ids_dict, multi_channel_event_and_queue_dict = None):
+	eq_dict = {}
+	for key in res_ids_dict:
+		if res_ids_dict[key] != None and res_ids_dict[key]['res_id'] != None:
+			eq_dict[key] = connect_to_eq(key, res_ids_dict[key]['class_name'], res_ids_dict[key]['res_id'], res_ids_dict[key]['use_remote_sense'], multi_channel_event_and_queue_dict)
+		else:
+			eq_dict[key] = None
+	return eq_dict
 
 def connect_to_eq(key, class_name, res_id, use_remote_sense = None, multi_channel_event_and_queue_dict = None):
 	#Key should be 'eload', 'psu', or 'dmm'
