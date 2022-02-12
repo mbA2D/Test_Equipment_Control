@@ -106,18 +106,22 @@ class DM3000:
 		if volt_range not in self.volt_ranges.keys():
 			print("Invalid Voltage Range Selection")
 			return
-		self.inst.write("CONF:VOLT:DC {}".format(self.volt_ranges[volt_range]))
+		if volt_range == 'AUTO':
+			self.inst.write(":MEAS AUTO")
+		else:
+			self.inst.write(":MEAS:VOLT:DC {}".format(self.volt_ranges[volt_range]))
 		self.setup_dcv["RANGE"] = volt_range
 	
 	def set_res(self, res = 1):
 		#res=0 is 4.5 digit
 		#res=1 is 5.5 digit
 		#res=2 is 6.5 digit
-		if res not in self.res_ranges:
-			print("Invalid Resolution Selection")
-			return
-		self.inst.write(":MEAS:VOLT:DC {}".format(res))
-		self.setup_dcv["RES"] = res
+		#if res not in self.res_ranges:
+		#	print("Invalid Resolution Selection")
+		#	return
+		#self.inst.write(":CONF:VOLT:DC {}".format(res))
+		#self.setup_dcv["RES"] = res
+		pass
 		
 	def set_nplc(self, nplc = 1):
 		#This is not quite NPLC, but we will keep it as NPLC for cross compatibility.

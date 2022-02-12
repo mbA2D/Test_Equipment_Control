@@ -24,25 +24,29 @@ res_ids_dict['eload'] = eq.get_res_id_dict_and_disconnect(eload)
 #Input Voltage Measurement
 msg = "Do you want to use a separate device to measure input voltage?"
 title = "Input Voltage Measurement Device"
+use_dmm_vin = False
 if eg.ynbox(msg, title):
-	dmm_v_in = eq.dmms.choose_dmm(multi_ch_event_and_queue_dict = dict_for_event_and_queue)
+	dmm_v_in = eq.dmms.choose_dmm()
 	res_ids_dict['dmm_v_in'] = eq.get_res_id_dict_and_disconnect(dmm_v_in)
+	use_dmm_vin = True
 #Output Voltage Measurement
 msg = "Do you want to use a separate device to measure output voltage?"
 title = "Output Voltage Measurement Device"
+use_dmm_vout = False
 if eg.ynbox(msg, title):
-	dmm_v_out = eq.dmms.choose_dmm(multi_ch_event_and_queue_dict = dict_for_event_and_queue)
+	dmm_v_out = eq.dmms.choose_dmm()
 	res_ids_dict['dmm_v_out'] = eq.get_res_id_dict_and_disconnect(dmm_v_out)
+	use_dmm_vout = True
 
 eq_dict = eq.get_equipment_dict(res_ids_dict)
 psu = eq_dict['psu']
 eload = eq_dict['eload']
 
 vmeas_in_eq = psu
-if eq_dict['dmm_v_in'] != None:
+if use_dmm_vin:
 	vmeas_in_eq = eq_dict['dmm_v_in']
 vmeas_out_eq = eload
-if eq_dict['dmm_v_out'] != None:
+if use_dmm_vout:
 	vmeas_out_eq = eq_dict['dmm_v_out']
 
 def init_instruments():
