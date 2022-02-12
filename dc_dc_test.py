@@ -21,13 +21,37 @@ psu = eq.powerSupplies.choose_psu()
 res_ids_dict['psu'] = eq.get_res_id_dict_and_disconnect(psu)
 eload = eq.eLoads.choose_eload()
 res_ids_dict['eload'] = eq.get_res_id_dict_and_disconnect(eload)
+#Input Voltage Measurement
+msg = "Do you want to use a separate device to measure input voltage?"
+title = "Input Voltage Measurement Device"
+use_dmm_vin = False
+if eg.ynbox(msg, title):
+	dmm_v_in = eq.dmms.choose_dmm()
+	res_ids_dict['dmm_v_in'] = eq.get_res_id_dict_and_disconnect(dmm_v_in)
+	use_dmm_vin = True
+#Output Voltage Measurement
+msg = "Do you want to use a separate device to measure output voltage?"
+title = "Output Voltage Measurement Device"
+use_dmm_vout = False
+if eg.ynbox(msg, title):
+	dmm_v_out = eq.dmms.choose_dmm()
+	res_ids_dict['dmm_v_out'] = eq.get_res_id_dict_and_disconnect(dmm_v_out)
+	use_dmm_vout = True
 
 eq_dict = eq.get_equipment_dict(res_ids_dict)
 psu = eq_dict['psu']
 eload = eq_dict['eload']
 
+vmeas_in_eq = psu
+if use_dmm_vin:
+	vmeas_in_eq = eq_dict['dmm_v_in']
+vmeas_out_eq = eload
+if use_dmm_vout:
+	vmeas_out_eq = eq_dict['dmm_v_out']
+
 def init_instruments():
-	pass
+	test1_v = vmeas_in_eq.measure_voltage()
+	test2_v = vmeas_out_eq.measure_voltage()
 
 def remove_extreme_values(list_to_remove, num_to_remove):
 	for i in range(int(num_to_remove)):
@@ -49,9 +73,9 @@ def gather_data(samples_to_avg):
 		#we will average each term individually as the load conditions are not
 		#changing and any switching noise, mains noise, etc. will be averaged out (hopefully)
 		time.sleep(0.01)
-		input_voltage.append(psu.measure_voltage())
+		input_voltage.append(vmeas_in_eq.measure_voltage())
 		input_current.append(psu.measure_current())
-		output_voltage.append(eload.measure_voltage())
+		output_voltage.append(vmeas_out_eq.measure_voltage())
 		output_current.append(eload.measure_current())
 		
 	#discard top and bottom measurements
