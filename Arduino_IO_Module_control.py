@@ -201,6 +201,10 @@ if __name__ == "__main__":
 			print('Right')
 			io.set_servo_us(9, 1500)
 			io.set_servo_us(10, 1800)
+		else:
+			print('Stop')
+			io.set_servo_us(9, 1500)
+			io.set_servo_us(10, 1500)
 		#print('Loop {} {} {} {}'.format(up_pressed, down_pressed, left_pressed, right_pressed))
 		sleep(0.5)
 			
