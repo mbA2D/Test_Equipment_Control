@@ -209,8 +209,8 @@ def charge_cell(log_filepath, cycle_settings, psu, v_meas_eq, i_meas_eq, data_ou
 	#start the charging
 	#Start the data so we don't immediately trigger end conditions
 	data = dict()
-	data["Current"] = cycle_settings["charge_a"]
 	data["Voltage"] = cycle_settings["charge_end_v"]
+	data["Current"] = cycle_settings["charge_a"]
 	data["Data_Timestamp"] = time.time()
 	
 	start_charge(cycle_settings["charge_end_v"], cycle_settings["charge_a"], psu)
@@ -371,9 +371,9 @@ def cycle_cell(filepath, cycle_settings, eload, psu, v_meas_eq = None, i_meas_eq
 		end_reason = rest_cell(filepath, cycle_settings, v_meas_eq, after_charge = False, data_out_queue = data_out_queue, data_in_queue = data_in_queue, ch_num = ch_num)
 	
 	if end_reason == 'end_requested':
-		print('Cycle Stopped: {}\n'.format(time.ctime()), flush=True)
+		print('CH{} - Cycle Stopped: {}\n'.format(ch_num, time.ctime()), flush=True)
 	elif end_reason == 'end_condition':
-		print('Cycle Completed: {}\n'.format(time.ctime()), flush=True)
+		print('CH{} - Cycle Completed: {}\n'.format(ch_num, time.ctime()), flush=True)
 	
 	return end_reason
 
@@ -661,6 +661,7 @@ def get_input_dict(ch_num = None, queue = None):
 	
 	if queue != None:
 		dict_to_put = {'ch_num': ch_num, 'cdc_input_dict': input_dict}
+		print(dict_to_put)
 		queue.put_nowait(dict_to_put)
 	else:
 		return input_dict
@@ -750,7 +751,7 @@ def charge_discharge_control(res_ids_dict, data_out_queue = None, data_in_queue 
 		
 		disable_equipment(psu = eq_dict['psu'], eload = eq_dict['eload'])
 
-		print("All Cycles Completed")
+		print("CH{} - All Cycles Completed: {}".format(ch_num, time.ctime()), flush=True)
 	except Exception:
 		traceback.print_exc()
 
