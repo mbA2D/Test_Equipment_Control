@@ -3,6 +3,8 @@
 import pyvisa
 from time import sleep
 import easygui as eg
+import keyboard
+from functools import partial
 
 #Data Acquisition Unit
 class Arduino_IO:
@@ -59,6 +61,12 @@ class Arduino_IO:
 		elif not dir:
 			self.inst.write('CONF:IO:INP (@{ch})'.format(ch = channel))
 	
+	def conf_servo(self, channel):
+		self.inst.write('CONF:SERVO (@{ch})'.format(ch = channel))
+	
+	def set_servo_us(self, channel, value):
+		self.inst.write('IO:SERVO:MICRO (@{ch}),{val}'.format(ch = channel, val = value))
+	
 	def get_analog_mv(self, channel = 2):
 		return self.inst.query('INSTR:IO:READ:ANA? (@{ch})'.format(ch = channel))
 	
@@ -102,11 +110,15 @@ class Arduino_IO:
 			value = 1
 		#x is a character that we parse but do nothing with (channel must be first)
 		self.inst.write('INSTR:IO:SET:LED x {val}'.format(val = value))
+	
+	
 		
 if __name__ == "__main__":
 	#connect to the io module
 	io = Arduino_IO()
 	
+	#Controlling some PWM pins
+	'''
 	# setup testing for 6 pwm signals
 	out_pins = [2,3,5,6,9,10,11]
 	en_pin = 2
@@ -125,4 +137,74 @@ if __name__ == "__main__":
 	
 	#disable
 	io.set_dig(en_pin, 0)
+	'''
 	
+	#Controlling some servos with arrow keys
+	io.conf_servo(9)
+	io.conf_servo(10)
+	
+	up_pressed = False
+	down_pressed = False
+	left_pressed = False
+	right_pressed = False
+	
+	def key_pr(test, key, pr):
+		#print('KEY: {}, PR: {}'.format(key, pr))
+		pressed = False
+		if pr == 'p':
+			pressed = True
+		if key == 'w':
+			#print('W {}'.format(pressed))
+			global up_pressed
+			up_pressed = pressed
+		elif key == 'a':
+			global left_pressed
+			left_pressed = pressed
+		elif key == 's':
+			global down_pressed
+			down_pressed = pressed
+		elif key == 'd':
+			global right_pressed
+			right_pressed = pressed
+	
+	keyboard.on_press_key('w', partial(key_pr,key = 'w',pr = 'p'))
+	keyboard.on_press_key('a', partial(key_pr,key = 'a',pr = 'p'))
+	keyboard.on_press_key('s', partial(key_pr,key = 's',pr = 'p'))
+	keyboard.on_press_key('d', partial(key_pr,key = 'd',pr = 'p'))
+	
+	keyboard.on_release_key('w', partial(key_pr,key = 'w',pr = 'r'))
+	keyboard.on_release_key('a', partial(key_pr,key = 'a',pr = 'r'))
+	keyboard.on_release_key('s', partial(key_pr,key = 's',pr = 'r'))
+	keyboard.on_release_key('d', partial(key_pr,key = 'd',pr = 'r'))
+	
+	io.set_servo_us(9,1500)
+	io.set_servo_us(10, 1500)
+	
+	while True:
+		if up_pressed:
+			#both forward
+			print('Forward')
+			io.set_servo_us(9, 1800)
+			io.set_servo_us(10, 1800)
+		elif down_pressed:
+			#both backward
+			print('Backward')
+			io.set_servo_us(9, 1200)
+			io.set_servo_us(10, 1200)
+		elif left_pressed:
+			#left only forward
+			print('Left')
+			io.set_servo_us(9, 1800)
+			io.set_servo_us(10, 1500)	
+		elif right_pressed:
+			#right only forward
+			print('Right')
+			io.set_servo_us(9, 1500)
+			io.set_servo_us(10, 1800)
+		else:
+			print('Stop')
+			io.set_servo_us(9, 1500)
+			io.set_servo_us(10, 1500)
+		#print('Loop {} {} {} {}'.format(up_pressed, down_pressed, left_pressed, right_pressed))
+		sleep(0.5)
+			
