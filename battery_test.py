@@ -376,7 +376,9 @@ class MainTestWindow(QMainWindow):
 			if self.mp_idle_process_list[ch_num] is not None and self.mp_idle_process_list[ch_num].is_alive():
 				self.stop_idle_process(ch_num)
 				
-			self.mp_process_list[ch_num] = Process(target=cdc.charge_discharge_control, args = (res_ids_dict, data_out_queue, data_in_queue, cdc_input_dict, self.dict_for_event_and_queue))
+			self.mp_process_list[ch_num] = Process(target=cdc.charge_discharge_control, 
+													args = (res_ids_dict, data_out_queue, data_in_queue, cdc_input_dict, 
+													self.dict_for_event_and_queue, ch_num))
 			self.mp_process_list[ch_num].start()
 		except:
 			traceback.print_exc()

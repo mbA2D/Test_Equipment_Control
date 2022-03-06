@@ -132,7 +132,7 @@ def calc_capacity(log_data, stats, charge=True, temp_log_dir = "", show_ica_grap
 	total_time = (end_time - start_time)/3600
 	
 	#add columns to the dataset
-	dsc_data['SecsFromLastTimestamp'] = dsc_data['Timestamp'].diff()
+	dsc_data['SecsFromLastTimestamp'] = dsc_data['Data_Timestamp'].diff()
 	dsc_data.loc[dsc_data.index.tolist()[0], 'SecsFromLastTimestamp'] = 0 #Set first val to 0 instead of NaN.
 	
 	dsc_data = dsc_data.assign(Capacity_Ah = dsc_data['Current'] * dsc_data['SecsFromLastTimestamp'] / 3600)
