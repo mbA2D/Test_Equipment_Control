@@ -4,6 +4,7 @@ import pyvisa
 from time import sleep
 import easygui as eg
 import voltage_to_temp as V2T
+from . import A2D_DAQ_config
 
 #Data Acquisition Unit
 class A2D_DAQ:
@@ -22,6 +23,7 @@ class A2D_DAQ:
 		self.pullup_voltage = 3.3
 		self.pull_up_cal_ch = 63
 		
+		self.config_dict = {}
 		
 		if(resource_id == None):
 			resources = rm.list_resources()
@@ -41,7 +43,7 @@ class A2D_DAQ:
 					instrument.baud_rate = A2D_DAQ.baud_rate
 					instrument.query_delay = A2D_DAQ.query_delay
 					instrument.chunk_size = A2D_DAQ.chunk_size
-					sleep(2) #wait for arduino reset - this could make it take a while.
+					sleep(2) #wait for arduino reset - this could make it take a while. Maybe there's a better way?
 					instrument_idn = instrument.query("*IDN?")
 					idns_dict[resource] = instrument_idn
 					instrument.close()
@@ -76,12 +78,29 @@ class A2D_DAQ:
 		self.inst.chunk_size = self.chunk_size
 		
 		print('Connected to:\n{name}'.format(name = self.inst.query('*IDN?')))
-	
+		
+		self.config_dict = A2D_DAQ_config.get_config_dict(default = True)
+		
+		msg = "Do you want to use a non-default config dict"
+		title = "A2D DAQ Configuration"
+		if eg.ynbox(msg, title):
+			self.config_dict.update(A2D_DAQ_config.get_config_dict())
+		self.configure_from_dict()
+		
 	def __del__(self):
 		try:
 			self.inst.close()
 		except AttributeError:
 			pass
+	
+	def configure_from_dict(self):
+		#Go through each channel and set it up according to the dict
+		for ch in list(self.config_dict.keys()):
+			if self.config_dict[ch]['Input_Type'] == 'voltage':
+				self.conf_io(ch, 0) #input
+			elif self.config_dict[ch]['Input_Type'] == 'temperature':
+				self.conf_io(ch, 1) #output
+				self.set_dig(ch, 1) #pull high
 	
 	def reset(self):
 		self.inst.write('*RST')
@@ -110,7 +129,10 @@ class A2D_DAQ:
 			self.pullup_voltage = float(self.measure_voltage(channel = cal_ch))
 	
 	def get_analog_mv(self, channel = 0):
-		return self.inst.query('INSTR:READ:ANA? (@{ch})'.format(ch = channel))
+		scaling = 1
+		if self.config_dict[channel]['Input_Type'] == 'voltage':
+			scaling = self.config_dict[channel]['Voltage_Scaling']
+		return float(self.inst.query('INSTR:READ:ANA? (@{ch})'.format(ch = channel)))*scaling
 	
 	def get_analog_v(self, channel = 0):
 		return float(self.get_analog_mv(channel))/1000.0
@@ -118,8 +140,11 @@ class A2D_DAQ:
 	def measure_voltage(self, channel = 0):
 		return float(self.get_analog_v(channel))
 	
-	def measure_temp(self, channel = 0):
-		return V2T.voltage_to_C(self.measure_voltage(channel), self.pull_up_r, self.pullup_voltage)
+	def measure_temperature(self, channel = 0):
+		sh_consts = {'SH_A': self.config_dict[channel]['Temp_A'],
+					 'SH_B': self.config_dict[channel]['Temp_B'],
+					 'SH_C': self.config_dict[channel]['Temp_C']}
+		return V2T.voltage_to_C(self.measure_voltage(channel), self.pull_up_r, self.pullup_voltage, sh_constants = sh_consts)
 	
 	def get_dig_in(self, channel = 0):
 		return self.inst.query('INSTR:READ:DIG? (@{ch})'.format(ch = channel))
