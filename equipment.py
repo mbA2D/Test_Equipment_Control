@@ -1,7 +1,12 @@
 #contains a list of all the equipment that there are libraries for
 #organized into which ones have common function calls
+
 import easygui as eg
+
+#multi channel device management functions
 from BATT_HIL import fet_board_management as fbm
+import A2D_DAQ_management as adm
+
 from easygui.boxes.derived_boxes import msgbox
 import time
 
@@ -25,6 +30,7 @@ from lab_equipment import PSU_Fake
 from lab_equipment import DMM_DM3000
 from lab_equipment import DMM_SDM3065X
 from lab_equipment import DMM_FET_BOARD_EQ
+from lab_equipment import A2D_DAQ_control
 from lab_equipment import DMM_Fake
 
 def setup_remote_sense(instrument, use_remote_sense):
@@ -174,6 +180,7 @@ class dmms:
 		'DM3000': 					'DMM_DM3000',
 		'SDM3065X': 				'DMM_SDM3065X',
 		'MATICIAN_FET_BOARD_CH':	'DMM_FET_BOARD',
+		'A2D_DAQ_CH':				'A2D_DAQ',
 		'Fake Test DMM': 			'DMM_Fake'
 	}
 	
@@ -195,6 +202,30 @@ class dmms:
 			dmm = DMM_SDM3065X.SDM3065X(resource_id = resource_id)
 		elif class_name == 'Fake Test DMM':
 			dmm = DMM_Fake.Fake_DMM(resource_id = resource_id)
+		elif class_name == 'A2D_DAQ_CH':
+			#if running from this process then create the extra process from here.
+			if multi_ch_event_and_queue_dict == None:
+				multi_ch_event_and_queue_dict = adm.create_event_and_queue_dicts(1, A2D_DAQ_control.A2D_DAQ.num_channels)
+			
+			if resource_id == None:
+				#get the event and queue dict from the proper channel of the proper device
+				#Figure out which devices are connected
+				#dict keyed by device name should be passed in
+				#Choose the device
+				msg = "Which Multi Channel Device to Use?"
+				title = "Multi Channel Device Selection"
+				board_name = int(eg.choicebox(msg, title, multi_ch_event_and_queue_dict.keys()))
+				
+				#Choose the channel
+				msg = "Choose Which Channel of This Device to Use:"
+				title = "Multi Channel Device Channel Selection"
+				ch_num = int(eg.choicebox(msg, title, multi_ch_event_and_queue_dict[board_name].keys()))
+				
+				resource_id = {'board_name': board_name, 'ch_num': ch_num}
+			
+			event_and_queue_dict = multi_ch_event_and_queue_dict[resource_id['board_name']][resource_id['ch_num']]
+			
+			dmm = DMM_A2D_DAQ_CH.A2D_DAQ_CH(resource_id, event_and_queue_dict)
 		elif class_name == 'MATICIAN_FET_BOARD_CH':
 			#if running from this process then create the extra process from here.
 			if multi_ch_event_and_queue_dict == None:
