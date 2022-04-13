@@ -97,7 +97,10 @@ class A2D_DAQ:
 	def get_pullup_v(self):
 		return self.pullup_voltage
 	
-	def calibrate_pullup_v(self, cal_ch = self.pull_up_cal_ch):
+	def calibrate_pullup_v(self, cal_ch = None):
+		if cal_ch == None:
+			cal_ch = self.pull_up_cal_ch
+	
 		#choose a channel to read from - this channel should have nothing on it
 		if cal_ch < self.num_channels:
 			#ensure channel is set to output and pullued high

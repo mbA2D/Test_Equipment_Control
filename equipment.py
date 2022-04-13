@@ -5,7 +5,7 @@ import easygui as eg
 
 #multi channel device management functions
 from BATT_HIL import fet_board_management as fbm
-import A2D_DAQ_management as adm
+from lab_equipment import A2D_DAQ_management as adm
 
 from easygui.boxes.derived_boxes import msgbox
 import time
@@ -30,7 +30,8 @@ from lab_equipment import PSU_Fake
 from lab_equipment import DMM_DM3000
 from lab_equipment import DMM_SDM3065X
 from lab_equipment import DMM_FET_BOARD_EQ
-from lab_equipment import A2D_DAQ_control
+from lab_equipment import A2D_DAQ_control #Just for num_channels at the moment
+from lab_equipment import DMM_A2D_DAQ_CH
 from lab_equipment import DMM_Fake
 
 def setup_remote_sense(instrument, use_remote_sense):
@@ -214,7 +215,15 @@ class dmms:
 				#Choose the device
 				msg = "Which Multi Channel Device to Use?"
 				title = "Multi Channel Device Selection"
-				board_name = int(eg.choicebox(msg, title, multi_ch_event_and_queue_dict.keys()))
+				num_available = len(multi_ch_event_and_queue_dict.keys())
+				if num_available == 0:
+					print("No Equipment Available. Connection attempt will exit with errors")
+				elif num_available == 1:
+					msg = "There is only 1 A2D DAQ board available.\nWould you like to use it?\n{}".format(list(multi_ch_event_and_queue_dict.keys())[0])
+					if(eg.ynbox(msg, title)):
+						board_name = int(list(multi_ch_event_and_queue_dict.keys())[0])
+				else:
+					board_name = int(eg.choicebox(msg, title, multi_ch_event_and_queue_dict.keys()))
 				
 				#Choose the channel
 				msg = "Choose Which Channel of This Device to Use:"
