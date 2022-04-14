@@ -53,6 +53,7 @@ class DL3000:
 		#values specific to the DL3000 - will break out to another file later
 		self.ranges = {"low":4,"high":40}
 		self.range = "low"
+		self.max_current = 40
 		
 		self.inst = rm.open_resource(resource_id)
 		print("Connected to {}\n".format(self.inst.query("*IDN?")))

@@ -15,6 +15,7 @@ from lab_equipment import Eload_BK8600
 from lab_equipment import Eload_DL3000
 from lab_equipment import Eload_KEL10X
 from lab_equipment import Eload_IT8500
+from lab_equipment import Eload_PARALLEL
 from lab_equipment import Eload_Fake
 
 #Power Supplies
@@ -45,6 +46,7 @@ def setup_remote_sense(instrument, use_remote_sense):
 			time.sleep(0.1) #delay to allow the instrument to process commands after re-booting.
 							#Ran into an issue with the DL3000 where it would display 'sense' on the screen, but
 							#the sensing relay would not be on. Adding a delay here seems to have fixed it.
+							#The sense line relay did not have time to toggle between a quick on-off-on sequence
 			instrument.remote_sense(use_remote_sense)
 			return use_remote_sense
 	except AttributeError:
@@ -82,6 +84,22 @@ def get_res_id_dict_and_disconnect(eq_list):
 	if class_name == 'MATICIAN_FET_BOARD_CH' or class_name == 'A2D_DAQ_CH':
 		eq_res_id_dict['res_id'] = {'board_name': eq_list[1].board_name, 'ch_num': eq_list[1].ch_num}
 		eq_res_id_dict['use_remote_sense'] = False
+	elif class_name == 'Parallel Eloads':
+		eq_res_id_dict['res_id'] = {}
+		eq_res_id_dict['res_id']['class_name_1'] = eq_list[1].class_name_1
+		eq_res_id_dict['res_id']['class_name_2'] = eq_list[1].class_name_2
+		eq_res_id_dict['res_id']['res_id_1'] = None #For fake instruments
+		eq_res_id_dict['res_id']['res_id_2'] = None #For fake instruments
+		try:
+			eq_res_id_dict['res_id']['res_id_1'] = eq_list[1].eload1.inst.resource_name
+		except AttributeError:
+			pass #For fake instruments
+		try:
+			eq_res_id_dict['res_id']['res_id_2'] = eq_list[1].eload2.inst.resource_name
+		except AttributeError:
+			pass #For fake instruments
+		eq_res_id_dict['res_id']['use_remote_sense_1'] = eq_list[1].use_remote_sense_1
+		eq_res_id_dict['res_id']['use_remote_sense_2'] = eq_list[1].use_remote_sense_2
 	elif 'Fake' in class_name:
 		eq_res_id_dict['res_id'] = 'Fake'
 		eq_res_id_dict['use_remote_sense'] = eq_list[2]
@@ -94,7 +112,11 @@ def get_res_id_dict_and_disconnect(eq_list):
 		
 	#disconnect from equipment
 	try:
-		eq_list[1].inst.close()
+		if class_name == 'Parallel Eloads':
+			eq_list[1].eload1.inst.close()
+			eq_list[1].eload2.inst.close()
+		else:
+			eq_list[1].inst.close()
 	except AttributeError:
 		pass #temporary fix for 'virtual and fake instruments' - TODO - figure out a way to do this more properly
 	
@@ -106,6 +128,7 @@ class eLoads:
 		'DL3000': 			'Eload_DL3000',
 		'KEL10X': 			'Eload_KEL10X',
 		'IT8500': 			'Eload_IT8500',
+		'Parallel Eloads':	'Eload_PARALLEL',
 		'Fake Test Eload': 	'Eload_Fake'
 	}
 		
@@ -128,6 +151,8 @@ class eLoads:
 			eload = Eload_KEL10X.KEL10X(resource_id = resource_id)
 		elif class_name == 'IT8500':
 			eload = Eload_IT8500.IT8500(resource_id = resource_id)
+		elif class_name == 'Parallel Eloads':
+			eload = Eload_PARALLEL.PARALLEL(resource_id = resource_id)
 		elif class_name == 'Fake Test Eload':
 			eload = Eload_Fake.Fake_Eload(resource_id = resource_id)
 			
