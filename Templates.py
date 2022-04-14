@@ -42,9 +42,6 @@ class CycleTypes:
 		"Step Cycle":									{'func_call': '', 'str_chg_opt': False,'load_req': False, 'supply_req': False},
 		"Continuous Step Cycles":						{'func_call': '', 'str_chg_opt': True, 'load_req': False, 'supply_req': False}
 	}
-	
-	#TODO - Step should not have its load and supply requirements given here - it should only be after the step values are chosen
-
 
 ###############  CYCLE  #######################
 class CycleSettings:
