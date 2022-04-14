@@ -70,7 +70,11 @@ class KEL10X:
 		self.model_number = split_string[0]
 		self.version_number = split_string[1]
 		self.serial_number = split_string[2]
-
+		
+		#For KEL103
+		self.max_current = 30
+		self.max_power = 300
+		
 		#unit does not have reset command
         #self.inst.write("*RST")
 		self.set_mode_current()
