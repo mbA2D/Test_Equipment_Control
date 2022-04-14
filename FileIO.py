@@ -35,11 +35,15 @@ def start_file(directory, name):
 	
 	return filepath
 
-def get_filepath():
-	return eg.fileopenbox(title = "Select the Log to Graph", filetypes = [['*.csv', 'CSV Files']], multiple = False)
+def get_filepath(name = None, mult = False):
+	if name == None:
+		title = "Select the file"
+	else:
+		title = name
+	return eg.fileopenbox(title = name, filetypes = [['*.csv', 'CSV Files']], multiple = mult)
 
-def get_multiple_filepaths():
-	return eg.fileopenbox(title = "Select the Log(s) to Graph", filetypes = [['*.csv', 'CSV Files']], multiple = True)
+def get_multiple_filepaths(name = None):
+	return get_filepath(name = name, mult = True)
 
 def ensure_subdir_exists_dir(filedir, subdir_name):
 	candidate_dir = os.path.join(filedir, subdir_name)

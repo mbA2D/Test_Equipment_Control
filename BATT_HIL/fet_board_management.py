@@ -59,5 +59,5 @@ class FETBoardManagement:
 								elif dict_key == 'i_event':
 									self.dict_for_event_and_queue[device_num][ch_num]['i_queue'].put_nowait(self.multi_ch_eq_dict[eq_key].measure_current(ch_num))
 								elif dict_key == 't_event':
-									self.dict_for_event_and_queue[device_num][ch_num]['t_queue'].put_nowait(self.multi_ch_eq_dict[eq_key].measure_temp(ch_num))
+									self.dict_for_event_and_queue[device_num][ch_num]['t_queue'].put_nowait(self.multi_ch_eq_dict[eq_key].measure_temperature(ch_num))
 								

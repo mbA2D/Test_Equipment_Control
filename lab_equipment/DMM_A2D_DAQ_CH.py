@@ -3,7 +3,7 @@
 
 from .DMM_VIRTUAL import VirtualDMM
 
-class FET_BOARD_EQ(VirtualDMM):
+class A2D_DAQ_CH(VirtualDMM):
 	def __init__(self, resource_id, event_and_queue_dict = None):
 		super().__init__(event_and_queue_dict)
 		self.board_name = resource_id['board_name']

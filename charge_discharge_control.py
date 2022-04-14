@@ -48,84 +48,81 @@ def initialize_connected_equipment(eq_dict):
 	if eq_dict['dmm_i'] != None:
 		init_dmm_i(eq_dict['dmm_i'])
 
-def disable_equipment(psu = None, eload = None):
-	if psu != None:
-		psu.set_current(0) #Turn current to 0 first to try and eliminate arcing in a relay inside an eload that disconnects the output
-		psu.toggle_output(False)
-	if eload != None:
-		eload.set_current(0) #Turn current to 0 first to try and eliminate arcing in a relay inside a power supply that disconnects the output
-		eload.toggle_output(False)
+def disable_equipment(eq_dict):
+	if eq_dict['psu'] != None:
+		eq_dict['psu'].set_current(0) #Turn current to 0 first to try and eliminate arcing in a relay inside an eload that disconnects the output
+		eq_dict['psu'].toggle_output(False)
+	if eq_dict['eload'] != None:
+		eq_dict['eload'].set_current(0) #Turn current to 0 first to try and eliminate arcing in a relay inside a power supply that disconnects the output
+		eq_dict['eload'].toggle_output(False)
 
 ####################### TEST CONTROL #####################
 
-def start_charge(end_voltage, constant_current, psu):
-	psu.set_voltage(end_voltage)
+def start_charge(end_voltage, constant_current, eq_dict):
+	eq_dict['psu'].set_voltage(end_voltage)
 	time.sleep(0.01)
-	psu.set_current(constant_current)
+	eq_dict['psu'].set_current(constant_current)
 	time.sleep(0.01)
-	psu.toggle_output(True)
+	eq_dict['psu'].toggle_output(True)
 
-def start_discharge(constant_current, eload):
-	eload.set_current(constant_current)
+def start_discharge(constant_current, eq_dict):
+	eq_dict['eload'].set_current(constant_current)
 	time.sleep(0.01)
-	eload.toggle_output(True)
+	eq_dict['eload'].toggle_output(True)
 	
-def start_step(step_settings, psu, eload, v_meas_eq, i_meas_eq):
+def start_step(step_settings, eq_dict):
 	#This function will set all the supplies to the settings given in the step
 	
 	#CURRENT DRIVEN
 	if step_settings["drive_style"] == 'current_a':
 		if step_settings["drive_value"] > 0:
 			#charge - turn off eload first if connected
-			disable_equipment(eload = eload)
-			if psu != None:
-				psu.set_current(step_settings["drive_value"])
-				psu.set_voltage(step_settings["drive_value_other"])
-				psu.toggle_output(True)
+			disable_equipment(eq_dict)
+			if eq_dict['psu'] != None:
+				eq_dict['psu'].set_current(step_settings["drive_value"])
+				eq_dict['psu'].set_voltage(step_settings["drive_value_other"])
+				eq_dict['psu'].toggle_output(True)
 			else:
 				print("No PSU Connected. Can't Charge! Exiting.")
 				return False
 		elif step_settings["drive_value"] < 0:
 			#discharge
-			disable_equipment(psu = psu)
-			if eload != None:
-				eload.set_current(step_settings["drive_value"])
-				eload.toggle_output(True)
+			disable_equipment(eq_dict)
+			if eq_dict['eload'] != None:
+				eq_dict['eload'].set_current(step_settings["drive_value"])
+				eq_dict['eload'].toggle_output(True)
 				#we're in constant current mode - can't set a voltage.
 			else:
 				print("No Eload Connected. Can't Discharge! Exiting.")
 				return False
 		elif step_settings["drive_value"] == 0:
 			#rest
-			disable_equipment(psu, eload)
+			disable_equipment(eq_dict)
 	
 	#VOLTAGE DRIVEN
 	elif step_settings["drive_style"] == 'voltage_v':
 		#positive current
 		if step_settings["drive_value_other"] >= 0:
-			disable_equipment(eload = eload) #turn off eload
-			if psu != None:
-				psu.set_current(step_settings["drive_value_other"])
-				psu.set_voltage(step_settings["drive_value"])
-				psu.toggle_output(True)
+			disable_equipment(eq_dict) #turn off eload
+			if eq_dict['psu'] != None:
+				eq_dict['psu'].set_current(step_settings["drive_value_other"])
+				eq_dict['psu'].set_voltage(step_settings["drive_value"])
+				eq_dict['psu'].toggle_output(True)
 		#TODO - needs CV mode on eloads
 		else:
 			print("Voltage Driven Step Not Yet Implemented for negative current. Exiting.")
 			#Ensure everything is off since not yet implemented.
-			disable_equipment(psu, eload)
+			disable_equipment(eq_dict)
 			return False
 	
 	#NOT DRIVEN
 	elif step_settings["drive_style"] == 'none':
 		#Ensure all sources and loads are off.
-		disable_equipment(psu, eload)
+		disable_equipment(eq_dict)
 	
 	
 	#return True for a successful step start.
 	return True
-
-def end_steps(psu, eload):
-	disable_equipment(psu, eload)
 
 def evaluate_end_condition(step_settings, data, data_in_queue):
 	#evaluates different end conditions (voltage, current, time)
@@ -176,20 +173,41 @@ def evaluate_end_condition(step_settings, data, data_in_queue):
 
 ######################### MEASURING ######################
 
-def measure_battery(v_meas_eq = None, i_meas_eq = None, data_out_queue = None):
-	data_dict = dict()
+def measure_battery(eq_dict, data_out_queue = None):
+	data_dict = {}
 	data_dict["Voltage"] = 0
-	if v_meas_eq != None:
-		data_dict["Voltage"] = v_meas_eq.measure_voltage()
+	if eq_dict['dmm_v'] != None:
+		data_dict["Voltage"] = eq_dict['dmm_v'].measure_voltage()
 	data_dict["Current"] = 0
-	if i_meas_eq != None:
-		data_dict['Current'] = i_meas_eq.measure_current()
+	if eq_dict['dmm_i'] != None:
+		data_dict["Current"] = eq_dict['dmm_i'].measure_current()
 	data_dict["Data_Timestamp"] = time.time()
 	
+	#Send voltage and current to be displayed in the main test window
 	if data_out_queue != None:
 		#add the new data to the output queue
 		data_out_queue.put_nowait(data_dict)
-		
+	
+	#Now, measure all the extra devices that were added to the channel - these being less time-critical.
+	prefix_list = ['v', 'i', 't']
+	#start at index 0 and keep increasing until we get a KeyError.
+	for prefix in prefix_list:
+		index = 0
+		try:
+			while index < 100:
+				dev_name = 'dmm_{}{}'.format(prefix, index)
+				measurement = 0
+				if prefix == 'v':
+					measurement = eq_dict[dev_name].measure_voltage()
+				elif prefix == 'i':
+					measurement = eq_dict[dev_name].measure_current()
+				elif prefix == 't':
+					measurement = eq_dict[dev_name].measure_temperature()
+				data_dict[dev_name] = measurement
+				index = index + 1
+		except KeyError:
+			continue
+	
 	return data_dict
 
 
@@ -205,7 +223,7 @@ def end_signal(data_in_queue):
 		pass
 	return end_signal
 
-def charge_cell(log_filepath, cycle_settings, psu, v_meas_eq, i_meas_eq, data_out_queue = None, data_in_queue = None, ch_num = None):
+def charge_cell(log_filepath, cycle_settings, eq_dict, data_out_queue = None, data_in_queue = None, ch_num = None):
 	#start the charging
 	#Start the data so we don't immediately trigger end conditions
 	data = dict()
@@ -213,7 +231,7 @@ def charge_cell(log_filepath, cycle_settings, psu, v_meas_eq, i_meas_eq, data_ou
 	data["Current"] = cycle_settings["charge_a"]
 	data["Data_Timestamp"] = time.time()
 	
-	start_charge(cycle_settings["charge_end_v"], cycle_settings["charge_a"], psu)
+	start_charge(cycle_settings["charge_end_v"], cycle_settings["charge_a"], eq_dict)
 	charge_start_time = time.time()
 	print('CH{} - Starting Charge: {}\n'.format(ch_num, time.ctime()), flush=True)
 	
@@ -222,21 +240,21 @@ def charge_cell(log_filepath, cycle_settings, psu, v_meas_eq, i_meas_eq, data_ou
 		end_reason = 'end_requested'
 	while (data["Current"] > cycle_settings["charge_end_a"]) and end_reason != 'end_requested':
 		time.sleep(cycle_settings["meas_log_int_s"] - ((time.time() - charge_start_time) % cycle_settings["meas_log_int_s"]))
-		data.update(measure_battery(v_meas_eq, i_meas_eq, data_out_queue = data_out_queue))
+		data.update(measure_battery(eq_dict, data_out_queue = data_out_queue))
 		if end_signal(data_in_queue):
 			end_reason = 'end_requested'
 		FileIO.write_data(log_filepath, data)
 		
-	disable_equipment(psu = psu)
+	disable_equipment(eq_dict)
 	return end_reason
 
-def idle_cell(v_meas_eq, i_meas_eq, data_out_queue = None, data_in_queue = None):
+def idle_cell(eq_dict, data_out_queue = None, data_in_queue = None):
 	#Measures voltage (and current if available) when no other process is running to have live voltage updates
 	while not end_signal(data_in_queue):
-		measure_battery(v_meas_eq, i_meas_eq = i_meas_eq, data_out_queue = data_out_queue)
+		measure_battery(eq_dict, data_out_queue = data_out_queue)
 		time.sleep(1)
 
-def rest_cell(log_filepath, cycle_settings, v_meas_eq, after_charge = True, data_out_queue = None, data_in_queue = None, ch_num = None):
+def rest_cell(log_filepath, cycle_settings, eq_dict, after_charge = True, data_out_queue = None, data_in_queue = None, ch_num = None):
 	#rest - do nothing for X time but continue monitoring voltage
 	rest_start_time = time.time()
 	
@@ -254,19 +272,19 @@ def rest_cell(log_filepath, cycle_settings, v_meas_eq, after_charge = True, data
 		end_reason = 'end_requested'
 	while ((time.time() - rest_start_time) < rest_time_s) and end_reason != 'end_requested':
 		time.sleep(cycle_settings["meas_log_int_s"] - ((time.time() - rest_start_time) % cycle_settings["meas_log_int_s"]))
-		data.update(measure_battery(v_meas_eq, data_out_queue = data_out_queue))
+		data.update(measure_battery(eq_dict, data_out_queue = data_out_queue))
 		if end_signal(data_in_queue):
 			end_reason = 'end_requested'
 		FileIO.write_data(log_filepath, data)
 	return end_reason
 
-def discharge_cell(log_filepath, cycle_settings, eload, v_meas_eq, i_meas_eq, data_out_queue = None, data_in_queue = None, ch_num = None):
+def discharge_cell(log_filepath, cycle_settings, eq_dict, data_out_queue = None, data_in_queue = None, ch_num = None):
 	#start discharge
-	start_discharge(cycle_settings["discharge_a"], eload)
+	start_discharge(cycle_settings["discharge_a"], eq_dict)
 	discharge_start_time = time.time()
 
 	data = dict()
-	data.update(measure_battery(v_meas_eq))
+	data.update(measure_battery(eq_dict))
 	
 	#need to add a previous voltage, previous voltage time so that we can compare to better extimate the end time.
 	#if we underestimate the end time, that's fine since we'll just get a measurement that is closer next, though there will be delay by the time to gather and write data
@@ -301,22 +319,22 @@ def discharge_cell(log_filepath, cycle_settings, eload, v_meas_eq, i_meas_eq, da
 		prev_v = data["Voltage"]
 		prev_v_time = data["Data_Timestamp"]
 		
-		data.update(measure_battery(v_meas_eq, i_meas_eq, data_out_queue = data_out_queue))
+		data.update(measure_battery(eq_dict, data_out_queue = data_out_queue))
 		if end_signal(data_in_queue):
 			end_reason = 'end_requested'
 		FileIO.write_data(log_filepath, data)
 	
-	disable_equipment(eload = eload)
+	disable_equipment(eq_dict)
 	return end_reason
 
-def step_cell(log_filepath, step_settings, psu = None, eload = None, v_meas_eq = None, i_meas_eq = None, data_out_queue = None, data_in_queue = None):
+def step_cell(log_filepath, step_settings, eq_dict, data_out_queue = None, data_in_queue = None):
 	
-	if start_step(step_settings, psu, eload, v_meas_eq, i_meas_eq):
+	if start_step(step_settings, eq_dict):
 		
 		step_start_time = time.time()
 		
 		data = dict()
-		data.update(measure_battery(v_meas_eq, i_meas_eq))
+		data.update(measure_battery(eq_dict))
 		data["Data_Timestamp_From_Step_Start"] = 0
 		
 		#If we are charging to the end of a CC cycle, then we need to not exit immediately.
@@ -331,7 +349,7 @@ def step_cell(log_filepath, step_settings, psu = None, eload = None, v_meas_eq =
 		#Do the measurements and check the end conditions at every logging interval
 		while end_condition == 'none':
 			time.sleep(step_settings["meas_log_int_s"] - ((time.time() - step_start_time) % step_settings["meas_log_int_s"]))
-			data.update(measure_battery(v_meas_eq, i_meas_eq, data_out_queue = data_out_queue))
+			data.update(measure_battery(eq_dict, data_out_queue = data_out_queue))
 			data["Data_Timestamp_From_Step_Start"] = (data["Data_Timestamp"] - step_start_time)
 			end_condition = evaluate_end_condition(step_settings, data, data_in_queue)
 			FileIO.write_data(log_filepath, data)
@@ -346,7 +364,7 @@ def step_cell(log_filepath, step_settings, psu = None, eload = None, v_meas_eq =
 ################################## SETTING CYCLE, CHARGE, DISCHARGE ############################
 
 #run a single cycle on a cell while logging data
-def cycle_cell(filepath, cycle_settings, eload, psu, v_meas_eq = None, i_meas_eq = None, data_out_queue = None, data_in_queue = None, ch_num = None):
+def cycle_cell(filepath, cycle_settings, eq_dict, data_out_queue = None, data_in_queue = None, ch_num = None):
 	#v_meas_eq is the measurement equipment to use for measuring the voltage.
 	#the device MUST have a measure_voltage() method that returns a float with units of Volts.
 	
@@ -355,20 +373,20 @@ def cycle_cell(filepath, cycle_settings, eload, psu, v_meas_eq = None, i_meas_eq
 	#When charging the battery this function should be positive current and discharging should be negative current.
 	
 	#use eload by default since they typically have better accuracy
-	if v_meas_eq == None:
-		v_meas_eq = eload
-	if i_meas_eq == None:
-		i_meas_eq = eload
+	if eq_dict['dmm_v'] == None:
+		eq_dict['dmm_v'] = eq_dict['eload']
+	if eq_dict['dmm_i'] == None:
+		eq_dict['dmm_i'] = eq_dict['eload']
 	
 	#need to override i_meas_eq since eload does not provide current during this step.
 	end_reason = 'none'
-	end_reason = charge_cell(filepath, cycle_settings, psu, v_meas_eq, i_meas_eq = psu, data_out_queue = data_out_queue, data_in_queue = data_in_queue, ch_num = ch_num) 
+	end_reason = charge_cell(filepath, cycle_settings, eq_dict, data_out_queue = data_out_queue, data_in_queue = data_in_queue, ch_num = ch_num) 
 	if end_reason != 'end_requested':
-		end_reason = rest_cell(filepath, cycle_settings, v_meas_eq, after_charge = True, data_out_queue = data_out_queue, data_in_queue = data_in_queue, ch_num = ch_num)
+		end_reason = rest_cell(filepath, cycle_settings, eq_dict, after_charge = True, data_out_queue = data_out_queue, data_in_queue = data_in_queue, ch_num = ch_num)
 	if end_reason != 'end_requested':	
-		end_reason = discharge_cell(filepath, cycle_settings, eload, v_meas_eq, i_meas_eq = eload, data_out_queue = data_out_queue, data_in_queue = data_in_queue, ch_num = ch_num)
+		end_reason = discharge_cell(filepath, cycle_settings, eq_dict, data_out_queue = data_out_queue, data_in_queue = data_in_queue, ch_num = ch_num)
 	if end_reason != 'end_requested':
-		end_reason = rest_cell(filepath, cycle_settings, v_meas_eq, after_charge = False, data_out_queue = data_out_queue, data_in_queue = data_in_queue, ch_num = ch_num)
+		end_reason = rest_cell(filepath, cycle_settings, eq_dict, after_charge = False, data_out_queue = data_out_queue, data_in_queue = data_in_queue, ch_num = ch_num)
 	
 	if end_reason == 'end_requested':
 		print('CH{} - Cycle Stopped: {}\n'.format(ch_num, time.ctime()), flush=True)
@@ -377,61 +395,61 @@ def cycle_cell(filepath, cycle_settings, eload, psu, v_meas_eq = None, i_meas_eq
 	
 	return end_reason
 
-def charge_cycle(filepath, charge_settings, psu, v_meas_eq = None, i_meas_eq = None, data_out_queue = None, data_in_queue = None, ch_num = None):
+def charge_cycle(filepath, charge_settings, eq_dict, data_out_queue = None, data_in_queue = None, ch_num = None):
 
-	if v_meas_eq == None:
-		v_meas_eq = psu
-	if i_meas_eq == None:
-		i_meas_eq = psu
+	if eq_dict['dmm_v'] == None:
+		eq_dict['dmm_v'] = eq_dict['psu']
+	if eq_dict['dmm_i'] == None:
+		eq_dict['dmm_i'] = eq_dict['psu']
 	
 	end_reason = 'none'
-	end_reason = charge_cell(filepath, charge_settings, psu, v_meas_eq, i_meas_eq, data_out_queue = data_out_queue, data_in_queue = data_in_queue, ch_num = ch_num)
+	end_reason = charge_cell(filepath, charge_settings, eq_dict, data_out_queue = data_out_queue, data_in_queue = data_in_queue, ch_num = ch_num)
 	return end_reason
 	
-def discharge_cycle(filepath, charge_settings, eload, v_meas_eq = None, i_meas_eq = None, data_out_queue = None, data_in_queue = None, ch_num = None):
+def discharge_cycle(filepath, charge_settings, eq_dict, data_out_queue = None, data_in_queue = None, ch_num = None):
 
-	if v_meas_eq == None:
-		v_meas_eq = eload
-	if i_meas_eq == None:
-		i_meas_eq = eload
+	if eq_dict['dmm_v'] == None:
+		eq_dict['dmm_v'] = eq_dict['eload']
+	if eq_dict['dmm_i'] == None:
+		eq_dict['dmm_i'] = eq_dict['eload']
 	
 	end_reason = 'none'
-	end_reason = discharge_cell(filepath, charge_settings, eload, v_meas_eq, i_meas_eq, data_out_queue = data_out_queue, data_in_queue = data_in_queue, ch_num = ch_num)
+	end_reason = discharge_cell(filepath, charge_settings, eq_dict, data_out_queue = data_out_queue, data_in_queue = data_in_queue, ch_num = ch_num)
 	return end_reason
 
-def idle_cell_cycle(eload = None, psu = None, v_meas_eq = None, i_meas_eq = None, data_out_queue = None, data_in_queue = None):
+def idle_cell_cycle(eq_dict, data_out_queue = None, data_in_queue = None):
 	
-	if v_meas_eq == None:
-		if eload != None:
-			v_meas_eq = eload
-		elif psu != None:
-			v_meas_eq = psu
+	if eq_dict['dmm_v'] == None:
+		if eq_dict['eload'] != None:
+			eq_dict['dmm_v'] = eq_dict['eload']
+		elif eq_dict['psu'] != None:
+			eq_dict['dmm_v'] = eq_dict['psu']
 		else:
 			print("No Voltage Measurement Equipment Connected! Exiting")
 			return 'settings'
 	
-	if i_meas_eq == None:
-		if eload != None:
-			i_meas_eq = eload
-		elif psu != None:
-			i_meas_eq = psu
+	if eq_dict['dmm_i'] == None:
+		if eq_dict['eload'] != None:
+			eq_dict['dmm_i'] = eq_dict['eload']
+		elif eq_dict['psu'] != None:
+			eq_dict['dmm_i'] = eq_dict['psu']
 			
-	idle_cell(v_meas_eq, i_meas_eq, data_out_queue = data_out_queue, data_in_queue = data_in_queue)
+	idle_cell(eq_dict, data_out_queue = data_out_queue, data_in_queue = data_in_queue)
 
-def single_step_cycle(filepath, step_settings, eload = None, psu = None, v_meas_eq = None, i_meas_eq = None, data_out_queue = None, data_in_queue = None, ch_num = None):
+def single_step_cycle(filepath, step_settings, eq_dict, data_out_queue = None, data_in_queue = None, ch_num = None):
 	
 	#if we don't have separate voltage measurement equipment, then choose what to use:
-	if v_meas_eq == None:
-		if eload != None:
-			v_meas_eq = eload
-		elif psu != None:
-			v_meas_eq = psu
+	if eq_dict['dmm_v'] == None:
+		if eq_dict['eload'] != None:
+			eq_dict['dmm_v'] = eq_dict['eload']
+		elif eq_dict['psu'] != None:
+			eq_dict['dmm_v'] = eq_dict['psu']
 		else:
 			print("No Voltage Measurement Equipment Connected! Exiting")
 			return 'settings'
 	
 	#if we don't have separate current measurement equipment, then choose what to use:
-	if i_meas_eq == None:
+	if eq_dict['dmm_i'] == None:
 		resting = False
 		left_comparator = 0
 		if step_settings["drive_style"] == 'current_a':
@@ -441,15 +459,15 @@ def single_step_cycle(filepath, step_settings, eload = None, psu = None, v_meas_
 		elif step_settings["drive_style"] == ['none'] or left_comparator == 0:
 			resting = True
 		
-		if left_comparator > 0 and psu != None:
-			i_meas_eq = psu #current measurement during charge
-		elif left_comparator < 0 and eload != None:
-			i_meas_eq = eload #current measurement during discharge
+		if left_comparator > 0 and eq_dict['psu'] != None:
+			eq_dict['dmm_i'] = eq_dict['psu'] #current measurement during charge
+		elif left_comparator < 0 and eq_dict['eload'] != None:
+			eq_dict['dmm_i'] = eq_dict['eload'] #current measurement during discharge
 		elif not resting:
 			print("No Current Measurement Equipment Connected and not Resting! Exiting")
 			return 'settings'
 		
-	return step_cell(filepath, step_settings, psu, eload, v_meas_eq, i_meas_eq, data_out_queue = data_out_queue, data_in_queue = data_in_queue)
+	return step_cell(filepath, step_settings, eq_dict, data_out_queue = data_out_queue, data_in_queue = data_in_queue)
 
 def find_eq_req_steps(step_settings):
 	eq_req_dict = {'psu': False, 'eload': False}
@@ -679,8 +697,8 @@ def get_equipment_dict(res_ids_dict, multi_channel_event_and_queue_dict):
 def idle_control(res_ids_dict, data_out_queue = None, data_in_queue = None, multi_channel_event_and_queue_dict = None):
 	try:
 		eq_dict = get_equipment_dict(res_ids_dict, multi_channel_event_and_queue_dict)
-		idle_cell_cycle(eload = eq_dict['eload'], psu = eq_dict['psu'], v_meas_eq = eq_dict['dmm_v'], i_meas_eq = eq_dict['dmm_i'], data_out_queue = data_out_queue, data_in_queue = data_in_queue)
-		disable_equipment(psu = eq_dict['psu'], eload = eq_dict['eload'])
+		idle_cell_cycle(eq_dict, data_out_queue = data_out_queue, data_in_queue = data_in_queue)
+		disable_equipment(eq_dict)
 	except Exception:
 		traceback.print_exc()
 	
@@ -706,7 +724,7 @@ def charge_discharge_control(res_ids_dict, data_out_queue = None, data_in_queue 
 		
 		
 		#TODO - looping a current profile until safety limits are hit
-		#TODO - current step profiles to/from csv and/or JSON files
+		#TODO - current step profiles to/from csv
 		
 		#cycle x times
 		cycle_num = 0
@@ -722,21 +740,21 @@ def charge_discharge_control(res_ids_dict, data_out_queue = None, data_in_queue 
 					
 					#Charge only - only using the power supply
 					if cycle_settings["cycle_type"] == 'charge':
-						end_condition = charge_cycle(filepath, cycle_settings, eq_dict['psu'], v_meas_eq = eq_dict['dmm_v'], i_meas_eq = eq_dict['dmm_i'], data_out_queue = data_out_queue, data_in_queue = data_in_queue, ch_num = ch_num)
+						end_condition = charge_cycle(filepath, cycle_settings, eq_dict, data_out_queue = data_out_queue, data_in_queue = data_in_queue, ch_num = ch_num)
 						
 					#Discharge only - only using the eload
 					elif cycle_settings["cycle_type"] == 'discharge':
-						end_condition = discharge_cycle(filepath, cycle_settings, eq_dict['eload'], v_meas_eq = eq_dict['dmm_v'], i_meas_eq = eq_dict['dmm_i'], data_out_queue = data_out_queue, data_in_queue = data_in_queue, ch_num = ch_num)
+						end_condition = discharge_cycle(filepath, cycle_settings, eq_dict, data_out_queue = data_out_queue, data_in_queue = data_in_queue, ch_num = ch_num)
 					
 					#Step Functions
 					elif cycle_settings["cycle_type"] == 'step':
-						end_condition = single_step_cycle(filepath, cycle_settings, eload = eq_dict['eload'], psu = eq_dict['psu'], v_meas_eq = eq_dict['dmm_v'], i_meas_eq = eq_dict['dmm_i'], data_out_queue = data_out_queue, data_in_queue = data_in_queue, ch_num = ch_num)
+						end_condition = single_step_cycle(filepath, cycle_settings, eq_dict, data_out_queue = data_out_queue, data_in_queue = data_in_queue, ch_num = ch_num)
 						if end_condition == 'safety_condition':
 							break
 							
 					#Cycle the cell - using both psu and eload
 					elif cycle_settings["cycle_type"] == 'cycle':
-						end_condition = cycle_cell(filepath, cycle_settings, eq_dict['eload'], eq_dict['psu'], v_meas_eq = eq_dict['dmm_v'], i_meas_eq = eq_dict['dmm_i'], data_out_queue = data_out_queue, data_in_queue = data_in_queue, ch_num = ch_num)
+						end_condition = cycle_cell(filepath, cycle_settings, eq_dict, data_out_queue = data_out_queue, data_in_queue = data_in_queue, ch_num = ch_num)
 					
 					if end_condition == 'end_request':
 						end_list_of_lists = True
@@ -745,11 +763,11 @@ def charge_discharge_control(res_ids_dict, data_out_queue = None, data_in_queue 
 					break
 				
 			except KeyboardInterrupt:
-				disable_equipment(psu = eq_dict['psu'], eload = eq_dict['eload'])
+				disable_equipment(eq_dict)
 				exit()
 			cycle_num += 1
 		
-		disable_equipment(psu = eq_dict['psu'], eload = eq_dict['eload'])
+		disable_equipment(eq_dict)
 
 		print("CH{} - All Cycles Completed: {}".format(ch_num, time.ctime()), flush=True)
 	except Exception:
