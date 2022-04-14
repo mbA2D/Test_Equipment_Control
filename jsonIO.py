@@ -1,7 +1,8 @@
 #importing and exporting settings to json files
 import easygui as eg
-import os
+from os import path
 import json
+import pandas as pd
 
 ##################### Checking User Input ##############
 def check_user_entry(keys, entries, valid_strings):
@@ -44,11 +45,15 @@ def convert_keys_to_int(settings):
 
 def force_extension(filename, extension):
 	#Checking the file type
-	file_root, file_extension = os.path.splitext(filename)
+	file_root, file_extension = path.splitext(filename)
 	if(file_extension != extension):
 		file_extension = extension
 	file_name = file_root + file_extension
 	return file_name
+	
+def get_extension(filename):
+	name, ext = path.splitext(filename)
+	return ext
 
 
 ####################### Getting Input from User #######################
@@ -80,6 +85,13 @@ def export_cycle_settings(settings, cycle_name = ""):
 		with open(file_name, "w") as write_file:
 			json.dump(settings, write_file, indent = 4)
 
+def import_multi_step_from_csv():
+	file_name = eg.fileopenbox(msg = "Choose a File to import step settings from",
+								title = "Settings", filetypes = ['*.csv', 'CSV files'])
+	df = pd.read_csv(file_name)
+	settings_list = df.to_dict(orient = 'records')
+	return settings_list
+
 def import_cycle_settings(cycle_name = "", queue = None, ch_num = None):
 	#add extra space to get formatting correct
 	if (cycle_name != ""):
@@ -87,13 +99,19 @@ def import_cycle_settings(cycle_name = "", queue = None, ch_num = None):
 	
 	#get the file to import from
 	file_name = eg.fileopenbox(msg = "Choose a File to import {}settings from".format(cycle_name),
-								title = "Settings", filetypes = ['*.json', 'JSON files'])
+								title = "Settings", filetypes = [['*.json', 'JSON files'],['*.csv', 'CSV files']])
 	settings = None
 	
 	#import the file
 	if(file_name != None):
-		with open(file_name, "r") as read_file:
-			settings = json.load(read_file)
+		#determine the file type - JSON or CSV
+		extension = get_extension(file_name)
+		if extension == '.json':
+			with open(file_name, "r") as read_file:
+				settings = json.load(read_file)
+		elif extension == '.csv':
+			df = pd.read_csv(file_name)
+			settings = df.to_dict(orient = 'records')[0]
 	
 	if queue != None:
 		settings = {'ch_num': ch_num, 'cdc_input_dict': settings}

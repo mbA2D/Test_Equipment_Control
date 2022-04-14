@@ -590,13 +590,23 @@ def single_step_cell_info():
 	return step_settings_list
 
 def multi_step_cell_info():
-	step_settings_list = list()
 	
-	msg = "Add a step to the cycle?"
-	title = "Add Step"
-	while eg.ynbox(msg = msg, title = title):
-		step_settings_list.append(single_step_cell_info()[0][0])
-		msg = "Add another step to the cycle?"
+	
+	#import multi step from csv?:
+	msg = "Import the multiple step cycle from a csv?"
+	title = "CSV Import"
+	from_csv = eg.ynbox(msg, title)
+	
+	if from_csv:
+		step_settings_list = jsonIO.import_multi_step_from_csv()
+	
+	else:
+		step_settings_list = list()
+		msg = "Add a step to the cycle?"
+		title = "Add Step"
+		while eg.ynbox(msg = msg, title = title):
+			step_settings_list.append(single_step_cell_info()[0][0])
+			msg = "Add another step to the cycle?"
 	
 	step_settings_list = (step_settings_list,)
 	
