@@ -50,14 +50,16 @@ class DL3000:
 				resources_dict = dict((v,k) for k,v in idns_dict.items())
 				resource_id = resources_dict[idn]
 		
-		#values specific to the DL3000 - will break out to another file later
-		self.ranges = {"low":4,"high":40}
-		self.range = "low"
-		self.max_current = 40
-		
 		self.inst = rm.open_resource(resource_id)
 		print("Connected to {}\n".format(self.inst.query("*IDN?")))
 		self.inst.write("*RST")
+		
+		#values specific to the DL3021 & DL3021A
+		self.ranges = {"low":4,"high":40}
+		self.range = "low"
+		self.max_current = 40
+		self.max_power = 200
+		
 		self.set_mode_current()
 		self.set_current(0)
 		self.set_range("high")

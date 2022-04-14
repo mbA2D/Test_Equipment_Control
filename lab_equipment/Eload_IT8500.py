@@ -60,6 +60,10 @@ class IT8500:
 		
 		self.inst = rm.open_resource(resource_id)
 		
+		#For 8513C+
+		self.max_current = 120
+		self.max_power = 600
+		
 		self.inst.baud_rate = self.baud_rate
 		self.inst.read_termination = self.read_termination
 		self.inst.write_termination = self.write_termination

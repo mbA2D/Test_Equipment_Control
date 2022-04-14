@@ -6,6 +6,9 @@ class Fake_Eload:
 	has_remote_sense = False
 
 	def __init__(self, resource_id = None):
+		self.max_power = 10000
+		self.max_current = 1000
+		
 		pass
 		
 	# To Set E-Load in Amps 

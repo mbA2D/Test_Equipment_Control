@@ -55,6 +55,11 @@ class BK8600:
 		print("Connected to {}\n".format(self.inst.query("*IDN?")))
 		#resets to Constant Current Mode
 		self.inst.write("*RST")
+		
+		#Values for BK8601
+		self.max_current = 60
+		self.max_power = 250
+		
 		self.set_current(0)
 		#set to remote mode (disable front panel)
 		self.lock_front_panel(True)

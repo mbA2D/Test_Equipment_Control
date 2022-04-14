@@ -41,9 +41,14 @@ class PARALLEL:
 		self.use_remote_sense_1 = eload_1_list[2]
 		self.use_remote_sense_2 = eload_2_list[2]
 		
-		self.eload1_current_share = 0.5
-		self.eload2_current_share = 0.5
+		#We want to load each eload proportionally to its max load.
+		#We will start by sharing power proportionally, but should account in the future for uneven current ranges.
+		#e.g. a high power load with 20A 500V 1000W and a lower power load wit 60A 120V 250W
+		self.max_current = self.eload1.max_current + self.eload2.max_current
+		self.max_power = self.eload1.max_power + self.eload2.max_power
 		
+		self.eload1_current_share = self.eload1.max_power / self.max_power
+		self.eload2_current_share = self.eload2.max_power / self.max_power
 		
 	# To Set E-Load in Amps 
 	def set_current(self, current_setpoint_A):		
