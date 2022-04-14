@@ -4,6 +4,9 @@ Controlling Various Lab Test Equipment
 
 
 TODO List
+ - Add crude internal resistance test through the step profiles
+ - Add parallel eloads ability to draw more power
+ - Add ability to control and interact with the A2D DAQ
  - finish adding ICA: smooth data before analysis
  - create auto-recognizing equipment profiles
       - DONE - choose instruments based on IDN? response instead of visa resource name.
