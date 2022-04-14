@@ -11,7 +11,7 @@ import traceback
 from random import randint
 
 from BATT_HIL import fet_board_management as fbm
-from equipment import A2D_DAQ_management as adm
+from lab_equipment import A2D_DAQ_management as adm
 import charge_discharge_control as cdc
 import equipment as eq
 import easygui as eg
@@ -306,11 +306,30 @@ class MainTestWindow(QMainWindow):
 					res_ids_dict['dmm_i'] = eq.get_res_id_dict_and_disconnect(dmm_i)
 				
 				#Add other devices? - temperaure sensors or mid-level voltage monitors?
-				msg = "Do you want to add any other devices for measurement on channel {}?".format(ch_num)
+				msg = "Do you want to add any other dmms for measurement on channel {}?".format(ch_num)
 				title = "CH {} Measurement Device".format(ch_num)
-				if eg.ynbox(msg, title):
-					other_device = eq.dmms.choose_dmm(multi_ch_event_and_queue_dict = dict_for_event_and_queue)
-				
+				add_other_device = True
+				device_v_counter = 0
+				device_i_counter = 0
+				device_t_counter = 0
+				while add_other_device:
+					add_other_device = eg.ynbox(msg, title)
+					if add_other_device:
+						choice = eg.choicebox("What will this device measure?","Adding Measurement Device",['Voltage', 'Current', 'Temperature'])
+						dev_name = 'dmm'
+						if choice == 'Voltage':
+							dev_name = 'dmm_v{}'.format(device_v_counter)
+							device_v_counter = device_v_counter + 1
+						elif choice == 'Current':
+							dev_name = 'dmm_i{}'.format(device_i_counter)
+							device_i_counter = device_i_counter + 1
+						elif choice == 'Temperature':
+							dev_name = 'dmm_t{}'.format(device_t_counter)
+							device_t_counter = device_t_counter + 1
+						
+						dmm_extra = eq.dmms.choose_dmm(multi_ch_event_and_queue_dict = dict_for_event_and_queue)
+						res_ids_dict[dev_name] = eq.get_res_id_dict_and_disconnect(dmm_extra)
+						
 			dict_for_queue = {'ch_num': ch_num, 'res_ids_dict': res_ids_dict}
 			assignment_queue.put_nowait(dict_for_queue)
 			

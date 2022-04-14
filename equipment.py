@@ -79,7 +79,7 @@ def get_res_id_dict_and_disconnect(eq_list):
 	#get resource id
 	class_name = eq_list[0]
 	eq_res_id_dict = {'class_name': class_name, 'res_id': None, 'use_remote_sense': None}
-	if class_name == 'MATICIAN_FET_BOARD_CH':
+	if class_name == 'MATICIAN_FET_BOARD_CH' or class_name == 'A2D_DAQ_CH':
 		eq_res_id_dict['res_id'] = {'board_name': eq_list[1].board_name, 'ch_num': eq_list[1].ch_num}
 		eq_res_id_dict['use_remote_sense'] = False
 	elif 'Fake' in class_name:
