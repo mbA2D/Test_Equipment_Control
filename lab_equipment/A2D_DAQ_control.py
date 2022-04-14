@@ -4,6 +4,7 @@ import pyvisa
 from time import sleep
 import easygui as eg
 import voltage_to_temp as V2T
+import serial
 from . import A2D_DAQ_config
 
 #Data Acquisition Unit

@@ -226,7 +226,7 @@ def end_signal(data_in_queue):
 def charge_cell(log_filepath, cycle_settings, eq_dict, data_out_queue = None, data_in_queue = None, ch_num = None):
 	#start the charging
 	#Start the data so we don't immediately trigger end conditions
-	data = dict()
+	data = {}
 	data["Voltage"] = cycle_settings["charge_end_v"]
 	data["Current"] = cycle_settings["charge_a"]
 	data["Data_Timestamp"] = time.time()
@@ -265,7 +265,7 @@ def rest_cell(log_filepath, cycle_settings, eq_dict, after_charge = True, data_o
 		rest_time_s = cycle_settings["rest_after_discharge_min"] * 60
 
 	print('CH{} - Starting Rest: {}\n'.format(ch_num, time.ctime()), flush=True)
-	data = dict()
+	data = {}
 	
 	end_reason = 'end_condition'
 	if end_signal(data_in_queue):
@@ -373,18 +373,28 @@ def cycle_cell(filepath, cycle_settings, eq_dict, data_out_queue = None, data_in
 	#When charging the battery this function should be positive current and discharging should be negative current.
 	
 	#use eload by default since they typically have better accuracy
+	no_dmm_i = False
 	if eq_dict['dmm_v'] == None:
 		eq_dict['dmm_v'] = eq_dict['eload']
 	if eq_dict['dmm_i'] == None:
 		eq_dict['dmm_i'] = eq_dict['eload']
+		no_dmm_i = True
 	
 	#need to override i_meas_eq since eload does not provide current during this step.
 	end_reason = 'none'
+	#Charge
+	if no_dmm_i:
+		eq_dict['dmm_i'] = eq_dict['psu']
 	end_reason = charge_cell(filepath, cycle_settings, eq_dict, data_out_queue = data_out_queue, data_in_queue = data_in_queue, ch_num = ch_num) 
+	#Rest
 	if end_reason != 'end_requested':
 		end_reason = rest_cell(filepath, cycle_settings, eq_dict, after_charge = True, data_out_queue = data_out_queue, data_in_queue = data_in_queue, ch_num = ch_num)
+	#Discharge
+	if no_dmm_i:
+		eq_dict['dmm_i'] = eq_dict['eload']
 	if end_reason != 'end_requested':	
 		end_reason = discharge_cell(filepath, cycle_settings, eq_dict, data_out_queue = data_out_queue, data_in_queue = data_in_queue, ch_num = ch_num)
+	#Rest
 	if end_reason != 'end_requested':
 		end_reason = rest_cell(filepath, cycle_settings, eq_dict, after_charge = False, data_out_queue = data_out_queue, data_in_queue = data_in_queue, ch_num = ch_num)
 	
