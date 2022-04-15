@@ -243,7 +243,7 @@ def charge_cell(log_filepath, cycle_settings, eq_dict, data_out_queue = None, da
 	end_reason = 'end_condition'
 	if end_signal(data_in_queue):
 		end_reason = 'end_requested'
-	while (data["Current"] > cycle_settings["charge_end_a"]) and data["Voltage"] > 0.99*cyccle_settings["charge_end_v"] and end_reason != 'end_requested':
+	while ((data["Current"] > cycle_settings["charge_end_a"] or data["Voltage"] < 0.99*cycle_settings["charge_end_v"]) and end_reason != 'end_requested'):
 		time.sleep(cycle_settings["meas_log_int_s"] - ((time.time() - charge_start_time) % cycle_settings["meas_log_int_s"]))
 		data.update(measure_battery(eq_dict, data_out_queue = data_out_queue))
 		if end_signal(data_in_queue):
