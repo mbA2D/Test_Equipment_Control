@@ -163,7 +163,11 @@ def evaluate_end_condition(step_settings, data, data_in_queue):
 		else:
 			return 'none'
 	elif step_settings["end_condition"] == 'lesser':
-		if left_comparator < step_settings["end_value"]:
+		#For positive current less than value endpoint, also check the voltage to be close to the end voltage
+		if step_settings["end_style"] == 'current_a' and step_settings["drive_style"] == 'voltage_v' and step_settings["end_value"] > 0:
+			if data["Voltage"] > 0.99*step_settings["end_value_other"] and left_comparator < step_settings["end_value"]:
+				return 'end_condition'
+		elif left_comparator < step_settings["end_value"]:
 			return 'end_condition'
 		else:
 			return 'none'
