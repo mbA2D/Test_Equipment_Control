@@ -408,6 +408,8 @@ def cycle_cell(filepath, cycle_settings, eq_dict, data_out_queue = None, data_in
 	elif end_reason == 'end_condition':
 		print('CH{} - Cycle Completed: {}\n'.format(ch_num, time.ctime()), flush=True)
 	
+	if no_dmm_i:
+		eq_dict['dmm_i'] = None
 	return end_reason
 
 def charge_cycle(filepath, charge_settings, eq_dict, data_out_queue = None, data_in_queue = None, ch_num = None):
