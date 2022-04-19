@@ -73,6 +73,7 @@ class MainTestWindow(QMainWindow):
 		self.assign_eq_process_list = {}
 		self.res_ids_dict_list = {}
 		self.configure_test_process_list = {}
+		self.edit_cell_name_process_list = {}
 		self.import_test_process_list = {}
 		self.export_test_process_list = {}
 		self.cdc_input_dict_list = {}
@@ -130,6 +131,7 @@ class MainTestWindow(QMainWindow):
 			self.assign_eq_process_list[ch_num] = None
 			self.res_ids_dict_list[ch_num] = None
 			self.configure_test_process_list[ch_num] = None
+			self.edit_cell_name_process_list[ch_num] = None
 			self.import_test_process_list[ch_num] = None
 			self.export_test_process_list[ch_num] = None
 			self.cdc_input_dict_list[ch_num] = None
@@ -140,7 +142,7 @@ class MainTestWindow(QMainWindow):
 			#Create a widget and some labels - voltage and current for each channel
 			#Update the widgets from the queues in each channel
 			self.cell_name_label_list[ch_num] = QLabel("N/A")
-			self.button_edit_cell_name_list = QPushButton("Edit Cell Name")
+			self.button_edit_cell_name_list[ch_num] = QPushButton("Edit Cell Name")
 			self.data_label_list[ch_num] = QLabel("CH: {}\nV: \nI:".format(ch_num))
 			self.button_assign_eq_list[ch_num] = QPushButton("Assign Equipment")
 			self.button_configure_test_list[ch_num] = QPushButton("Configure Test")
@@ -179,6 +181,7 @@ class MainTestWindow(QMainWindow):
 			#Data label on the left
 			left_col_layout = QVBoxLayout()
 			left_col_layout.addWidget(self.cell_name_label_list[ch_num])
+			left_col_layout.addWidget(self.button_edit_cell_name_list[ch_num])
 			left_col_layout.addWidget(self.data_label_list[ch_num])
 			
 			left_col_widget = QWidget()
@@ -242,7 +245,8 @@ class MainTestWindow(QMainWindow):
 			new_cell_name_dict = self.edit_cell_name_queue.get_nowait()
 			ch_num = int(new_cell_name_dict['ch_num'])
 			self.cell_name_label_list[ch_num].setText(new_cell_name_dict['cell_name'])
-			self.cdc_input_dict_list[ch_num]['cell_name'] = new_cell_name_dict['cell_name']
+			if self.cdc_input_dict_list[ch_num] != None:
+				self.cdc_input_dict_list[ch_num]['cell_name'] = new_cell_name_dict['cell_name']
 			print("Updated Cell Name for Channel {}".format(new_cell_name_dict['ch_num']))
 		except queue.Empty:
 			pass #No new data was available
@@ -498,6 +502,8 @@ class MainTestWindow(QMainWindow):
 				self.stop_process(self.assign_eq_process_list[ch_num])
 			if self.configure_test_process_list[ch_num] != None:
 				self.stop_process(self.configure_test_process_list[ch_num])
+			if self.edit_cell_name_process_list[ch_num] != None:
+				self.stop_process(self.edit_cell_name_process_list[ch_num])
 			self.stop_test(ch_num)
 			self.stop_idle_process(ch_num)
 			
