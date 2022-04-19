@@ -225,7 +225,7 @@ class MainTestWindow(QMainWindow):
 			self.res_ids_dict_list[int(new_eq_assignment['ch_num'])] = new_eq_assignment['res_ids_dict']
 			#stop the idle test to re-start with new equipment
 			self.stop_idle_process(int(new_eq_assignment['ch_num']))
-			print("Assigned New Equipment to Channel {}".format(new_eq_assignment['ch_num']))
+			print("CH{} - Assigned New Equipment".format(new_eq_assignment['ch_num']))
 		except queue.Empty:
 			pass #No new data was available
 		
@@ -236,7 +236,7 @@ class MainTestWindow(QMainWindow):
 			self.cdc_input_dict_list[ch_num] = new_test_configuration['cdc_input_dict']
 			#Update cell name
 			self.cell_name_label_list[ch_num].setText(new_test_configuration['cdc_input_dict']['cell_name'])
-			print("Configured Test for Channel {}".format(new_test_configuration['ch_num']))
+			print("CH{} - Configured Test".format(new_test_configuration['ch_num']))
 		except queue.Empty:
 			pass #No new data was available		
 		
@@ -247,7 +247,7 @@ class MainTestWindow(QMainWindow):
 			self.cell_name_label_list[ch_num].setText(new_cell_name_dict['cell_name'])
 			if self.cdc_input_dict_list[ch_num] != None:
 				self.cdc_input_dict_list[ch_num]['cell_name'] = new_cell_name_dict['cell_name']
-			print("Updated Cell Name for Channel {}".format(new_cell_name_dict['ch_num']))
+			print("CH{} - Updated Cell Name".format(new_cell_name_dict['ch_num']))
 		except queue.Empty:
 			pass #No new data was available
 		
@@ -305,7 +305,7 @@ class MainTestWindow(QMainWindow):
 	def assign_equipment_process(self, ch_num):
 		try:
 			if self.assign_eq_process_list[ch_num] is not None and self.assign_eq_process_list[ch_num].is_alive():
-				print("There is a process already running to assign equipment on Channel {}".format(ch_num))
+				print("CH{} - There is a process already running to assign equipment".format(ch_num))
 				return
 			self.assign_eq_process_list[ch_num] = Process(target=self.assign_equipment, args = (ch_num, self.eq_assignment_queue, None, self.dict_for_event_and_queue))
 			self.assign_eq_process_list[ch_num].start()
@@ -390,7 +390,7 @@ class MainTestWindow(QMainWindow):
 		
 	def export_test_configuration_process(self, ch_num):	
 		if self.export_test_process_list[ch_num] is not None and self.export_test_process_list[ch_num].is_alive():
-			print("There is an export already running in Channel {}".format(ch_num))
+			print("CH{} - There is an export already running".format(ch_num))
 			return
 		try:
 			self.export_test_process_list[ch_num] = Process(target=jsonIO.export_cycle_settings, args = (self.cdc_input_dict_list[ch_num],))
@@ -400,7 +400,7 @@ class MainTestWindow(QMainWindow):
 		
 	def import_test_configuration_process(self, ch_num):
 		if self.import_test_process_list[ch_num] is not None and self.import_test_process_list[ch_num].is_alive():
-				print("There is an import already running in Channel {}".format(ch_num))
+				print("CH{} - There is an import already running".format(ch_num))
 				return
 		try:
 			self.import_test_process_list[ch_num] = Process(target=jsonIO.import_cycle_settings, args = ("", self.test_configuration_queue, ch_num))
@@ -414,7 +414,7 @@ class MainTestWindow(QMainWindow):
 	
 	def edit_cell_name_process(self, ch_num):
 		if self.edit_cell_name_process_list[ch_num] is not None and self.edit_cell_name_process_list[ch_num].is_alive():
-				print("There is a cell name edit already running in Channel {}".format(ch_num))
+				print("CH{} - There is a cell name edit already running".format(ch_num))
 				return
 		try:
 			self.edit_cell_name_process_list[ch_num] = Process(target=cdc.get_cell_name, args = (ch_num, self.edit_cell_name_queue))
@@ -427,7 +427,7 @@ class MainTestWindow(QMainWindow):
 	
 	def configure_test_process(self, ch_num):
 		if self.configure_test_process_list[ch_num] is not None and self.configure_test_process_list[ch_num].is_alive():
-				print("There is a configuration already running in Channel {}".format(ch_num))
+				print("CH{} - There is a configuration already running".format(ch_num))
 				return
 		try:
 			self.configure_test_process_list[ch_num] = Process(target=cdc.get_input_dict, args = (ch_num, self.test_configuration_queue))
@@ -438,10 +438,10 @@ class MainTestWindow(QMainWindow):
 	
 	def start_test(self, ch_num):
 		if self.res_ids_dict_list[ch_num] == None:
-			print("Please Assign Equipment to Channel {} before starting a test!".format(ch_num))
+			print("CH{} - Please Assign Equipment before starting a test!".format(ch_num))
 			return
 		if self.cdc_input_dict_list[ch_num] == None:
-			print("Please Configure Test for Channel {} before starting a test!".format(ch_num))
+			print("CH{} - Please Configure Test before starting a test!".format(ch_num))
 			return
 		self.batt_test_process(self.res_ids_dict_list[ch_num], data_out_queue = self.data_from_ch_queue_list[ch_num],
 								data_in_queue = self.data_to_ch_queue_list[ch_num], cdc_input_dict = self.cdc_input_dict_list[ch_num], ch_num = ch_num)
@@ -449,7 +449,7 @@ class MainTestWindow(QMainWindow):
 	def batt_test_process(self, res_ids_dict, data_out_queue = None, data_in_queue = None, cdc_input_dict = None, ch_num = None):
 		try:
 			if self.mp_process_list[ch_num] is not None and self.mp_process_list[ch_num].is_alive():
-				print("There is a process already running in Channel {}".format(ch_num))
+				print("CH{} - There is a battery test process already running".format(ch_num))
 				return
 			if self.mp_idle_process_list[ch_num] is not None and self.mp_idle_process_list[ch_num].is_alive():
 				self.stop_idle_process(ch_num)
