@@ -679,13 +679,18 @@ def ask_storage_charge():
 							Recommended to do one. Leaving a cell discharged increases\n\
 							risk of latent failures due to dendrite growth.")
 
-def get_cell_name():
+def get_cell_name(ch_num = None, queue = None):
 	#get the cell name
 	cell_name = eg.enterbox(title = "Test Setup", msg = "Enter the Cell Name\n(Spaces will be replaced with underscores)",
 							default = "CELL_NAME", strip = True)
 	#replace the spaces to keep file names consistent
 	cell_name = cell_name.replace(" ", "_")
-	return cell_name
+	
+	if queue != None:
+		dict_to_put = {'ch_num': ch_num, 'cell_name': cell_name}
+		queue.put_nowait(dict_to_put)
+	else:
+		return cell_name
 	
 def get_cycle_type():
 	cycle_types = Templates.CycleTypes.cycle_types
