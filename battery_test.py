@@ -36,6 +36,7 @@ class MainTestWindow(QMainWindow):
 	
 		self.eq_assignment_queue = Queue()
 		self.test_configuration_queue = Queue()
+		self.edit_cell_name_queue = Queue()
 		
 		self.setWindowTitle("Battery Tester App")
 		self.central_layout = QVBoxLayout()
@@ -58,7 +59,6 @@ class MainTestWindow(QMainWindow):
 		channels_widget.setLayout(self.channels_layout)
 		self.central_layout.addWidget(channels_widget)
 		
-		
 		central_widget = QWidget()
 		central_widget.setLayout(self.central_layout)
 		self.setCentralWidget(central_widget)
@@ -73,6 +73,7 @@ class MainTestWindow(QMainWindow):
 		self.assign_eq_process_list = {}
 		self.res_ids_dict_list = {}
 		self.configure_test_process_list = {}
+		self.edit_cell_name_process_list = {}
 		self.import_test_process_list = {}
 		self.export_test_process_list = {}
 		self.cdc_input_dict_list = {}
@@ -82,6 +83,8 @@ class MainTestWindow(QMainWindow):
 		
 		#Create a widget and some labels - voltage and current for each channel
 		#Update the widgets from the queues in each channel
+		self.cell_name_label_list = {}
+		self.button_edit_cell_name_list = {}
 		self.data_label_list = {}
 		self.button_assign_eq_list = {}
 		self.button_configure_test_list = {}
@@ -128,6 +131,7 @@ class MainTestWindow(QMainWindow):
 			self.assign_eq_process_list[ch_num] = None
 			self.res_ids_dict_list[ch_num] = None
 			self.configure_test_process_list[ch_num] = None
+			self.edit_cell_name_process_list[ch_num] = None
 			self.import_test_process_list[ch_num] = None
 			self.export_test_process_list[ch_num] = None
 			self.cdc_input_dict_list[ch_num] = None
@@ -137,6 +141,8 @@ class MainTestWindow(QMainWindow):
 			
 			#Create a widget and some labels - voltage and current for each channel
 			#Update the widgets from the queues in each channel
+			self.cell_name_label_list[ch_num] = QLabel("N/A")
+			self.button_edit_cell_name_list[ch_num] = QPushButton("Edit Cell Name")
 			self.data_label_list[ch_num] = QLabel("CH: {}\nV: \nI:".format(ch_num))
 			self.button_assign_eq_list[ch_num] = QPushButton("Assign Equipment")
 			self.button_configure_test_list[ch_num] = QPushButton("Configure Test")
@@ -151,6 +157,9 @@ class MainTestWindow(QMainWindow):
 			self.ch_graph_widget[ch_num] = pg.PlotWidget(background='w')
 			
 			#setting up buttons
+			self.button_edit_cell_name_list[ch_num].setCheckable(False)
+			self.button_edit_cell_name_list[ch_num].clicked.connect(partial(self.edit_cell_name_process, ch_num))
+			
 			self.button_assign_eq_list[ch_num].setCheckable(False)
 			self.button_assign_eq_list[ch_num].clicked.connect(partial(self.assign_equipment_process, ch_num))
 			self.button_configure_test_list[ch_num].setCheckable(False)
@@ -167,11 +176,25 @@ class MainTestWindow(QMainWindow):
 			self.button_start_test_list[ch_num].clicked.connect(partial(self.start_test, ch_num))
 			
 			#setting up a widget and layout for each channel
-			ch_layout = QHBoxLayout()
-			ch_layout.addWidget(self.data_label_list[ch_num])
+			ch_layout = QHBoxLayout() #Each channel has horizontal layout
+			
+			#Data label on the left
+			left_col_layout = QVBoxLayout()
+			left_col_layout.addWidget(self.cell_name_label_list[ch_num])
+			left_col_layout.addWidget(self.button_edit_cell_name_list[ch_num])
+			left_col_layout.addWidget(self.data_label_list[ch_num])
+			
+			left_col_widget = QWidget()
+			left_col_widget.setLayout(left_col_layout)
+			
+			ch_layout.addWidget(left_col_widget)
+			
+			
+			#Graph in the middle
 			ch_layout.addWidget(self.ch_graph_widget[ch_num])
 			self.plot_list[ch_num] = LivePlot(self.ch_graph_widget[ch_num])
-
+			
+			#Buttons on the right
 			btn_grid_layout = QGridLayout()
 			btn_grid_layout.addWidget(self.button_assign_eq_list[ch_num], 0, 0)
 			btn_grid_layout.addWidget(self.button_configure_test_list[ch_num], 0, 1)
@@ -209,10 +232,24 @@ class MainTestWindow(QMainWindow):
 		#Check test configuration queue
 		try:
 			new_test_configuration = self.test_configuration_queue.get_nowait()
-			self.cdc_input_dict_list[int(new_test_configuration['ch_num'])] = new_test_configuration['cdc_input_dict']
+			ch_num = int(new_test_configuration['ch_num'])
+			self.cdc_input_dict_list[ch_num] = new_test_configuration['cdc_input_dict']
+			#Update cell name
+			self.cell_name_label_list[ch_num].setText(new_test_configuration['cdc_input_dict']['cell_name'])
 			print("Configured Test for Channel {}".format(new_test_configuration['ch_num']))
 		except queue.Empty:
 			pass #No new data was available		
+		
+		#Check edit cell name queue
+		try:
+			new_cell_name_dict = self.edit_cell_name_queue.get_nowait()
+			ch_num = int(new_cell_name_dict['ch_num'])
+			self.cell_name_label_list[ch_num].setText(new_cell_name_dict['cell_name'])
+			if self.cdc_input_dict_list[ch_num] != None:
+				self.cdc_input_dict_list[ch_num]['cell_name'] = new_cell_name_dict['cell_name']
+			print("Updated Cell Name for Channel {}".format(new_cell_name_dict['ch_num']))
+		except queue.Empty:
+			pass #No new data was available
 		
 		#Read from all the data queues
 		for ch_num in range(self.num_battery_channels):
@@ -372,6 +409,19 @@ class MainTestWindow(QMainWindow):
 			traceback.print_exc()
 			
 	
+	def edit_cell_name(self, ch_num):
+		self.configure_test_process(ch_num = ch_num)
+	
+	def edit_cell_name_process(self, ch_num):
+		if self.edit_cell_name_process_list[ch_num] is not None and self.edit_cell_name_process_list[ch_num].is_alive():
+				print("There is a cell name edit already running in Channel {}".format(ch_num))
+				return
+		try:
+			self.edit_cell_name_process_list[ch_num] = Process(target=cdc.get_cell_name, args = (ch_num, self.edit_cell_name_queue))
+			self.edit_cell_name_process_list[ch_num].start()
+		except:
+			traceback.print_exc()
+	
 	def configure_test(self, ch_num):
 		self.configure_test_process(ch_num = ch_num)
 	
@@ -452,6 +502,8 @@ class MainTestWindow(QMainWindow):
 				self.stop_process(self.assign_eq_process_list[ch_num])
 			if self.configure_test_process_list[ch_num] != None:
 				self.stop_process(self.configure_test_process_list[ch_num])
+			if self.edit_cell_name_process_list[ch_num] != None:
+				self.stop_process(self.edit_cell_name_process_list[ch_num])
 			self.stop_test(ch_num)
 			self.stop_idle_process(ch_num)
 			
