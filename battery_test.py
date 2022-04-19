@@ -83,6 +83,7 @@ class MainTestWindow(QMainWindow):
 		#Create a widget and some labels - voltage and current for each channel
 		#Update the widgets from the queues in each channel
 		self.data_label_list = {}
+		self.cell_name_label_list = {}
 		self.button_assign_eq_list = {}
 		self.button_configure_test_list = {}
 		self.button_import_test_list = {}
@@ -138,6 +139,7 @@ class MainTestWindow(QMainWindow):
 			#Create a widget and some labels - voltage and current for each channel
 			#Update the widgets from the queues in each channel
 			self.data_label_list[ch_num] = QLabel("CH: {}\nV: \nI:".format(ch_num))
+			self.cell_name_label_list[ch_num] = QLabel("N/A")
 			self.button_assign_eq_list[ch_num] = QPushButton("Assign Equipment")
 			self.button_configure_test_list[ch_num] = QPushButton("Configure Test")
 			self.button_import_test_list[ch_num] = QPushButton("Import Test")
@@ -209,7 +211,10 @@ class MainTestWindow(QMainWindow):
 		#Check test configuration queue
 		try:
 			new_test_configuration = self.test_configuration_queue.get_nowait()
-			self.cdc_input_dict_list[int(new_test_configuration['ch_num'])] = new_test_configuration['cdc_input_dict']
+			ch_num = int(new_test_configuration['ch_num'])
+			self.cdc_input_dict_list[ch_num] = new_test_configuration['cdc_input_dict']
+			#Update cell name
+			self.cell_name_label_list[ch_num].setText(new_test_configuration['cdc_input_dict']['cell_name'])
 			print("Configured Test for Channel {}".format(new_test_configuration['ch_num']))
 		except queue.Empty:
 			pass #No new data was available		
