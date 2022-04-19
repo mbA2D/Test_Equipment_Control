@@ -169,11 +169,24 @@ class MainTestWindow(QMainWindow):
 			self.button_start_test_list[ch_num].clicked.connect(partial(self.start_test, ch_num))
 			
 			#setting up a widget and layout for each channel
-			ch_layout = QHBoxLayout()
-			ch_layout.addWidget(self.data_label_list[ch_num])
+			ch_layout = QHBoxLayout() #Each channel has horizontal layout
+			
+			#Data label on the left
+			left_col_layout = QVBoxLayout()
+			left_col_layout.addWidget(self.cell_name_label_list[ch_num])
+			left_col_layout.addWidget(self.data_label_list[ch_num])
+			
+			left_col_widget = QWidget()
+			left_col_widget.setLayout(left_col_layout)
+			
+			ch_layout.addWidget(left_col_widget)
+			
+			
+			#Graph in the middle
 			ch_layout.addWidget(self.ch_graph_widget[ch_num])
 			self.plot_list[ch_num] = LivePlot(self.ch_graph_widget[ch_num])
-
+			
+			#Buttons on the right
 			btn_grid_layout = QGridLayout()
 			btn_grid_layout.addWidget(self.button_assign_eq_list[ch_num], 0, 0)
 			btn_grid_layout.addWidget(self.button_configure_test_list[ch_num], 0, 1)
