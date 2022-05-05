@@ -86,6 +86,8 @@ class MainTestWindow(QMainWindow):
 		self.cell_name_label_list = {}
 		self.button_edit_cell_name_list = {}
 		self.data_label_list = {}
+		self.current_status_label_list = {}
+		self.next_status_label_list = {}
 		self.button_assign_eq_list = {}
 		self.button_configure_test_list = {}
 		self.button_import_test_list = {}
@@ -144,6 +146,8 @@ class MainTestWindow(QMainWindow):
 			self.cell_name_label_list[ch_num] = QLabel("N/A")
 			self.button_edit_cell_name_list[ch_num] = QPushButton("Edit Cell Name")
 			self.data_label_list[ch_num] = QLabel("CH: {}\nV: \nI:".format(ch_num))
+			self.current_status_label_list[ch_num] = QLabel("Current Status: Idle")
+			self.next_status_label_list[ch_num] = QLabel("Next Status: N/A")
 			self.button_assign_eq_list[ch_num] = QPushButton("Assign Equipment")
 			self.button_configure_test_list[ch_num] = QPushButton("Configure Test")
 			self.button_import_test_list[ch_num] = QPushButton("Import Test")
@@ -183,6 +187,8 @@ class MainTestWindow(QMainWindow):
 			left_col_layout.addWidget(self.cell_name_label_list[ch_num])
 			left_col_layout.addWidget(self.button_edit_cell_name_list[ch_num])
 			left_col_layout.addWidget(self.data_label_list[ch_num])
+			left_col_layout.addWidget(self.current_status_label_list[ch_num])
+			left_col_layout.addWidget(self.next_status_label_list[ch_num])
 			
 			left_col_widget = QWidget()
 			left_col_widget.setLayout(left_col_layout)
@@ -236,6 +242,8 @@ class MainTestWindow(QMainWindow):
 			self.cdc_input_dict_list[ch_num] = new_test_configuration['cdc_input_dict']
 			#Update cell name
 			self.cell_name_label_list[ch_num].setText(new_test_configuration['cdc_input_dict']['cell_name'])
+			#Set the next status label
+			self.next_status_label_list[ch_num].setText(f"Next Status: {new_test_configuration['cdc_input_dict']['cycle_settings_list_of_lists'][0][0]['cycle_type']}")
 			print("CH{} - Configured Test".format(new_test_configuration['ch_num']))
 		except queue.Empty:
 			pass #No new data was available		
@@ -260,13 +268,25 @@ class MainTestWindow(QMainWindow):
 					(self.mp_process_list[ch_num] != None and not self.mp_process_list[ch_num].is_alive())) and \
 					(self.mp_idle_process_list[ch_num] == None or
 					(self.mp_idle_process_list[ch_num] != None and not self.mp_idle_process_list[ch_num].is_alive())):
+						#Set the current status to idle and next status to 'N/A' or the next cycle
+						self.current_status_label_list[ch_num].setText('Current Status: Idle')
+						try:
+							self.next_status_label_list[ch_num].setText(f"Next Status: {self.cdc_input_dict_list[ch_num]['cycle_settings_list_of_lists'][0][0]['cycle_type']}")
+						except (KeyError, TypeError):
+							self.next_status_label_list[ch_num].setText('Next Status: N/A')
+							
 						#start an idle process since nothing else is running
 						self.start_idle_process(ch_num)
 				
 				#Read from all queues if available
-				self.data_dict_list[ch_num] = self.data_from_ch_queue_list[ch_num].get_nowait()
+				data_from_ch = self.data_from_ch_queue_list[ch_num].get_nowait()
+				if data_from_ch['type'] == 'status':
+					self.current_status_label_list[ch_num].setText(f"Current Status: {data_from_ch['data'][0]}")
+					self.next_status_label_list[ch_num].setText(f"Next Status: {data_from_ch['data'][1]}")
+				elif data_from_ch['type'] == 'measurement':
+					self.data_dict_list[ch_num] = data_from_ch['data']
 				
-			except (queue.Empty, ValueError):
+			except queue.Empty:
 				pass #No new data was available
 		
 		#Update plots and displayed values

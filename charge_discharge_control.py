@@ -179,14 +179,14 @@ def evaluate_end_condition(step_settings, data, data_in_queue):
 ######################### MEASURING ######################
 
 def measure_battery(eq_dict, data_out_queue = None):
-	data_dict = {}
-	data_dict["Voltage"] = 0
+	data_dict = {'type': 'measurement', 'data': {}}
+	data_dict['data']["Voltage"] = 0
 	if eq_dict['dmm_v'] != None:
-		data_dict["Voltage"] = eq_dict['dmm_v'].measure_voltage()
-	data_dict["Current"] = 0
+		data_dict['data']["Voltage"] = eq_dict['dmm_v'].measure_voltage()
+	data_dict['data']["Current"] = 0
 	if eq_dict['dmm_i'] != None:
-		data_dict["Current"] = eq_dict['dmm_i'].measure_current()
-	data_dict["Data_Timestamp"] = time.time()
+		data_dict['data']["Current"] = eq_dict['dmm_i'].measure_current()
+	data_dict['data']["Data_Timestamp"] = time.time()
 	
 	#Send voltage and current to be displayed in the main test window
 	if data_out_queue != None:
@@ -208,12 +208,12 @@ def measure_battery(eq_dict, data_out_queue = None):
 					measurement = eq_dict[dev_name].measure_current()
 				elif prefix == 't':
 					measurement = eq_dict[dev_name].measure_temperature()
-				data_dict[dev_name] = measurement
+				data_dict['data'][dev_name] = measurement
 				index = index + 1
 		except KeyError:
 			continue
 	
-	return data_dict
+	return data_dict['data']
 
 
 ########################## CHARGE, DISCHARGE, REST #############################
@@ -806,30 +806,43 @@ def charge_discharge_control(res_ids_dict, data_out_queue = None, data_in_queue 
 		cycle_num = 0
 		end_list_of_lists = False
 		
-		for cycle_settings_list in input_dict['cycle_settings_list_of_lists']:
+		for count_1, cycle_settings_list in enumerate(input_dict['cycle_settings_list_of_lists']):
 			print("CH{} - Cycle {} Starting".format(ch_num, cycle_num), flush=True)
 			filepath = FileIO.start_file(input_dict['directory'], input_dict['cell_name'])
 			
 			try:
-				for cycle_settings in cycle_settings_list:
+				for count_2, cycle_settings in enumerate(cycle_settings_list):
 					end_condition = 'none'
 					
+					#Set label text for current and next status
+					current_status = cycle_settings["cycle_type"]
+					try:
+						next_status = cycle_settings_list[count_2 + 1]["cycle_type"]
+					except IndexError:
+						try:
+							next_status = input_dict['cycle_settings_list_of_lists'][count_1 + 1][0]["cycle_type"]
+						except (IndexError, TypeError):
+							next_status = "Idle"
+					
+					data_out_queue.put_nowait({'type': 'status', 'data': (current_status, next_status)})
+					
+					
 					#Charge only - only using the power supply
-					if cycle_settings["cycle_type"] == 'charge':
+					if current_status == 'charge':
 						end_condition = charge_cycle(filepath, cycle_settings, eq_dict, data_out_queue = data_out_queue, data_in_queue = data_in_queue, ch_num = ch_num)
 						
 					#Discharge only - only using the eload
-					elif cycle_settings["cycle_type"] == 'discharge':
+					elif current_status == 'discharge':
 						end_condition = discharge_cycle(filepath, cycle_settings, eq_dict, data_out_queue = data_out_queue, data_in_queue = data_in_queue, ch_num = ch_num)
 					
 					#Step Functions
-					elif cycle_settings["cycle_type"] == 'step':
+					elif current_status == 'step':
 						end_condition = single_step_cycle(filepath, cycle_settings, eq_dict, data_out_queue = data_out_queue, data_in_queue = data_in_queue, ch_num = ch_num)
 						if end_condition == 'safety_condition':
 							break
 							
 					#Cycle the cell - using both psu and eload
-					elif cycle_settings["cycle_type"] == 'cycle':
+					elif current_status == 'cycle':
 						end_condition = cycle_cell(filepath, cycle_settings, eq_dict, data_out_queue = data_out_queue, data_in_queue = data_in_queue, ch_num = ch_num)
 					
 					if end_condition == 'end_request':
