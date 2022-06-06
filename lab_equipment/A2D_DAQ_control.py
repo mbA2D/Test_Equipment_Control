@@ -82,7 +82,7 @@ class A2D_DAQ:
 		
 		self.config_dict = A2D_DAQ_config.get_config_dict(default = True)
 		
-		msg = "Do you want to use a non-default config dict?"
+		msg = "Do you want to use a non-default config dict?\nDefault dict is all high-Z voltage inputs"
 		title = "A2D DAQ Configuration"
 		if eg.ynbox(msg, title):
 			self.config_dict.update(A2D_DAQ_config.get_config_dict())

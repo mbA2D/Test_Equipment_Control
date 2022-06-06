@@ -30,7 +30,7 @@ temperature
 
 def get_config_dict(default = False):
 	if default:
-		filename = 'A2D_DAQ_default_config.csv'
+		filename = 'A2D_DAQ_Config_Default.csv'
 		filepath = path.join(path.dirname(__file__), filename)
 	else:
 		#Choose CSV to load from
