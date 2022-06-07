@@ -64,7 +64,7 @@ class E3631A:
 		self.version_number = split_string[3]
 		
 		#Choose channel 1 by default
-		self.select_channel(1)
+		self.select_channel(2)
 		
 		self.lock_front_panel(True)
 		self.set_current(0)
