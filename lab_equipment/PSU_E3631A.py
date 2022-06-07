@@ -9,6 +9,7 @@ import serial
 # Power Supply
 class E3631A:
 	
+	query_delay = 0.1
 	has_remote_sense = False
 	
 	# Initialize the E3631A Power Supply
@@ -28,6 +29,7 @@ class E3631A:
 			for resource in resources:
 				try:
 					instrument = rm.open_resource(resource)
+					instrument.query_delay = self.query_delay
 					instrument_idn = instrument.query("*IDN?")
 					idns_dict[resource] = instrument_idn
 					instrument.close()
@@ -52,6 +54,7 @@ class E3631A:
 				resource_id = resources_dict[idn]
 		
 		self.inst = rm.open_resource(resource_id)
+		self.inst.query_delay = self.query_delay
 		
 		self.inst_idn = self.inst.query("*IDN?")
 		print("Connected to {}\n".format(self.inst_idn))
