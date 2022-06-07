@@ -9,7 +9,7 @@ import serial
 # Power Supply
 class E3631A:
 	
-	query_delay = 0.1
+	query_delay = 0.75
 	has_remote_sense = False
 	
 	# Initialize the E3631A Power Supply
