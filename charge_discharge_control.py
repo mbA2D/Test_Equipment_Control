@@ -674,8 +674,8 @@ def continuous_step_cycles_info():
 	return cycle_settings_list
 
 def ask_storage_charge():
-	message = "Do you want to do a storage charge?\n" + 
-				"Recommended to do one. Leaving a cell discharged increases\n" + 
+	message = "Do you want to do a storage charge?\n" + \
+				"Recommended to do one. Leaving a cell discharged increases\n" + \
 				"risk of latent failures due to dendrite growth."
 	return eg.ynbox(title = "Storage Charge",
 					msg = message)
