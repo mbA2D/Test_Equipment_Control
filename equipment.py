@@ -67,7 +67,8 @@ def connect_to_eq(key, class_name, res_id, use_remote_sense = None, multi_channe
 	#Key should be 'eload', 'psu', or 'dmm'
 	#'dmm' with any following characters will be considered a dmm
 	instrument = None
-	time.sleep(1) #testing E3631A and delay for passing equipment between threads
+	
+	if class_name == 'E3631A': time.sleep(1) #testing E3631A and delay for passing equipment between threads
 	
 	#return the actual equipment object instead of the equipment dictionary
 	if key == 'eload':
