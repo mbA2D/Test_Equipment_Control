@@ -392,6 +392,8 @@ def cycle_cell(filepath, cycle_settings, eq_dict, data_out_queue = None, data_in
 	#Charge
 	if no_dmm_i:
 		eq_dict['dmm_i'] = eq_dict['psu']
+	if no_dmm_v:
+		eq_dict['dmm_v'] = eq_dict['psu']
 	end_reason = charge_cell(filepath, cycle_settings, eq_dict, data_out_queue = data_out_queue, data_in_queue = data_in_queue, ch_num = ch_num) 
 	#Rest
 	if end_reason != 'end_requested':
@@ -399,6 +401,8 @@ def cycle_cell(filepath, cycle_settings, eq_dict, data_out_queue = None, data_in
 	#Discharge
 	if no_dmm_i:
 		eq_dict['dmm_i'] = eq_dict['eload']
+	if no_dmm_v:
+		eq_dict['dmm_v'] = eq_dict['eload']
 	if end_reason != 'end_requested':	
 		end_reason = discharge_cell(filepath, cycle_settings, eq_dict, data_out_queue = data_out_queue, data_in_queue = data_in_queue, ch_num = ch_num)
 	#Rest
