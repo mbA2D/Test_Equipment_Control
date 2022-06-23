@@ -381,133 +381,102 @@ def cycle_cell(filepath, cycle_settings, eq_dict, data_out_queue = None, data_in
 	no_dmm_v = False
 	no_dmm_i = False
 	if eq_dict['dmm_v'] == None:
-		eq_dict['dmm_v'] = eq_dict['eload']
 		no_dmm_v = True
 	if eq_dict['dmm_i'] == None:
-		eq_dict['dmm_i'] = eq_dict['eload']
 		no_dmm_i = True
+	
+	local_eq_dict = eq_dict
 	
 	#need to override i_meas_eq since eload does not provide current during this step.
 	end_reason = 'none'
 	#Charge
-	if no_dmm_i:
-		eq_dict['dmm_i'] = eq_dict['psu']
-	if no_dmm_v:
-		eq_dict['dmm_v'] = eq_dict['psu']
-	end_reason = charge_cell(filepath, cycle_settings, eq_dict, data_out_queue = data_out_queue, data_in_queue = data_in_queue, ch_num = ch_num) 
+	if no_dmm_i: local_eq_dict['dmm_i'] = eq_dict['psu']
+	if no_dmm_v: local_eq_dict['dmm_v'] = eq_dict['psu']
+	end_reason = charge_cell(filepath, cycle_settings, local_eq_dict, data_out_queue = data_out_queue, data_in_queue = data_in_queue, ch_num = ch_num) 
 	#Rest
 	if end_reason != 'end_requested':
-		end_reason = rest_cell(filepath, cycle_settings, eq_dict, after_charge = True, data_out_queue = data_out_queue, data_in_queue = data_in_queue, ch_num = ch_num)
+		end_reason = rest_cell(filepath, cycle_settings, local_eq_dict, after_charge = True, data_out_queue = data_out_queue, data_in_queue = data_in_queue, ch_num = ch_num)
 	#Discharge
-	if no_dmm_i:
-		eq_dict['dmm_i'] = eq_dict['eload']
-	if no_dmm_v:
-		eq_dict['dmm_v'] = eq_dict['eload']
+	if no_dmm_i: local_eq_dict['dmm_i'] = eq_dict['eload']
+	if no_dmm_v: local_eq_dict['dmm_v'] = eq_dict['eload']
 	if end_reason != 'end_requested':	
-		end_reason = discharge_cell(filepath, cycle_settings, eq_dict, data_out_queue = data_out_queue, data_in_queue = data_in_queue, ch_num = ch_num)
+		end_reason = discharge_cell(filepath, cycle_settings, local_eq_dict, data_out_queue = data_out_queue, data_in_queue = data_in_queue, ch_num = ch_num)
 	#Rest
 	if end_reason != 'end_requested':
-		end_reason = rest_cell(filepath, cycle_settings, eq_dict, after_charge = False, data_out_queue = data_out_queue, data_in_queue = data_in_queue, ch_num = ch_num)
+		end_reason = rest_cell(filepath, cycle_settings, local_eq_dict, after_charge = False, data_out_queue = data_out_queue, data_in_queue = data_in_queue, ch_num = ch_num)
 	
 	if end_reason == 'end_requested':
 		print('CH{} - Cycle Stopped: {}\n'.format(ch_num, time.ctime()), flush=True)
 	elif end_reason == 'end_condition':
 		print('CH{} - Cycle Completed: {}\n'.format(ch_num, time.ctime()), flush=True)
 	
-	if no_dmm_i:
-		eq_dict['dmm_i'] = None
-	if no_dmm_v:
-		eq_dict['dmm_v'] = None
 	return end_reason
 
 def charge_cycle(filepath, charge_settings, eq_dict, data_out_queue = None, data_in_queue = None, ch_num = None):
 
-	no_dmm_v = False
-	no_dmm_i = False
+	local_eq_dict = eq_dict
+	
 	if eq_dict['dmm_v'] == None:
-		eq_dict['dmm_v'] = eq_dict['psu']
-		no_dmm_v = True
+		local_eq_dict['dmm_v'] = eq_dict['psu']
 	if eq_dict['dmm_i'] == None:
-		eq_dict['dmm_i'] = eq_dict['psu']
-		no_dmm_i = True
+		local_eq_dict['dmm_i'] = eq_dict['psu']
 	
 	end_reason = 'none'
-	end_reason = charge_cell(filepath, charge_settings, eq_dict, data_out_queue = data_out_queue, data_in_queue = data_in_queue, ch_num = ch_num)
-	
-	if no_dmm_i:
-		eq_dict['dmm_i'] = None
-	if no_dmm_v:
-		eq_dict['dmm_v'] = None
+	end_reason = charge_cell(filepath, charge_settings, local_eq_dict, data_out_queue = data_out_queue, data_in_queue = data_in_queue, ch_num = ch_num)
 	
 	return end_reason
 	
 def discharge_cycle(filepath, charge_settings, eq_dict, data_out_queue = None, data_in_queue = None, ch_num = None):
 	
-	no_dmm_v = False
-	no_dmm_i = False
+	local_eq_dict = eq_dict
+	
 	if eq_dict['dmm_v'] == None:
-		eq_dict['dmm_v'] = eq_dict['eload']
-		no_dmm_v = True
+		local_eq_dict['dmm_v'] = eq_dict['eload']
 	if eq_dict['dmm_i'] == None:
-		eq_dict['dmm_i'] = eq_dict['eload']
-		no_dmm_i = True
+		local_eq_dict['dmm_i'] = eq_dict['eload']
 	
 	end_reason = 'none'
-	end_reason = discharge_cell(filepath, charge_settings, eq_dict, data_out_queue = data_out_queue, data_in_queue = data_in_queue, ch_num = ch_num)
-	
-	if no_dmm_i:
-		eq_dict['dmm_i'] = None
-	if no_dmm_v:
-		eq_dict['dmm_v'] = None
+	end_reason = discharge_cell(filepath, charge_settings, local_eq_dict, data_out_queue = data_out_queue, data_in_queue = data_in_queue, ch_num = ch_num)
 	
 	return end_reason
 
 def idle_cell_cycle(eq_dict, data_out_queue = None, data_in_queue = None):
 	
-	no_dmm_v = False
-	no_dmm_i = False
+	local_eq_dict = eq_dict
+	
 	if eq_dict['dmm_v'] == None:
-		no_dmm_v = True
 		if eq_dict['eload'] != None:
-			eq_dict['dmm_v'] = eq_dict['eload']
+			local_eq_dict['dmm_v'] = eq_dict['eload']
 		elif eq_dict['psu'] != None:
-			eq_dict['dmm_v'] = eq_dict['psu']
+			local_eq_dict['dmm_v'] = eq_dict['psu']
 		else:
 			print("No Voltage Measurement Equipment Connected! Exiting")
 			return 'settings'
 	
 	if eq_dict['dmm_i'] == None:
-		no_dmm_i = True
 		if eq_dict['eload'] != None:
-			eq_dict['dmm_i'] = eq_dict['eload']
+			local_eq_dict['dmm_i'] = eq_dict['eload']
 		elif eq_dict['psu'] != None:
-			eq_dict['dmm_i'] = eq_dict['psu']
+			local_eq_dict['dmm_i'] = eq_dict['psu']
 			
-	idle_cell(eq_dict, data_out_queue = data_out_queue, data_in_queue = data_in_queue)
-	
-	if no_dmm_i:
-		eq_dict['dmm_i'] = None
-	if no_dmm_v:
-		eq_dict['dmm_v'] = None
+	idle_cell(local_eq_dict, data_out_queue = data_out_queue, data_in_queue = data_in_queue)
 
 def single_step_cycle(filepath, step_settings, eq_dict, data_out_queue = None, data_in_queue = None, ch_num = None):
 	
-	no_dmm_v = False
-	no_dmm_i = False
+	local_eq_dict = eq_dict
+	
 	#if we don't have separate voltage measurement equipment, then choose what to use:
 	if eq_dict['dmm_v'] == None:
-		no_dmm_v = True
 		if eq_dict['eload'] != None:
-			eq_dict['dmm_v'] = eq_dict['eload']
+			local_eq_dict['dmm_v'] = eq_dict['eload']
 		elif eq_dict['psu'] != None:
-			eq_dict['dmm_v'] = eq_dict['psu']
+			local_eq_dict['dmm_v'] = eq_dict['psu']
 		else:
 			print("No Voltage Measurement Equipment Connected! Exiting")
 			return 'settings'
 	
 	#if we don't have separate current measurement equipment, then choose what to use:
 	if eq_dict['dmm_i'] == None:
-		no_dmm_i = True
 		resting = False
 		left_comparator = 0
 		if step_settings["drive_style"] == 'current_a':
@@ -518,21 +487,17 @@ def single_step_cycle(filepath, step_settings, eq_dict, data_out_queue = None, d
 			resting = True
 		
 		if left_comparator > 0 and eq_dict['psu'] != None:
-			eq_dict['dmm_i'] = eq_dict['psu'] #current measurement during charge
+			local_eq_dict['dmm_i'] = eq_dict['psu'] #current measurement during charge
 		elif left_comparator < 0 and eq_dict['eload'] != None:
-			eq_dict['dmm_i'] = eq_dict['eload'] #current measurement during discharge
+			local_eq_dict['dmm_i'] = eq_dict['eload'] #current measurement during discharge
 		elif not resting:
 			print("No Current Measurement Equipment Connected and not Resting! Exiting")
 			return 'settings'
-		
-	end_condition = step_cell(filepath, step_settings, eq_dict, data_out_queue = data_out_queue, data_in_queue = data_in_queue)
+	
+	end_reason = 'none'
+	end_reason = step_cell(filepath, step_settings, local_eq_dict, data_out_queue = data_out_queue, data_in_queue = data_in_queue)
 
-	if no_dmm_i:
-		eq_dict['dmm_i'] = None
-	if no_dmm_v:
-		eq_dict['dmm_v'] = None
-
-	return end_condition
+	return end_reason
 
 def find_eq_req_steps(step_settings):
 	eq_req_dict = {'psu': False, 'eload': False}
