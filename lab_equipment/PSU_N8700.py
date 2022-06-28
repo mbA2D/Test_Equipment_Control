@@ -10,6 +10,7 @@ class N8700:
 	# Initialize the N8700 Power Supply
 	
 	has_remote_sense = False
+	can_measure_v_while_off = True #Have not checked this.
 	
 	def __init__(self, resource_id = None):
 		rm = pyvisa.ResourceManager()

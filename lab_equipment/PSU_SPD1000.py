@@ -11,8 +11,9 @@ class SPD1000:
 	
 	read_termination = '\n'
 	write_termination = '\n'
-	query_delay = 0.05
+	query_delay = 0.15
 	has_remote_sense = True
+	can_measure_v_while_off = False
 	
 	def __init__(self, resource_id = None):
 		rm = pyvisa.ResourceManager()

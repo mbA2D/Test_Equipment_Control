@@ -9,6 +9,7 @@ import serial
 class BK9100:
 	
 	has_remote_sense = False
+	can_measure_v_while_off = True #Have not checked this.
 	
 	# Initialize the BK9100 Power Supply
 	

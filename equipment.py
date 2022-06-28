@@ -77,7 +77,7 @@ def connect_to_eq(key, class_name, res_id, use_remote_sense = None, multi_channe
 		instrument = powerSupplies.choose_psu(class_name, res_id, use_remote_sense)[1]
 	if key == 'dmm' or ('dmm' in key): #for dmm_i and dmm_v keys
 		instrument = dmms.choose_dmm(class_name, resource_id = res_id, multi_ch_event_and_queue_dict = multi_channel_event_and_queue_dict, use_remote_sense = use_remote_sense)[1]
-
+	time.sleep(0.1)
 	return instrument
 
 def get_res_id_dict_and_disconnect(eq_list):

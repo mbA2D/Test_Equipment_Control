@@ -33,6 +33,8 @@ class MainTestWindow(QMainWindow):
 		self.num_battery_channels = 0
 		
 		self.dict_for_event_and_queue = {}
+		self.multi_ch_device_process = None
+		self.multi_ch_management_queue = None
 	
 		self.eq_assignment_queue = Queue()
 		self.test_configuration_queue = Queue()
@@ -317,7 +319,7 @@ class MainTestWindow(QMainWindow):
 	
 	def multi_ch_devices_process(self):
 		#TODO - ask which board to connect to - for now, we will just connect to an A2D DAQ
-		self.dict_for_event_and_queue = adm.create_event_and_queue_dicts()
+		self.dict_for_event_and_queue, self.multi_ch_management_queue, self.multi_ch_device_process = adm.create_event_and_queue_dicts()
 		#self.dict_for_event_and_queue = fbm.create_event_and_queue_dicts(4,4)
 		
 		
@@ -517,16 +519,15 @@ class MainTestWindow(QMainWindow):
 	
 	def clean_up(self):
 		#close all threads - run this function just before the app closes
+		print("Exiting - Cleaning Up Processes")
 		for ch_num in range(self.num_battery_channels):
-			if self.assign_eq_process_list[ch_num] != None:
-				self.stop_process(self.assign_eq_process_list[ch_num])
-			if self.configure_test_process_list[ch_num] != None:
-				self.stop_process(self.configure_test_process_list[ch_num])
-			if self.edit_cell_name_process_list[ch_num] != None:
-				self.stop_process(self.edit_cell_name_process_list[ch_num])
+			self.stop_process(self.assign_eq_process_list[ch_num])
+			self.stop_process(self.configure_test_process_list[ch_num])
+			self.stop_process(self.edit_cell_name_process_list[ch_num])
 			self.stop_test(ch_num)
 			self.stop_idle_process(ch_num)
-			
+		if self.multi_ch_device_process is not None and self.multi_ch_management_queue is not None:
+			self.stop_process(self.multi_ch_device_process, self.multi_ch_management_queue)
 			
 	
 

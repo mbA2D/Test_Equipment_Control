@@ -106,24 +106,25 @@ def plot_ica(data_w_cap):
 #Calculates the capacity of the charge or discharge in wh and ah.
 #Also returns a dataframe that contains the temperature log entries corresponding to the
 #same timestamps as the log.
-def calc_capacity(log_data, stats, charge=True, temp_log_dir = "", show_ica_graphs = False):
+def calc_capacity(log_data, stats, charge = True, temp_log_dir = None, show_ica_graphs = False):
 	#create a mask to get only the discharge data
-	if (charge):
+	if charge:
 		prefix = 'charge'
 		mask = log_data['Current'] > 0
 	else:
 		prefix = 'discharge'
 		mask = log_data['Current'] < 0
 
-	temps_available = False
-	if(temp_log_dir != ""):
-		temps_available = True
-
-	dsc_data = log_data[mask]
+	separate_temps = False
+	if temp_log_dir is not None:
+		separate_temps = True
+	
+	log_data.loc[mask]
+	dsc_data = log_data
 	
 	if(dsc_data.size == 0):
-		print("Data for {} does not exist in log".format(prefix))
-		return dsc_data
+		print(f"Data for {prefix} does not exist in log")
+		return None
 	
 	#Calculate time required for cycle
 	start_time = dsc_data.loc[dsc_data.index[0], 'Data_Timestamp']
@@ -135,9 +136,8 @@ def calc_capacity(log_data, stats, charge=True, temp_log_dir = "", show_ica_grap
 	dsc_data['SecsFromLastTimestamp'] = dsc_data['Data_Timestamp'].diff()
 	dsc_data.loc[dsc_data.index.tolist()[0], 'SecsFromLastTimestamp'] = 0 #Set first val to 0 instead of NaN.
 	
-	dsc_data = dsc_data.assign(Capacity_Ah = dsc_data['Current'] * dsc_data['SecsFromLastTimestamp'] / 3600)
-	#For some reason, can't assign 2 at the same time, but I think we should be able to
-	dsc_data = dsc_data.assign(Capacity_wh = dsc_data['Capacity_Ah'] * dsc_data['Voltage'])
+	dsc_data['Capacity_Ah'] = dsc_data['Current'] * dsc_data['SecsFromLastTimestamp'] / 3600
+	dsc_data['Capacity_wh'] = dsc_data['Capacity_Ah'] * dsc_data['Voltage']
 	
 	dsc_data['Capacity_Ah_Up_To'] = dsc_data['Capacity_Ah'].cumsum() #cumulative sum of the values
 	dsc_data['Capacity_wh_Up_To'] = dsc_data['Capacity_wh'].cumsum()
@@ -145,40 +145,49 @@ def calc_capacity(log_data, stats, charge=True, temp_log_dir = "", show_ica_grap
 	dsc_data['Voltage_Diff'] = dsc_data['Voltage'].diff()
 	dsc_data = dsc_data.assign(dQ_dV = dsc_data['Capacity_Ah'] / dsc_data['Voltage_Diff'])
 	
-	capacity_ah = dsc_data['Capacity_Ah'].sum()
-	capacity_wh = dsc_data['Capacity_wh'].sum()
+	capacity_ah = dsc_data['Capacity_Ah_Up_To'].iloc[-1]
+	capacity_wh = dsc_data['Capacity_wh_Up_To'].iloc[-1]
 	
-	#TODO - better way of detecting charge current - find the CV and CC phases
-	#round current to 1 decimal point
-	charge_a = round(dsc_data['Current'].median(),1)
+	#TODO - better way of detecting charge current - find the CV and CC phases?
+	#round current to 2 demicals
+	charge_a = round(dsc_data['Current'].median(),2)
 	
-	print("{}:".format(prefix))
+	print(f'{prefix}:')
 	
-	stats.stats['{}_capacity_ah'.format(prefix)] = capacity_ah
-	stats.stats['{}_capacity_wh'.format(prefix)] = capacity_wh
-	stats.stats['{}_time_h'.format(prefix)] = total_time
-	stats.stats['{}_current_a'.format(prefix)] = charge_a
-	stats.stats['{}_start_time'.format(prefix)] = start_time
-	stats.stats['{}_end_time'.format(prefix)] = end_time
-	stats.stats['{}_end_v'.format(prefix)] = end_v
+	stats.stats[f'{prefix}_capacity_ah'] = capacity_ah
+	stats.stats[f'{prefix}_capacity_wh'] = capacity_wh
+	stats.stats[f'{prefix}_time_h'] = total_time
+	stats.stats[f'{prefix}_current_a'] = charge_a
+	stats.stats[f'{prefix}_start_time'] = start_time
+	stats.stats[f'{prefix}_end_time'] = end_time
+	stats.stats[f'{prefix}_end_v'] = end_v
 	
-	print('Ah: {}'.format(capacity_ah))
-	print('wh: {}'.format(capacity_wh))
-	print('Time(h): {}'.format(total_time))
-	print('Current(A): {}'.format(charge_a))
-	print('Start Time: {}'.format(start_time))
-	print('End Time: {}'.format(end_time))
+	print(f'Ah: {capacity_ah}')
+	print(f'wh: {capacity_wh}')
+	print(f'Time(h): {total_time}')
+	print(f'Current(A): {charge_a}')
+	print(f'Start Time: {start_time}')
+	print(f'End Time: {end_time}')
 
 	if show_ica_graphs: 
 		plot_ica(dsc_data)
 	
-	if temps_available:
+	if separate_temps:
 		#now add some temperature data
 		temp_data, max_temp = PlotTemps.get_temps(stats.stats, prefix, temp_log_dir)
-		stats.stats['{}_max_temp_c'.format(prefix)] = max_temp
-		
+		stats.stats[f'{prefix}_max_temp_c'] = max_temp
 		return temp_data
-	return dsc_data
+		
+	if True in ['dmm_t' in col_name for col_name in dsc_data]:
+		#There are temperatures in the same log as the voltages and currents.
+		t_col_list = [col_name for col_name in dsc_data if 'dmm_t' in col_name]
+		t_col_list.append('Data_Timestamp')
+		temp_data = dsc_data[t_col_list]
+		max_temp = temp_data[t_col_list].max().max()
+		stats.stats[f'{prefix}_max_temp_c'] = max_temp
+		return temp_data
+		
+	return None
 
 #adds a CycleStatistic dictionary to a CSV without duplicating results in the csv
 def dict_to_csv(dict, filepath):
@@ -253,11 +262,11 @@ if __name__ == '__main__':
 	filepaths = FileIO.get_multiple_filepaths()
 	
 	#Are there temperature logs associated?
-	temp_log_dir = ""
-	temps_available = eg.ynbox(title = "Temperature Logs",
-								msg = "Are there temperature logs associated with these discharge logs\n\
-								created by the A2D Electronics 64CH DAQ?")
-	if(temps_available):
+	temp_log_dir = None
+	separate_temps = eg.ynbox(title = "Temperature Logs",
+								msg = "Are there separate temperature logs associated with these discharge logs\n" + 
+										"created by the A2D Electronics 64CH DAQ?")
+	if(separate_temps):
 		#get the temps file location
 		temp_log_dir = FileIO.get_directory("Choose the directory that contains the temp logs")
 	
@@ -268,16 +277,14 @@ if __name__ == '__main__':
 	
 	#ensure that all directories exist
 	filedir = os.path.dirname(filepaths[0])
-	sub_dirs = ['Graphs','Stats']
-	if(temps_available):
-		sub_dirs.append('Temperature Graphs')
-		sub_dirs.append('Split Temperature Logs')
+	sub_dirs = ['Graphs', 'Stats', 'Temperature Graphs']
+	if separate_temps: sub_dirs.append('Split Temperature Logs')
 	for sub_dir in sub_dirs:
 		FileIO.ensure_subdir_exists_dir(filedir, sub_dir)
 	
 	#go through each voltage log and check it
 	for filepath in filepaths:
-		print("Voltage Log File: {}".format(os.path.split(filepath)[-1]))
+		print(f"Voltage Log File: {os.path.split(filepath)[-1]}")
 		filedir = os.path.dirname(filepath)
 		filename = os.path.split(filepath)[-1]  
 		
@@ -289,44 +296,45 @@ if __name__ == '__main__':
 		log_date = filename_parts[1]
 		log_time = filename_parts[2]
 
-		#modify file names for savings graphs and other files
+		#Modify file names for saving graphs and other files
 		filename_graph = 'GraphIV ' + filename
-		filename_stats = 'Cycle_Statistics.csv'
-		if(temps_available):
-			filename_temp_charge = 'Temps_Charge ' + filename
-			filename_temp_discharge = 'Temps_Discharge ' + filename
+		filename_stats = 'Cycle_Statistics.csv'	
 		
 		#Create directory names to store graphs etc.
 		filepath_graph = os.path.join(filedir, sub_dirs[0], filename_graph)
 		filepath_stats = os.path.join(filedir, sub_dirs[1], filename_stats)		
-		if(temps_available):
-			filepath_graph_temps_charge = os.path.join(filedir, sub_dirs[2], filename_temp_charge)
-			filepath_graph_temps_discharge = os.path.join(filedir, sub_dirs[2], filename_temp_discharge)
-			filepath_logs_temps_charge = os.path.join(filedir, sub_dirs[3], filename_temp_charge)
-			filepath_logs_temps_discharge = os.path.join(filedir, sub_dirs[3], filename_temp_discharge)
-			
-		#calculate stats and export
+		
+		#Calculate stats and export
 		cycle_stats = Templates.CycleStats()
 		cycle_stats.stats['cell_name'] = cell_name
 		
+		#Calculate capacity and get temperature datasets
 		temps_charge = calc_capacity(df, cycle_stats, charge=True, temp_log_dir = temp_log_dir, show_ica_graphs = show_ica_graphs)
 		temps_discharge = calc_capacity(df, cycle_stats, charge=False, temp_log_dir = temp_log_dir, show_ica_graphs = show_ica_graphs)
 		dict_to_csv(cycle_stats.stats, filepath_stats)
 		
+		if temps_charge is not None:
+			temps_charge = timestamp_to_cycle_start(temps_charge)
+			filename_temp_charge = 'Temps_Charge ' + filename
+			filepath_graph_temps_charge = os.path.join(filedir, sub_dirs[2], filename_temp_charge)
+			if separate_temps:
+				filepath_logs_temps_charge = os.path.join(filedir, sub_dirs[3], filename_temp_charge)
+				dataframe_to_csv(temps_charge, filepath_logs_temps_charge)
+			PlotTemps.plot_temps(temps_charge, cycle_stats.stats['cell_name'], separate_temps,\
+					save_filepath=filepath_graph_temps_charge, show_graph=False, suffix = 'charge')
+		if temps_discharge is not None:
+			temps_discharge = timestamp_to_cycle_start(temps_discharge)
+			filename_temp_discharge = 'Temps_Discharge ' + filename
+			filepath_graph_temps_discharge = os.path.join(filedir, sub_dirs[2], filename_temp_discharge)
+			if separate_temps:
+				filepath_logs_temps_discharge = os.path.join(filedir, sub_dirs[3], filename_temp_discharge)
+				dataframe_to_csv(temps_discharge, filepath_logs_temps_discharge)
+			PlotTemps.plot_temps(temps_discharge, cycle_stats.stats['cell_name'], separate_temps,\
+					save_filepath=filepath_graph_temps_discharge, show_graph=False, suffix = 'discharge')
+		
 		#Change timestamp to be seconds from cycle start instead of epoch
 		df = timestamp_to_cycle_start(df)
-		if(temps_available):
-			temps_charge = timestamp_to_cycle_start(temps_charge)
-			temps_discharge = timestamp_to_cycle_start(temps_discharge)
-			#export temps for this cell directly to csv
-			dataframe_to_csv(temps_charge, filepath_logs_temps_charge)
-			dataframe_to_csv(temps_discharge, filepath_logs_temps_discharge)
 		
 		#Show plot
 		plot_iv(df, save_filepath=filepath_graph, show_graph=show_discharge_graphs)
-		if(temps_available):
-			PlotTemps.plot_temps(temps_charge, cycle_stats.stats['cell_name'], \
-					save_filepath=filepath_graph_temps_charge, show_graph=False, prefix = 'charge')
-			PlotTemps.plot_temps(temps_discharge, cycle_stats.stats['cell_name'], \
-					save_filepath=filepath_graph_temps_discharge, show_graph=False, prefix = 'discharge')
-
+		
