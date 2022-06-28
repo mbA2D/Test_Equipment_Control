@@ -15,6 +15,7 @@ class MP71025X:
 	read_termination = '\n'
 	query_delay = 0.04
 	has_remote_sense = True
+	can_measure_v_while_off = True #Have not checked this.
 	
 	def __init__(self, resource_id = None):
 		

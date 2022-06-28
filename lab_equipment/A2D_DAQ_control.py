@@ -67,26 +67,27 @@ class A2D_DAQ:
 			resources_dict = dict((v,k) for k,v in idns_dict.items())
 			resource_id = resources_dict[idn]
 		
-		self.inst = rm.open_resource(resource_id)
-		
-		sleep(2) #wait for arduino reset
-		
-		#pyvisa configuration
-		self.inst.baud_rate = self.baud_rate
-		self.inst.read_termination = self.read_termination
-		self.inst.write_termination = self.write_termination
-		self.inst.query_delay = self.query_delay
-		self.inst.chunk_size = self.chunk_size
-		
-		print('Connected to:\n{name}'.format(name = self.inst.query('*IDN?')))
-		
-		self.config_dict = A2D_DAQ_config.get_config_dict(default = True)
-		
-		msg = "Do you want to use a non-default config dict?\nDefault dict is all high-Z voltage inputs"
-		title = "A2D DAQ Configuration"
-		if eg.ynbox(msg, title):
-			self.config_dict.update(A2D_DAQ_config.get_config_dict())
-		self.configure_from_dict()
+		if resource_id != None:
+			self.inst = rm.open_resource(resource_id)
+			
+			sleep(2) #wait for arduino reset
+			
+			#pyvisa configuration
+			self.inst.baud_rate = self.baud_rate
+			self.inst.read_termination = self.read_termination
+			self.inst.write_termination = self.write_termination
+			self.inst.query_delay = self.query_delay
+			self.inst.chunk_size = self.chunk_size
+			
+			print('Connected to: {name}'.format(name = self.inst.query('*IDN?')))
+			
+			self.config_dict = A2D_DAQ_config.get_config_dict(default = True)
+			
+			msg = "Do you want to use a non-default config dict?\nDefault dict is all high-Z voltage inputs"
+			title = "A2D DAQ Configuration"
+			if eg.ynbox(msg, title):
+				self.config_dict.update(A2D_DAQ_config.get_config_dict())
+			self.configure_from_dict()
 		
 	def __del__(self):
 		try:

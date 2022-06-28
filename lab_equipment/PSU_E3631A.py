@@ -11,6 +11,7 @@ class E3631A:
 	
 	query_delay = 0.75
 	has_remote_sense = False
+	can_measure_v_while_off = True #Have not checked this.
 	
 	# Initialize the E3631A Power Supply
 	def __init__(self, resource_id = None):

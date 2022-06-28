@@ -52,23 +52,27 @@ def initialize_connected_equipment(eq_dict):
 def disable_equipment(eq_dict):
 	if eq_dict['psu'] != None:
 		eq_dict['psu'].set_current(0) #Turn current to 0 first to try and eliminate arcing in a relay inside an eload that disconnects the output
+		time.sleep(0.05)
 		eq_dict['psu'].toggle_output(False)
 	if eq_dict['eload'] != None:
 		eq_dict['eload'].set_current(0) #Turn current to 0 first to try and eliminate arcing in a relay inside a power supply that disconnects the output
+		time.sleep(0.05)
 		eq_dict['eload'].toggle_output(False)
 
 ####################### TEST CONTROL #####################
 
 def start_charge(end_voltage, constant_current, eq_dict):
-	eq_dict['psu'].set_voltage(end_voltage)
-	time.sleep(0.01)
+	time.sleep(0.2)
 	eq_dict['psu'].set_current(constant_current)
-	time.sleep(0.01)
+	time.sleep(0.05)
+	eq_dict['psu'].set_voltage(end_voltage)
+	time.sleep(0.05)
 	eq_dict['psu'].toggle_output(True)
+	time.sleep(0.05)
 
 def start_discharge(constant_current, eq_dict):
 	eq_dict['eload'].set_current(constant_current)
-	time.sleep(0.01)
+	time.sleep(0.05)
 	eq_dict['eload'].toggle_output(True)
 	
 def start_step(step_settings, eq_dict):
@@ -242,12 +246,12 @@ def charge_cell(log_filepath, cycle_settings, eq_dict, data_out_queue = None, da
 	
 	end_reason = 'end_condition'
 	if end_signal(data_in_queue):
-		end_reason = 'end_requested'
-	while ((data["Current"] > cycle_settings["charge_end_a"] or data["Voltage"] < 0.99*cycle_settings["charge_end_v"]) and end_reason != 'end_requested'):
+		end_reason = 'end_request'
+	while ((data["Current"] > cycle_settings["charge_end_a"] or data["Voltage"] < 0.99*cycle_settings["charge_end_v"]) and end_reason != 'end_request'):
 		time.sleep(cycle_settings["meas_log_int_s"] - ((time.time() - charge_start_time) % cycle_settings["meas_log_int_s"]))
 		data.update(measure_battery(eq_dict, data_out_queue = data_out_queue))
 		if end_signal(data_in_queue):
-			end_reason = 'end_requested'
+			end_reason = 'end_request'
 		FileIO.write_data(log_filepath, data)
 		
 	disable_equipment(eq_dict)
@@ -274,12 +278,12 @@ def rest_cell(log_filepath, cycle_settings, eq_dict, after_charge = True, data_o
 	
 	end_reason = 'end_condition'
 	if end_signal(data_in_queue):
-		end_reason = 'end_requested'
-	while ((time.time() - rest_start_time) < rest_time_s) and end_reason != 'end_requested':
+		end_reason = 'end_request'
+	while ((time.time() - rest_start_time) < rest_time_s) and end_reason != 'end_request':
 		time.sleep(cycle_settings["meas_log_int_s"] - ((time.time() - rest_start_time) % cycle_settings["meas_log_int_s"]))
 		data.update(measure_battery(eq_dict, data_out_queue = data_out_queue))
 		if end_signal(data_in_queue):
-			end_reason = 'end_requested'
+			end_reason = 'end_request'
 		FileIO.write_data(log_filepath, data)
 	return end_reason
 
@@ -301,8 +305,8 @@ def discharge_cell(log_filepath, cycle_settings, eq_dict, data_out_queue = None,
 	
 	end_reason = 'end_condition'
 	if end_signal(data_in_queue):
-		end_reason = 'end_requested'
-	while (data["Voltage"] > cycle_settings["discharge_end_v"]) and end_reason != 'end_requested':
+		end_reason = 'end_request'
+	while (data["Voltage"] > cycle_settings["discharge_end_v"]) and end_reason != 'end_request':
 		rise = data["Voltage"] - prev_v
 		run = data["Data_Timestamp"] - prev_v_time
 		slope = 0
@@ -326,7 +330,7 @@ def discharge_cell(log_filepath, cycle_settings, eq_dict, data_out_queue = None,
 		
 		data.update(measure_battery(eq_dict, data_out_queue = data_out_queue))
 		if end_signal(data_in_queue):
-			end_reason = 'end_requested'
+			end_reason = 'end_request'
 		FileIO.write_data(log_filepath, data)
 	
 	disable_equipment(eq_dict)
@@ -393,21 +397,25 @@ def cycle_cell(filepath, cycle_settings, eq_dict, data_out_queue = None, data_in
 	if no_dmm_i: local_eq_dict['dmm_i'] = eq_dict['psu']
 	if no_dmm_v: local_eq_dict['dmm_v'] = eq_dict['psu']
 	end_reason = charge_cell(filepath, cycle_settings, local_eq_dict, data_out_queue = data_out_queue, data_in_queue = data_in_queue, ch_num = ch_num) 
+	if end_reason == 'end_request': return end_reason
+	
 	#Rest
-	if end_reason != 'end_requested':
-		end_reason = rest_cell(filepath, cycle_settings, local_eq_dict, after_charge = True, data_out_queue = data_out_queue, data_in_queue = data_in_queue, ch_num = ch_num)
+	if no_dmm_i: local_eq_dict['dmm_i'] = eq_dict['psu']
+	if no_dmm_v: local_eq_dict['dmm_v'] = eq_dict['psu']
+	end_reason = rest_cell(filepath, cycle_settings, local_eq_dict, after_charge = True, data_out_queue = data_out_queue, data_in_queue = data_in_queue, ch_num = ch_num)
+	if end_reason == 'end_request': return end_reason
+	
 	#Discharge
 	if no_dmm_i: local_eq_dict['dmm_i'] = eq_dict['eload']
 	if no_dmm_v: local_eq_dict['dmm_v'] = eq_dict['eload']
-	if end_reason != 'end_requested':	
-		end_reason = discharge_cell(filepath, cycle_settings, local_eq_dict, data_out_queue = data_out_queue, data_in_queue = data_in_queue, ch_num = ch_num)
-	#Rest
-	if end_reason != 'end_requested':
-		end_reason = rest_cell(filepath, cycle_settings, local_eq_dict, after_charge = False, data_out_queue = data_out_queue, data_in_queue = data_in_queue, ch_num = ch_num)
+	end_reason = discharge_cell(filepath, cycle_settings, local_eq_dict, data_out_queue = data_out_queue, data_in_queue = data_in_queue, ch_num = ch_num)
+	if end_reason == 'end_request': return end_reason
 	
-	if end_reason == 'end_requested':
-		print('CH{} - Cycle Stopped: {}\n'.format(ch_num, time.ctime()), flush=True)
-	elif end_reason == 'end_condition':
+	#Rest
+	end_reason = rest_cell(filepath, cycle_settings, local_eq_dict, after_charge = False, data_out_queue = data_out_queue, data_in_queue = data_in_queue, ch_num = ch_num)
+	if end_reason == 'end_request': return end_reason
+	
+	if end_reason == 'end_condition':
 		print('CH{} - Cycle Completed: {}\n'.format(ch_num, time.ctime()), flush=True)
 	
 	return end_reason
@@ -788,7 +796,7 @@ def charge_discharge_control(res_ids_dict, data_out_queue = None, data_in_queue 
 					current_status = cycle_settings["cycle_type"]
 					try:
 						next_status = cycle_settings_list[count_2 + 1]["cycle_type"]
-					except IndexError:
+					except (IndexError, TypeError):
 						try:
 							next_status = input_dict['cycle_settings_list_of_lists'][count_1 + 1][0]["cycle_type"]
 						except (IndexError, TypeError):

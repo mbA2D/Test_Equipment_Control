@@ -3,6 +3,7 @@
 # Power Supply
 class Fake_PSU:
 	has_remote_sense = False
+	can_measure_v_while_off = True
 	
 	def __init__(self, resource_id = None):
 		pass

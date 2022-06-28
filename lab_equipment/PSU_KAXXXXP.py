@@ -15,6 +15,7 @@ class KAXXXXP:
 	baud_rate = 9600
 	query_delay = 0.01
 	has_remote_sense = False
+	can_measure_v_while_off = True #Have not checked this.
 	
 	def __init__(self, resource_id = None):
 		rm = pyvisa.ResourceManager('@py')
