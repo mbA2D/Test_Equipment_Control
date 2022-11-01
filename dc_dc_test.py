@@ -7,7 +7,6 @@ import equipment as eq
 import time
 import easygui as eg
 import numpy as np
-import tkinter as tk
 import FileIO
 import Templates
 import jsonIO

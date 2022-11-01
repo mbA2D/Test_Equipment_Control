@@ -94,7 +94,21 @@ class DL3000:
 		
 	def set_mode_current(self):
 		self.inst.write(":FUNC CURR")
-
+	
+	
+	##COMMANDS FOR CV MODE
+	def set_mode_voltage(self):
+		self.inst.write(":FUNC VOLT")
+		time.sleep(0.05)
+		self.inst.write(":VOLT:RANG MAX")
+	
+	def set_cv_voltage(self, voltage_setpoint_V):
+		self.inst.write(":VOLT {}".format(voltage_setpoint_V))
+		
+	#also have :VOLT:RANG :VOLT:VLIM :VOLT:ILIM
+	
+	##END OF COMMANDS FOR CV MODE
+	
 	def toggle_output(self, state):
 		if state:
 			self.inst.write(":INP ON")
