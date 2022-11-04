@@ -70,6 +70,7 @@ class IT8500:
 		
 		print("Connected to {}\n".format(self.inst.query("*IDN?")))
 		#resets to Constant Current Mode
+		self.mode = "CURR"
 		self.inst.write("*RST")
 		self.set_current(0)
 		#set to remote mode (disable front panel)
@@ -77,10 +78,31 @@ class IT8500:
 		
 	# To Set E-Load in Amps 
 	def set_current(self, current_setpoint_A):
+		if self.mode != "CURR":
+			print("ERROR - E-load not in correct mode")
+			return
 		if current_setpoint_A < 0:
 			current_setpoint_A = -current_setpoint_A
 		self.inst.write("CURR {}".format(current_setpoint_A))
-
+	
+	def set_mode_current(self):
+		self.inst.write("FUNC CURR")
+		self.mode = "CURR"
+	
+	##COMMANDS FOR CV MODE
+	def set_mode_voltage(self):
+		self.inst.write("FUNC VOLT")
+		self.mode = "VOLT"
+		#Only 1 voltage range on this eload
+	
+	def set_cv_voltage(self, voltage_setpoint_V):
+		if self.mode != "VOLT":
+			print("ERROR - E-load not in correct mode")
+			return
+		self.inst.write("VOLT {}".format(voltage_setpoint_V))
+	
+	##END OF COMMANDS FOR CV MODE
+	
 	def toggle_output(self, state):
 		if state:
 			self.inst.write("INP ON")

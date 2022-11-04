@@ -4,6 +4,7 @@
 class Fake_Eload:
 	
 	has_remote_sense = False
+	self.mode = "CURR"
 
 	def __init__(self, resource_id = None):
 		self.max_power = 10000
@@ -13,8 +14,22 @@ class Fake_Eload:
 		
 	# To Set E-Load in Amps 
 	def set_current(self, current_setpoint_A):
+		if self.mode != "CURR":
+			print("ERROR - E-load not in correct mode")
 		pass
-
+	
+	def set_mode_current(self):
+		self.mode = "CURR"
+	
+	def set_mode_voltage(self):
+		self.mode = "VOLT"
+		pass
+		
+	def set_cv_voltage(self, voltage_setpoint_V):
+		if self.mode != "VOLT":
+			print("ERROR - E-load not in correct mode")
+		pass
+	
 	def toggle_output(self, state):
 		pass
 	

@@ -50,8 +50,22 @@ class PARALLEL:
 		self.eload1_current_share = self.eload1.max_power / self.max_power
 		self.eload2_current_share = self.eload2.max_power / self.max_power
 		
+		self.mode = "CURR"
+		self.set_mode_current()
+		
+	def set_mode_current(self):
+		self.eload1.set_mode_current()
+		self.eload2.set_mode_current()
+		self.mode = "CURR"
+		
+	def set_mode_voltage(self):
+		print("ERROR - CV mode with parallel eloads is not allowed")
+	
 	# To Set E-Load in Amps 
-	def set_current(self, current_setpoint_A):		
+	def set_current(self, current_setpoint_A):	
+		if self.mode != "CURR":
+			print("ERROR - E-load not in correct mode")
+			return
 		self.eload1.set_current(current_setpoint_A * self.eload1_current_share)
 		self.eload2.set_current(current_setpoint_A * self.eload2_current_share)
 
