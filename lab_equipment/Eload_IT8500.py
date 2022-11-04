@@ -60,15 +60,52 @@ class IT8500:
 		
 		self.inst = rm.open_resource(resource_id)
 		
-		#For 8513C+
-		self.max_current = 120
-		self.max_power = 600
-		
 		self.inst.baud_rate = self.baud_rate
 		self.inst.read_termination = self.read_termination
 		self.inst.write_termination = self.write_termination
+		idn_response = self.inst.query("*IDN?")
+		idn_split = idn_response.split(',')
+		model_number = idn_split[1]
+		print("Connected to {}\n".format(idn_response))
 		
-		print("Connected to {}\n".format(self.inst.query("*IDN?")))
+		if 'IT8511A' in model_number:
+			self.max_current = 30
+			self.max_power = 150
+		elif 'IT8511B' in model_number:
+			self.max_current = 10
+			self.max_power = 150
+		elif 'IT8512A' in model_number:
+			self.max_current = 30
+			self.max_power = 300
+		elif 'IT8512B' in model_number:
+			self.max_current = 15
+			self.max_power = 300
+		elif 'IT8512C' in model_number:
+			self.max_current = 60
+			self.max_power = 300
+		elif 'IT8512H' in model_number:
+			self.max_current = 5
+			self.max_power = 300
+		elif 'IT8513A' in model_number:
+			self.max_current = 60
+			self.max_power = 400
+		elif 'IT8513B' in model_number:
+			self.max_current = 30
+			self.max_power = 600
+		elif 'IT8513C' in model_number:
+			self.max_current = 120
+			self.max_power = 600
+		elif 'IT8514B' in model_number:
+			self.max_current = 60
+			self.max_power = 1500
+		elif 'IT8514C' in model_number:
+			self.max_current = 240
+			self.max_power = 1500
+		elif 'IT8516C' in model_number:
+			self.max_current = 240
+			self.max_power = 3000
+		
+		
 		#resets to Constant Current Mode
 		self.mode = "CURR"
 		self.inst.write("*RST")

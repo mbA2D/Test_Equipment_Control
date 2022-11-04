@@ -71,9 +71,12 @@ class KEL10X:
 		self.version_number = split_string[1]
 		self.serial_number = split_string[2]
 		
-		#For KEL103
-		self.max_current = 30
-		self.max_power = 300
+		if 'KEL103' in self.model_number:
+			self.max_current = 30
+			self.max_power = 300
+		elif 'KEL102' in self.model_number:
+			self.max_current = 30
+			self.max_power = 150
 		
 		self.mode = "CURR"
 		
