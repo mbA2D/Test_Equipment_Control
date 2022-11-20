@@ -24,7 +24,7 @@ TODO List
 
 ## Setup:
 ### Prerequisites:
- - Tested with Python 3.9.10
+ - Tested with Python 3.9.10 (https://www.python.org/downloads/release/python-3910/)
  - Keysight Instrument Control Bundle (https://www.keysight.com/ca/en/lib/software-detail/computer-software/keysight-instrument-control-bundle-download-1184883.html)
  - You might also need to download NI VISA (https://www.ni.com/en-ca/support/downloads/drivers/download.ni-visa.html#460225)
  - To install all the required python packages
