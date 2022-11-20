@@ -54,7 +54,7 @@ def gather_data(samples_to_avg):
 	
 	return data
 
-def sweep_load_voltage(filepath, test_name, voltage_list):
+def sweep_load_voltage(filepath, test_name, voltage_list, settings):
 	
 	for voltage in voltage_list:
 		eload.set_cv_voltage(voltage)
@@ -86,7 +86,7 @@ if __name__ == '__main__':
 	time.sleep(0.05)
 	eload.toggle_output(True)
 	
-	sweep_load_voltage(filepath, test_name, voltage_list)
+	sweep_load_voltage(filepath, test_name, voltage_list, test_settings)
 	
 	#Turn off power supply and eload
 	eload.toggle_output(False)
