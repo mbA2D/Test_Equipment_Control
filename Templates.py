@@ -159,3 +159,18 @@ class DcdcSweepSettings():
 			"measurement_samples_for_avg":	10
 		}
 		self.valid_strings = {}
+
+######################### MPPT TESTING ################
+
+class EloadCVSweepSettings():
+	
+	def __init__(self):
+		self.settings = {
+			"min_cv_voltage":				0,
+			"max_cv_voltage":				30,
+			"num_voltage_steps":			10,
+			"step_delay_s":					1,
+			"measurement_samples_for_avg":	10
+		}
+		self.valid_strings = {}
+	

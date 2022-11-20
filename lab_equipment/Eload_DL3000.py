@@ -51,15 +51,24 @@ class DL3000:
 				resource_id = resources_dict[idn]
 		
 		self.inst = rm.open_resource(resource_id)
-		print("Connected to {}\n".format(self.inst.query("*IDN?")))
+		idn_response = self.inst.query("*IDN?")
+		idn_split = idn_response.split(',')
+		model_number = idn_split[1]
+		print("Connected to {}\n".format(idn_response))
 		self.inst.write("*RST")
 		
-		#values specific to the DL3021 & DL3021A
-		self.ranges = {"low":4,"high":40}
+		if 'DL3021' in model_number:
+			#values specific to the DL3021 & DL3021A
+			self.ranges = {"low":4,"high":40}
+			self.max_current = 40
+			self.max_power = 200
+		elif 'DL3031' in model_number:
+			self.ranges = {"low":6,"high":60}
+			self.max_current = 60
+			self.max_power = 350
+			
 		self.range = "low"
-		self.max_current = 40
-		self.max_power = 200
-		
+		self.mode = "CURR"
 		self.set_mode_current()
 		self.set_current(0)
 		self.set_range("high")
@@ -69,6 +78,10 @@ class DL3000:
 		
 	# To Set E-Load in Amps 
 	def set_current(self, current_setpoint_A):		
+		if self.mode != "CURR":
+			print("ERROR - E-load not in correct mode")
+			return
+			
 		if current_setpoint_A < 0:
 			current_setpoint_A = -current_setpoint_A
 		
@@ -94,7 +107,26 @@ class DL3000:
 		
 	def set_mode_current(self):
 		self.inst.write(":FUNC CURR")
-
+		self.mode = "CURR"
+	
+	
+	##COMMANDS FOR CV MODE
+	def set_mode_voltage(self):
+		self.inst.write(":FUNC VOLT")
+		time.sleep(0.05)
+		self.inst.write(":VOLT:RANG MAX")
+		self.mode = "VOLT"
+	
+	def set_cv_voltage(self, voltage_setpoint_V):
+		if self.mode != "VOLT":
+			print("ERROR - E-load not in correct mode")
+			return
+		self.inst.write(":VOLT {}".format(voltage_setpoint_V))
+		
+	#also have :VOLT:RANG :VOLT:VLIM :VOLT:ILIM
+	
+	##END OF COMMANDS FOR CV MODE
+	
 	def toggle_output(self, state):
 		if state:
 			self.inst.write(":INP ON")

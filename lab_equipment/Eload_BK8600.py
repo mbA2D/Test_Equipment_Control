@@ -52,13 +52,48 @@ class BK8600:
 		
 		
 		self.inst = rm.open_resource(resource_id)
-		print("Connected to {}\n".format(self.inst.query("*IDN?")))
+		idn_response = self.inst.query("*IDN?")
+		idn_split = idn_response.split(',')
+		model_number = idn_split[1]
+		print("Connected to {}\n".format(idn_response))
 		#resets to Constant Current Mode
 		self.inst.write("*RST")
 		
-		#Values for BK8601
-		self.max_current = 60
-		self.max_power = 250
+		if '8600' in model_number:
+			self.max_current = 30
+			self.max_power = 150
+		elif '8601' in model_number:
+			self.max_current = 60
+			self.max_power = 250
+		elif '8602' in model_number:
+			self.max_current = 15
+			self.max_power = 200
+		elif '8610' in model_number:
+			self.max_current = 120
+			self.max_power = 750
+		elif '8612' in model_number:
+			self.max_current = 30
+			self.max_power = 750
+		elif '8614' in model_number:
+			self.max_current = 240
+			self.max_power = 1500
+		elif '8616' in model_number:
+			self.max_current = 60
+			self.max_power = 1200
+		elif '8620' in model_number:
+			self.max_current = 480
+			self.max_power = 3000
+		elif '8622' in model_number:
+			self.max_current = 100
+			self.max_power = 2500
+		elif '8624' in model_number:
+			self.max_current = 600
+			self.max_power = 4500
+		elif '8610' in model_number:
+			self.max_current = 720
+			self.max_power = 6000
+		
+		self.mode = "CURR"
 		
 		self.set_current(0)
 		#set to remote mode (disable front panel)
@@ -66,10 +101,31 @@ class BK8600:
 		
 	# To Set E-Load in Amps 
 	def set_current(self, current_setpoint_A):
+		if self.mode != "CURR":
+			print("ERROR - E-load not in correct mode")
+			return
 		if current_setpoint_A < 0:
 			current_setpoint_A = -current_setpoint_A
 		self.inst.write("CURR:LEV {}".format(current_setpoint_A))
-
+	
+	def set_mode_current(self):
+		self.inst.write("FUNC CURR")
+		self.mode = "CURR"
+	
+	##COMMANDS FOR CV MODE
+	def set_mode_voltage(self):
+		self.inst.write("FUNC VOLT")
+		self.mode = "VOLT"
+		#Only 1 voltage range on this eload
+	
+	def set_cv_voltage(self, voltage_setpoint_V):
+		if self.mode != "VOLT":
+			print("ERROR - E-load not in correct mode")
+			return
+		self.inst.write("VOLT {}".format(voltage_setpoint_V))
+	
+	##END OF COMMANDS FOR CV MODE
+	
 	def toggle_output(self, state):
 		if state:
 			self.inst.write("INP ON")
