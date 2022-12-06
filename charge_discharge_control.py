@@ -449,17 +449,18 @@ def discharge_cycle(filepath, charge_settings, eq_dict, data_out_queue = None, d
     return end_reason
 
 def rest_cycle(filepath, charge_settings, eq_dict, data_out_queue = None, data_in_queue = None, ch_num = None):
+    
     local_eq_dict = eq_dict
     
     if eq_dict['dmm_v'] == None:
         if eq_dict['eload'] != None:
             local_eq_dict['dmm_v'] = eq_dict['eload']
-        else eq_dict['psu'] != None:
+        elif eq_dict['psu'] != None:
             local_eq_dict['dmm_v'] = eq_dict['psu']
     if eq_dict['dmm_i'] == None:
         if eq_dict['eload'] != None:
             local_eq_dict['dmm_i'] = eq_dict['eload']
-        else eq_dict['psu'] != None:
+        elif eq_dict['psu'] != None:
             local_eq_dict['dmm_i'] = eq_dict['psu']
     
     end_reason = 'none'
