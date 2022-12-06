@@ -448,6 +448,25 @@ def discharge_cycle(filepath, charge_settings, eq_dict, data_out_queue = None, d
     
     return end_reason
 
+def rest_cycle(filepath, charge_settings, eq_dict, data_out_queue = None, data_in_queue = None, ch_num = None):
+    local_eq_dict = eq_dict
+    
+    if eq_dict['dmm_v'] == None:
+        if eq_dict['eload'] != None:
+            local_eq_dict['dmm_v'] = eq_dict['eload']
+        else eq_dict['psu'] != None:
+            local_eq_dict['dmm_v'] = eq_dict['psu']
+    if eq_dict['dmm_i'] == None:
+        if eq_dict['eload'] != None:
+            local_eq_dict['dmm_i'] = eq_dict['eload']
+        else eq_dict['psu'] != None:
+            local_eq_dict['dmm_i'] = eq_dict['psu']
+    
+    end_reason = 'none'
+    end_reason = rest_cell(filepath, charge_settings, local_eq_dict, data_out_queue = data_out_queue, data_in_queue = data_in_queue, ch_num = ch_num)
+    
+    return end_reason
+
 def idle_cell_cycle(eq_dict, data_out_queue = None, data_in_queue = None):
     
     local_eq_dict = eq_dict
@@ -655,14 +674,20 @@ def single_ir_test_info():
     ir_test_settings.get_cycle_settings("Single IR Test")
     
     ir_settings = ir_test_settings.settings
-    step_settings_list = convert_single_ir_settings_to_steps(ir_settings)
-    step_settings_list = (step_settings_list,)
-    
+    step_settings_list = list()
+    step_settings_list.append(convert_single_ir_settings_to_steps(ir_settings))
+
     return step_settings_list
     
-def convert_single_ir_settings_to_steps(ir_settings):
-    step_1 = Templates.StepSettings()
-    step_2 = Templates.StepSettings()
+def convert_single_ir_settings_to_steps(ir_settings, model_step_settings = None):
+    if model_step_settings is None:
+        step_1 = Templates.StepSettings()
+        step_2 = Templates.StepSettings()
+    else:
+        step_1 = model_step_settings
+        step_2 = model_step_settings
+    
+    
     max_current = max(ir_settings["current_1_a"], ir_settings["current_2_a"])
     max_time = max(ir_settings["time_1_s"], ir_settings["time_2_s"])
     
@@ -677,8 +702,69 @@ def convert_single_ir_settings_to_steps(ir_settings):
     step_1.settings["safety_max_time_s"] = max_time*1.5
     step_2.settings["safety_max_time_s"] = max_time*1.5
     
-    return (step_1.settings, step_2.settings)
+    return_list = list()
+    return_list.append(step_1.settings)
+    return_list.append(step_2.settings)
+    return return_list
     
+    
+def repeated_ir_test_info():
+    ir_test_settings = Templates.RepeatedIRSettings()
+    ir_test_settings.get_cycle_settings("Repeated IR Test")
+
+    charge_settings = Templates.ChargeSettings()
+    
+    charge_settings.settings["charge_end_v"] = ir_test_settings.settings["charge_end_v"]
+    charge_settings.settings["charge_a"] = ir_test_settings.settings["charge_a"]
+    charge_settings.settings["charge_end_a"] = ir_test_settings.settings["charge_end_a"]
+    charge_settings.settings["meas_log_int_s"] = ir_test_settings.settings["meas_log_int_s"]
+    
+    rest_settings = Templates.RestSettings()
+    
+    rest_settings.settings["meas_log_int_s"] = ir_test_settings.settings["meas_log_int_s"]
+    
+    step_settings_list = convert_repeated_ir_settings_to_steps(ir_test_settings.settings)
+    
+    settings_list = list()
+    settings_list.append((charge_settings.settings,))
+    settings_list.append((rest_settings.settings,))
+    settings_list.append(step_settings_list)
+    
+    return settings_list
+    
+def convert_repeated_ir_settings_to_steps(test_settings):
+    model_step_settings = Templates.StepSettings()
+    max_current = max(test_settings["current_1_a"], test_settings["current_2_a"])
+    max_time = max(test_settings["time_1_s"], test_settings["time_2_s"])
+    
+    model_step_settings.settings["drive_style"] = 'current_a'
+    model_step_settings.settings["safety_min_current_a"] = test_settings["safety_min_current_a"]
+    model_step_settings.settings["safety_max_current_a"] = test_settings["safety_max_current_a"]
+    model_step_settings.settings["safety_max_time_s"] = max_time*1.5
+    model_step_settings.settings["end_style"] = 'time_s'
+    model_step_settings.settings["end_condition"] = 'greater'
+    model_step_settings.settings["safety_min_voltage_v"] = test_settings["safety_min_voltage_v"]
+    model_step_settings.settings["safety_max_voltage_v"] = test_settings["safety_max_voltage_v"]
+    
+    step_1 = model_step_settings
+    step_2 = model_step_settings
+    
+    step_1.settings["drive_value"] = test_settings["current_1_a"]
+    step_2.settings["drive_value"] = test_settings["current_2_a"]
+    step_1.settings["end_value"] = test_settings["time_1_s"]
+    step_2.settings["end_value"] = test_settings["time_2_s"]
+    
+    capacity_per_test_a_s = test_settings["current_1_a"]*test_settings["time_1_s"] + test_settings["current_2_a"]*test_settings["time_2_s"]
+    total_capacity_a_s = test_settings["estimated_capacity_ah"] * 3600
+    num_tests_required = int(abs(total_capacity_a_s / capacity_per_test_a_s))
+    
+    settings_list = list()
+    
+    for i in range(num_tests_required*2):
+        settings_list.append(step_1.settings)
+        settings_list.append(step_2.settings)
+        
+    return settings_list
     
 def ask_storage_charge():
     message = "Do you want to do a storage charge?\n" + \
@@ -721,6 +807,7 @@ def get_cycle_settings_list_of_lists(cycle_type):
     cycle_types["Step Cycle"]['func_call'] = multi_step_cell_info
     cycle_types["Continuous Step Cycles"]['func_call'] = continuous_step_cycles_info
     cycle_types["Single IR Test"]['func_call'] = single_ir_test_info
+    cycle_types["Repeated IR Test"]['func_call'] = repeated_ir_test_info
     
     #gather the list settings based on the cycle type
     cycle_settings_list_of_lists = list()
@@ -737,9 +824,10 @@ def get_cycle_settings_list_of_lists(cycle_type):
         
     return cycle_settings_list_of_lists
 
-def get_eq_req_dict(cycle_type, cycle_settings_list_of_lists):
+def get_eq_req_dict(cycle_settings_list_of_lists):
     #REQUIRED EQUIPMENT
     eq_req_dict = {'psu': False, 'eload': False}
+    cycle_requirements = Templates.CycleTypes.cycle_requirements
     
     for settings_list in cycle_settings_list_of_lists:
         for settings in settings_list:
@@ -748,9 +836,8 @@ def get_eq_req_dict(cycle_type, cycle_settings_list_of_lists):
                 eq_req_dict['psu'] = eq_req_dict['psu'] or eq_req_from_settings['psu']
                 eq_req_dict['eload'] = eq_req_dict['eload'] or eq_req_from_settings['eload']
             else:
-                cycle_types = Templates.CycleTypes.cycle_types
-                eq_req_dict['psu'] = eq_req_dict['psu'] or cycle_types[cycle_type]['supply_req']
-                eq_req_dict['eload'] = eq_req_dict['eload'] or cycle_types[cycle_type]['load_req']
+                eq_req_dict['psu'] = eq_req_dict['psu'] or cycle_requirements[settings["cycle_type"]]['supply_req']
+                eq_req_dict['eload'] = eq_req_dict['eload'] or cycle_requirements[settings["cycle_type"]]['load_req']
     
     return eq_req_dict
 
@@ -760,7 +847,7 @@ def get_input_dict(ch_num = None, queue = None):
     input_dict['directory'] = FileIO.get_directory("Choose directory to save the cycle logs")
     input_dict['cycle_type'] = get_cycle_type()
     input_dict['cycle_settings_list_of_lists'] = get_cycle_settings_list_of_lists(input_dict['cycle_type'])
-    input_dict['eq_req_dict'] = get_eq_req_dict(input_dict['cycle_type'], input_dict['cycle_settings_list_of_lists'])
+    input_dict['eq_req_dict'] = get_eq_req_dict(input_dict['cycle_settings_list_of_lists'])
     
     if queue != None:
         dict_to_put = {'ch_num': ch_num, 'cdc_input_dict': input_dict}
@@ -843,6 +930,10 @@ def charge_discharge_control(res_ids_dict, data_out_queue = None, data_in_queue 
                     #Discharge only - only using the eload
                     elif current_status == 'discharge':
                         end_condition = discharge_cycle(filepath, cycle_settings, eq_dict, data_out_queue = data_out_queue, data_in_queue = data_in_queue, ch_num = ch_num)
+                    
+                    #Rest only
+                    elif current_status == 'rest':
+                        end_condition = rest_cycle(filepath, cycle_settings, eq_dict, data_out_queue = data_out_queue, data_in_queue = data_in_queue, ch_num = ch_num)
                     
                     #Step Functions
                     elif current_status == 'step':
