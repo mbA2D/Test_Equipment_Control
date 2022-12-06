@@ -686,7 +686,7 @@ def convert_single_ir_settings_to_steps(ir_settings, model_step_settings = None)
         step_2 = model_step_settings
     
     max_current_limit = abs(max(ir_settings["current_1_a"], ir_settings["current_2_a"]))*1.5
-    min_current_limit = -abs(min(ir_settings["current_1_a"], ir_settings["current_2_a"])*1.5)
+    min_current_limit = -abs(min(ir_settings["current_1_a"], ir_settings["current_2_a"]))*1.5
     max_time = max(ir_settings["time_1_s"], ir_settings["time_2_s"])
     
     step_1.settings["drive_style"] = 'current_a'
