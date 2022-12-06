@@ -685,8 +685,8 @@ def convert_single_ir_settings_to_steps(ir_settings, model_step_settings = None)
         step_1 = model_step_settings
         step_2 = model_step_settings
     
-    
-    max_current = max(ir_settings["current_1_a"], ir_settings["current_2_a"])
+    max_current_limit = abs(max(ir_settings["current_1_a"], ir_settings["current_2_a"]))*1.5
+    min_current_limit = -abs(min(ir_settings["current_1_a"], ir_settings["current_2_a"])*1.5)
     max_time = max(ir_settings["time_1_s"], ir_settings["time_2_s"])
     
     step_1.settings["drive_style"] = 'current_a'
@@ -695,8 +695,10 @@ def convert_single_ir_settings_to_steps(ir_settings, model_step_settings = None)
     step_2.settings["drive_value"] = ir_settings["current_2_a"]
     step_1.settings["end_value"] = ir_settings["time_1_s"]
     step_2.settings["end_value"] = ir_settings["time_2_s"]
-    step_1.settings["safety_min_current_a"] = max_current*1.5
-    step_2.settings["safety_min_current_a"] = max_current*1.5
+    step_1.settings["safety_min_current_a"] = min_current_limit
+    step_2.settings["safety_min_current_a"] = min_current_limit
+    step_1.settings["safety_max_current_a"] = max_current_limit
+    step_2.settings["safety_max_current_a"] = max_current_limit
     step_1.settings["safety_max_time_s"] = max_time*1.5
     step_2.settings["safety_max_time_s"] = max_time*1.5
     
@@ -733,7 +735,6 @@ def repeated_ir_test_info():
     
 def convert_repeated_ir_settings_to_steps(test_settings):
     model_step_settings = Templates.StepSettings()
-    max_current = max(test_settings["current_1_a"], test_settings["current_2_a"])
     max_time = max(test_settings["time_1_s"], test_settings["time_2_s"])
     
     model_step_settings.settings["drive_style"] = 'current_a'
@@ -772,10 +773,14 @@ def ask_storage_charge():
     return eg.ynbox(title = "Storage Charge",
                     msg = message)
 
-def get_cell_name(ch_num = None, queue = None):
+def get_cell_name(ch_num = None, queue = None, current_text = None):
+    default_name = "CELL_NAME"
+    if current_text != None:
+        default_name = current_text
+
     #get the cell name
     cell_name = eg.enterbox(title = "Test Setup", msg = "Enter the Cell Name\n(Spaces will be replaced with underscores)",
-                            default = "CELL_NAME", strip = True)
+                            default = default_name, strip = True)
     #replace the spaces to keep file names consistent
     cell_name = cell_name.replace(" ", "_")
     
@@ -840,9 +845,9 @@ def get_eq_req_dict(cycle_settings_list_of_lists):
     
     return eq_req_dict
 
-def get_input_dict(ch_num = None, queue = None):
+def get_input_dict(ch_num = None, queue = None, current_cell_name = None):
     input_dict = {}
-    input_dict['cell_name'] = get_cell_name()
+    input_dict['cell_name'] = get_cell_name(current_text = current_cell_name)
     input_dict['directory'] = FileIO.get_directory("Choose directory to save the cycle logs")
     input_dict['cycle_type'] = get_cycle_type()
     input_dict['cycle_settings_list_of_lists'] = get_cycle_settings_list_of_lists(input_dict['cycle_type'])

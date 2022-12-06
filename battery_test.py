@@ -164,7 +164,7 @@ class MainTestWindow(QMainWindow):
 			
 			#setting up buttons
 			self.button_edit_cell_name_list[ch_num].setCheckable(False)
-			self.button_edit_cell_name_list[ch_num].clicked.connect(partial(self.edit_cell_name_process, ch_num))
+			self.button_edit_cell_name_list[ch_num].clicked.connect(partial(self.edit_cell_name, ch_num))
 			
 			self.button_assign_eq_list[ch_num].setCheckable(False)
 			self.button_assign_eq_list[ch_num].clicked.connect(partial(self.assign_equipment_process, ch_num))
@@ -432,14 +432,14 @@ class MainTestWindow(QMainWindow):
 			
 	
 	def edit_cell_name(self, ch_num):
-		self.configure_test_process(ch_num = ch_num)
+		self.edit_cell_name_process(ch_num = ch_num)
 	
 	def edit_cell_name_process(self, ch_num):
 		if self.edit_cell_name_process_list[ch_num] is not None and self.edit_cell_name_process_list[ch_num].is_alive():
 				print("CH{} - There is a cell name edit already running".format(ch_num))
 				return
 		try:
-			self.edit_cell_name_process_list[ch_num] = Process(target=cdc.get_cell_name, args = (ch_num, self.edit_cell_name_queue))
+			self.edit_cell_name_process_list[ch_num] = Process(target=cdc.get_cell_name, args = (ch_num, self.edit_cell_name_queue, self.cell_name_label_list[ch_num].text()))
 			self.edit_cell_name_process_list[ch_num].start()
 		except:
 			traceback.print_exc()
@@ -452,7 +452,7 @@ class MainTestWindow(QMainWindow):
 				print("CH{} - There is a configuration already running".format(ch_num))
 				return
 		try:
-			self.configure_test_process_list[ch_num] = Process(target=cdc.get_input_dict, args = (ch_num, self.test_configuration_queue))
+			self.configure_test_process_list[ch_num] = Process(target=cdc.get_input_dict, args = (ch_num, self.test_configuration_queue, self.cell_name_label_list[ch_num].text()))
 			self.configure_test_process_list[ch_num].start()
 		except:
 			traceback.print_exc()

@@ -41,7 +41,7 @@ class CycleTypes:
 		"CC Discharge Only": 							{'func_call': '', 'str_chg_opt': False},
 		"Step Cycle":									{'func_call': '', 'str_chg_opt': False},
 		"Continuous Step Cycles":						{'func_call': '', 'str_chg_opt': True},
-        "Single IR Test":	        					{'func_call': '', 'str_chg_opt': True},
+        "Single IR Test":	        					{'func_call': '', 'str_chg_opt': False},
         "Repeated IR Test":                	            {'func_call': '', 'str_chg_opt': True}
 	}
 	
