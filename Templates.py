@@ -40,7 +40,8 @@ class CycleTypes:
 		"CC Charge Only": 								{'func_call': '', 'str_chg_opt': False,'load_req': False, 'supply_req': True},
 		"CC Discharge Only": 							{'func_call': '', 'str_chg_opt': False,'load_req': True, 'supply_req': False},
 		"Step Cycle":									{'func_call': '', 'str_chg_opt': False,'load_req': False, 'supply_req': False},
-		"Continuous Step Cycles":						{'func_call': '', 'str_chg_opt': True, 'load_req': False, 'supply_req': False}
+		"Continuous Step Cycles":						{'func_call': '', 'str_chg_opt': True, 'load_req': False, 'supply_req': False},
+        "Single IR Test":	        					{'func_call': '', 'str_chg_opt': False, 'load_req': True, 'supply_req': False}
 	}
 
 ###############  CYCLE  #######################
@@ -54,7 +55,7 @@ class CycleSettings:
 			"charge_end_a": 			0.3,
 			"rest_after_charge_min": 	20, 
 			"discharge_end_v": 			2.5,
-			"discharge_a": 				1,
+			"discharge_a": 				-1,
 			"rest_after_discharge_min": 20,
 			"meas_log_int_s": 			1
 		}
@@ -79,8 +80,8 @@ class ChargeSettings(CycleSettings):
 		self.settings = {
 			"cycle_type":				'charge',
 			"charge_end_v": 			4.2,
-			"charge_a": 				7.5,
-			"charge_end_a": 			0.3,
+			"charge_a": 				1,
+			"charge_end_a": 			0.1,
 			"meas_log_int_s": 			1
 		}
 		self.valid_strings = {
@@ -95,7 +96,7 @@ class DischargeSettings(CycleSettings):
 		self.settings = { 
 			"cycle_type":				'discharge',
 			"discharge_end_v": 			2.5,
-			"discharge_a": 				52.5,
+			"discharge_a": 				-1,
 			"meas_log_int_s": 			1
 		}
 		self.valid_strings = {
@@ -127,6 +128,22 @@ class StepSettings(CycleSettings):
 			"end_style":				('time_s', 'current_a', 'voltage_v'),
 			"end_condition":			('greater', 'lesser')
 		}
+
+################ INTERNAL RESISTANCE BATTERY TEST ##############
+
+class SingleIRSettings(CycleSettings):
+    def __init__(self):
+        self.settings = {
+            "cycle_type":               'single_ir_test',
+            "current_1_a":              -1,
+            "time_1_s":                 5,
+            "current_2_a":              -5,
+            "time_2_s":                 5
+        }
+        self.valid_strings = {
+			"cycle_type":				('single_ir_test',)
+		}
+
 
 ####################  DC DC TESTING  ############
 
