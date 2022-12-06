@@ -119,6 +119,7 @@ class RestSettings(CycleSettings):
 	def __init__(self):
 		self.settings = { 
 			"cycle_type":				'rest',
+			"rest_time_min":			5,
 			"meas_log_int_s": 			1
 		}
 		self.valid_strings = {

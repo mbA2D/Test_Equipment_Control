@@ -263,15 +263,9 @@ def idle_cell(eq_dict, data_out_queue = None, data_in_queue = None):
         measure_battery(eq_dict, data_out_queue = data_out_queue)
         time.sleep(1)
 
-def rest_cell(log_filepath, cycle_settings, eq_dict, after_charge = True, data_out_queue = None, data_in_queue = None, ch_num = None):
+def rest_cell(log_filepath, cycle_settings, eq_dict, rest_time_s, data_out_queue = None, data_in_queue = None, ch_num = None):
     #rest - do nothing for X time but continue monitoring voltage
     rest_start_time = time.time()
-    
-    rest_time_s = 0
-    if(after_charge):
-        rest_time_s = cycle_settings["rest_after_charge_min"] * 60
-    else:
-        rest_time_s = cycle_settings["rest_after_discharge_min"] * 60
 
     print('CH{} - Starting Rest: {}\n'.format(ch_num, time.ctime()), flush=True)
     data = {}
@@ -402,7 +396,8 @@ def cycle_cell(filepath, cycle_settings, eq_dict, data_out_queue = None, data_in
     #Rest
     if no_dmm_i: local_eq_dict['dmm_i'] = eq_dict['psu']
     if no_dmm_v: local_eq_dict['dmm_v'] = eq_dict['psu']
-    end_reason = rest_cell(filepath, cycle_settings, local_eq_dict, after_charge = True, data_out_queue = data_out_queue, data_in_queue = data_in_queue, ch_num = ch_num)
+    rest_time_s = cycle_settings['rest_after_charge_min']*60
+    end_reason = rest_cell(filepath, cycle_settings, local_eq_dict, rest_time_s, data_out_queue = data_out_queue, data_in_queue = data_in_queue, ch_num = ch_num)
     if end_reason == 'end_request': return end_reason
     
     #Discharge
@@ -412,9 +407,10 @@ def cycle_cell(filepath, cycle_settings, eq_dict, data_out_queue = None, data_in
     if end_reason == 'end_request': return end_reason
     
     #Rest
-    end_reason = rest_cell(filepath, cycle_settings, local_eq_dict, after_charge = False, data_out_queue = data_out_queue, data_in_queue = data_in_queue, ch_num = ch_num)
-    if end_reason == 'end_request': return end_reason
     
+    end_reason = rest_cell(filepath, cycle_settings, local_eq_dict, rest_time_s, data_out_queue = data_out_queue, data_in_queue = data_in_queue, ch_num = ch_num)
+    if end_reason == 'end_request': return end_reason
+    rest_time_s = cycle_settings['rest_after_discharge_min']*60
     if end_reason == 'end_condition':
         print('CH{} - Cycle Completed: {}\n'.format(ch_num, time.ctime()), flush=True)
     
@@ -448,7 +444,7 @@ def discharge_cycle(filepath, charge_settings, eq_dict, data_out_queue = None, d
     
     return end_reason
 
-def rest_cycle(filepath, charge_settings, eq_dict, data_out_queue = None, data_in_queue = None, ch_num = None):
+def rest_cycle(filepath, rest_settings, eq_dict, data_out_queue = None, data_in_queue = None, ch_num = None):
     
     local_eq_dict = eq_dict
     
@@ -464,7 +460,8 @@ def rest_cycle(filepath, charge_settings, eq_dict, data_out_queue = None, data_i
             local_eq_dict['dmm_i'] = eq_dict['psu']
     
     end_reason = 'none'
-    end_reason = rest_cell(filepath, charge_settings, local_eq_dict, data_out_queue = data_out_queue, data_in_queue = data_in_queue, ch_num = ch_num)
+    rest_time_s = rest_settings['rest_time_min']*60
+    end_reason = rest_cell(filepath, rest_settings, local_eq_dict, rest_time_s, data_out_queue = data_out_queue, data_in_queue = data_in_queue, ch_num = ch_num)
     
     return end_reason
 
@@ -723,6 +720,7 @@ def repeated_ir_test_info():
     rest_settings = Templates.RestSettings()
     
     rest_settings.settings["meas_log_int_s"] = ir_test_settings.settings["meas_log_int_s"]
+    rest_settings.settings["rest_time_min"] = ir_test_settings.settings["rest_after_charge_min"]
     
     step_settings_list = convert_repeated_ir_settings_to_steps(ir_test_settings.settings)
     
