@@ -9,24 +9,30 @@ class Fake_Eload:
 		self.max_power = 10000
 		self.max_current = 1000
 		self.mode = "CURR"
+        self.current_a = 0
+        self.voltage_v = 4
 		
 		pass
 		
 	# To Set E-Load in Amps 
 	def set_current(self, current_setpoint_A):
-		if self.mode != "CURR":
+		self.current_a = current_setpoint_A
+        if self.mode != "CURR":
 			print("ERROR - E-load not in correct mode")
 		pass
 	
 	def set_mode_current(self):
+        self.current_a = 0
 		self.mode = "CURR"
 	
 	def set_mode_voltage(self):
-		self.mode = "VOLT"
+		self.voltage_v = 0
+        self.mode = "VOLT"
 		pass
 		
 	def set_cv_voltage(self, voltage_setpoint_V):
-		if self.mode != "VOLT":
+		self.voltage_v = voltage_setpoint_V
+        if self.mode != "VOLT":
 			print("ERROR - E-load not in correct mode")
 		pass
 	
@@ -40,7 +46,7 @@ class Fake_Eload:
 		pass
 	
 	def measure_voltage(self):
-		return 4.05
+		return self.voltage_v
 
 	def measure_current(self):
-		return -1.0
+		return self.current_a
