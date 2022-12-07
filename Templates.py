@@ -162,6 +162,7 @@ class SingleIRSettings(CycleSettings):
             "time_1_s":                 5,
             "current_2_a":              -5,
             "time_2_s":                 5,
+			"psu_voltage_if_pos_i":		0,
             "meas_log_int_s":			1
         }
         self.valid_strings = {
@@ -180,6 +181,7 @@ class RepeatedIRSettings(CycleSettings):
             "time_1_s":                 5,
             "current_2_a":              -5,
             "time_2_s":                 5,
+			"psu_voltage_if_pos_i":		0,
             "meas_log_int_s":			1,
 			"safety_min_voltage_v":		2.45,
 			"safety_max_voltage_v":		4.25,

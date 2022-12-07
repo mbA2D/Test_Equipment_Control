@@ -81,20 +81,27 @@ def start_step(step_settings, eq_dict):
     #CURRENT DRIVEN
     if step_settings["drive_style"] == 'current_a':
         if step_settings["drive_value"] > 0:
-            #charge - turn off eload first if connected
-            disable_equipment(eq_dict)
+            #charge - turn off eload first if connected, leave psu on.
+            local_eq_dict = eq_dict.copy()
+            local_eq_dict['psu'] = None
+            disable_equipment(local_eq_dict)
             if eq_dict['psu'] != None:
                 eq_dict['psu'].set_current(step_settings["drive_value"])
+                time.sleep(0.01)
                 eq_dict['psu'].set_voltage(step_settings["drive_value_other"])
+                time.sleep(0.01)
                 eq_dict['psu'].toggle_output(True)
             else:
                 print("No PSU Connected. Can't Charge! Exiting.")
                 return False
         elif step_settings["drive_value"] < 0:
-            #discharge
-            disable_equipment(eq_dict)
+            #discharge - turn off power supply if connected, leave eload on.
+            local_eq_dict = eq_dict.copy()
+            local_eq_dict['eload'] = None
+            disable_equipment(local_eq_dict)
             if eq_dict['eload'] != None:
                 eq_dict['eload'].set_current(step_settings["drive_value"])
+                time.sleep(0.01)
                 eq_dict['eload'].toggle_output(True)
                 #we're in constant current mode - can't set a voltage.
             else:
@@ -124,7 +131,6 @@ def start_step(step_settings, eq_dict):
     elif step_settings["drive_style"] == 'none':
         #Ensure all sources and loads are off.
         disable_equipment(eq_dict)
-    
     
     #return True for a successful step start.
     return True
@@ -383,7 +389,7 @@ def cycle_cell(filepath, cycle_settings, eq_dict, data_out_queue = None, data_in
     if eq_dict['dmm_i'] == None:
         no_dmm_i = True
     
-    local_eq_dict = eq_dict
+    local_eq_dict = eq_dict.copy()
     
     #need to override i_meas_eq since eload does not provide current during this step.
     end_reason = 'none'
@@ -418,7 +424,7 @@ def cycle_cell(filepath, cycle_settings, eq_dict, data_out_queue = None, data_in
 
 def charge_cycle(filepath, charge_settings, eq_dict, data_out_queue = None, data_in_queue = None, ch_num = None):
 
-    local_eq_dict = eq_dict
+    local_eq_dict = eq_dict.copy()
     
     if eq_dict['dmm_v'] == None:
         local_eq_dict['dmm_v'] = eq_dict['psu']
@@ -432,7 +438,7 @@ def charge_cycle(filepath, charge_settings, eq_dict, data_out_queue = None, data
     
 def discharge_cycle(filepath, charge_settings, eq_dict, data_out_queue = None, data_in_queue = None, ch_num = None):
     
-    local_eq_dict = eq_dict
+    local_eq_dict = eq_dict.copy()
     
     if eq_dict['dmm_v'] == None:
         local_eq_dict['dmm_v'] = eq_dict['eload']
@@ -446,7 +452,7 @@ def discharge_cycle(filepath, charge_settings, eq_dict, data_out_queue = None, d
 
 def rest_cycle(filepath, rest_settings, eq_dict, data_out_queue = None, data_in_queue = None, ch_num = None):
     
-    local_eq_dict = eq_dict
+    local_eq_dict = eq_dict.copy()
     
     if eq_dict['dmm_v'] == None:
         if eq_dict['eload'] != None:
@@ -467,7 +473,7 @@ def rest_cycle(filepath, rest_settings, eq_dict, data_out_queue = None, data_in_
 
 def idle_cell_cycle(eq_dict, data_out_queue = None, data_in_queue = None):
     
-    local_eq_dict = eq_dict
+    local_eq_dict = eq_dict.copy()
     
     if eq_dict['dmm_v'] == None:
         if eq_dict['eload'] != None:
@@ -488,7 +494,7 @@ def idle_cell_cycle(eq_dict, data_out_queue = None, data_in_queue = None):
 
 def single_step_cycle(filepath, step_settings, eq_dict, data_out_queue = None, data_in_queue = None, ch_num = None):
     
-    local_eq_dict = eq_dict
+    local_eq_dict = eq_dict.copy()
     
     #if we don't have separate voltage measurement equipment, then choose what to use:
     if eq_dict['dmm_v'] == None:
@@ -693,6 +699,8 @@ def convert_single_ir_settings_to_steps(ir_settings, model_step_settings = None)
     step_2.settings["drive_style"] = 'current_a'
     step_1.settings["drive_value"] = ir_settings["current_1_a"]
     step_2.settings["drive_value"] = ir_settings["current_2_a"]
+    step_1.settings["drive_value_other"] = ir_settings["psu_voltage_if_pos_i"]
+    step_2.settings["drive_value_other"] = ir_settings["psu_voltage_if_pos_i"]
     step_1.settings["end_value"] = ir_settings["time_1_s"]
     step_2.settings["end_value"] = ir_settings["time_2_s"]
     step_1.settings["safety_min_current_a"] = min_current_limit
@@ -738,6 +746,7 @@ def convert_repeated_ir_settings_to_steps(test_settings):
     max_time = max(test_settings["time_1_s"], test_settings["time_2_s"])
     
     model_step_settings.settings["drive_style"] = 'current_a'
+    model_step_settings.settings["drive_value_other"] = test_settings["psu_voltage_if_pos_i"]
     model_step_settings.settings["safety_min_current_a"] = test_settings["safety_min_current_a"]
     model_step_settings.settings["safety_max_current_a"] = test_settings["safety_max_current_a"]
     model_step_settings.settings["safety_max_time_s"] = max_time*1.5
@@ -746,13 +755,13 @@ def convert_repeated_ir_settings_to_steps(test_settings):
     model_step_settings.settings["safety_min_voltage_v"] = test_settings["safety_min_voltage_v"]
     model_step_settings.settings["safety_max_voltage_v"] = test_settings["safety_max_voltage_v"]
     
-    step_1 = model_step_settings
-    step_2 = model_step_settings
+    step_1_settings = model_step_settings.settings.copy()
+    step_2_settings = model_step_settings.settings.copy()
     
-    step_1.settings["drive_value"] = test_settings["current_1_a"]
-    step_2.settings["drive_value"] = test_settings["current_2_a"]
-    step_1.settings["end_value"] = test_settings["time_1_s"]
-    step_2.settings["end_value"] = test_settings["time_2_s"]
+    step_1_settings["drive_value"] = test_settings["current_1_a"]
+    step_2_settings["drive_value"] = test_settings["current_2_a"]
+    step_1_settings["end_value"] = test_settings["time_1_s"]
+    step_2_settings["end_value"] = test_settings["time_2_s"]
     
     capacity_per_test_a_s = test_settings["current_1_a"]*test_settings["time_1_s"] + test_settings["current_2_a"]*test_settings["time_2_s"]
     total_capacity_a_s = test_settings["estimated_capacity_ah"] * 3600
@@ -761,8 +770,8 @@ def convert_repeated_ir_settings_to_steps(test_settings):
     settings_list = list()
     
     for i in range(num_tests_required*2):
-        settings_list.append(step_1.settings)
-        settings_list.append(step_2.settings)
+        settings_list.append(step_1_settings)
+        settings_list.append(step_2_settings)
         
     return settings_list
     
@@ -914,8 +923,6 @@ def charge_discharge_control(res_ids_dict, data_out_queue = None, data_in_queue 
                 for count_2, cycle_settings in enumerate(cycle_settings_list):
                     end_condition = 'none'
                     
-                    time.sleep(1) #testing
-                    
                     #Set label text for current and next status
                     current_status = cycle_settings["cycle_type"]
                     try:
@@ -927,7 +934,6 @@ def charge_discharge_control(res_ids_dict, data_out_queue = None, data_in_queue 
                             next_status = "Idle"
                     
                     data_out_queue.put_nowait({'type': 'status', 'data': (current_status, next_status)})
-                    
                     
                     #Charge only - only using the power supply
                     if current_status == 'charge':
@@ -945,6 +951,7 @@ def charge_discharge_control(res_ids_dict, data_out_queue = None, data_in_queue 
                     elif current_status == 'step':
                         end_condition = single_step_cycle(filepath, cycle_settings, eq_dict, data_out_queue = data_out_queue, data_in_queue = data_in_queue, ch_num = ch_num)
                         if end_condition == 'safety_condition':
+                            disable_equipment(eq_dict)
                             break
                             
                     #Cycle the cell - using both psu and eload
@@ -954,6 +961,7 @@ def charge_discharge_control(res_ids_dict, data_out_queue = None, data_in_queue 
                     if end_condition == 'end_request':
                         end_list_of_lists = True
                         break
+                
                 if end_list_of_lists:
                     break
                 
