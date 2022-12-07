@@ -12,15 +12,12 @@ class Fake_Eload:
         self.current_a = 0
         self.voltage_v = 4
         
-        pass
-        
     # To Set E-Load in Amps 
     def set_current(self, current_setpoint_A):
         self.current_a = current_setpoint_A
         if self.mode != "CURR":
             print("ERROR - E-load not in correct mode")
-        pass
-    
+
     def set_mode_current(self):
         self.current_a = 0
         self.mode = "CURR"
@@ -28,13 +25,11 @@ class Fake_Eload:
     def set_mode_voltage(self):
         self.voltage_v = 0
         self.mode = "VOLT"
-        pass
         
     def set_cv_voltage(self, voltage_setpoint_V):
         self.voltage_v = voltage_setpoint_V
         if self.mode != "VOLT":
             print("ERROR - E-load not in correct mode")
-        pass
     
     def toggle_output(self, state):
         pass

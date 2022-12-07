@@ -133,8 +133,7 @@ def calc_capacity(log_data, stats, charge = True, temp_log_dir = None, show_ica_
     total_time = (end_time - start_time)/3600
     
     #add columns to the dataset
-    dsc_data['SecsFromLastTimestamp'] = dsc_data['Data_Timestamp'].diff()
-    dsc_data.loc[dsc_data.index.tolist()[0], 'SecsFromLastTimestamp'] = 0 #Set first val to 0 instead of NaN.
+    dsc_data['SecsFromLastTimestamp'] = dsc_data['Data_Timestamp'].diff().fillna(0)
     
     dsc_data['Capacity_Ah'] = dsc_data['Current'] * dsc_data['SecsFromLastTimestamp'] / 3600
     dsc_data['Capacity_wh'] = dsc_data['Capacity_Ah'] * dsc_data['Voltage']
@@ -260,57 +259,54 @@ def timestamp_to_cycle_start(df):
 
 def process_standard_charge_discharge_cycle(filedir, filename, subdirs, df, separate_temps, temp_log_dir, show_ica_graphs, show_discharge_graphs):
     #Modify file names for saving graphs and other files
-        filename_graph = 'GraphIV ' + filename
-        filename_stats = 'Cycle_Statistics.csv'	
-        
-        #Create directory names to store graphs etc.
-        filepath_graph = os.path.join(filedir, sub_dirs[0], filename_graph)
-        filepath_stats = os.path.join(filedir, sub_dirs[1], filename_stats)		
-        
-        
-        #Calculate stats and export
-        cycle_stats = Templates.CycleStats()
-        cycle_stats.stats['cell_name'] = cell_name
-        
-        #Calculate capacity and get temperature datasets
-        temps_charge = calc_capacity(df, cycle_stats, charge=True, temp_log_dir = temp_log_dir, show_ica_graphs = show_ica_graphs)
-        temps_discharge = calc_capacity(df, cycle_stats, charge=False, temp_log_dir = temp_log_dir, show_ica_graphs = show_ica_graphs)
-        dict_to_csv(cycle_stats.stats, filepath_stats)
-        
-        
-        #Plot temperatures
-        if temps_charge is not None:
-            temps_charge = timestamp_to_cycle_start(temps_charge)
-            filename_temp_charge = 'Temps_Charge ' + filename
-            filepath_graph_temps_charge = os.path.join(filedir, sub_dirs[2], filename_temp_charge)
-            if separate_temps:
-                filepath_logs_temps_charge = os.path.join(filedir, sub_dirs[3], filename_temp_charge)
-                dataframe_to_csv(temps_charge, filepath_logs_temps_charge)
-            PlotTemps.plot_temps(temps_charge, cycle_stats.stats['cell_name'], separate_temps,\
-                    save_filepath=filepath_graph_temps_charge, show_graph=False, suffix = 'charge')
-        if temps_discharge is not None:
-            temps_discharge = timestamp_to_cycle_start(temps_discharge)
-            filename_temp_discharge = 'Temps_Discharge ' + filename
-            filepath_graph_temps_discharge = os.path.join(filedir, sub_dirs[2], filename_temp_discharge)
-            if separate_temps:
-                filepath_logs_temps_discharge = os.path.join(filedir, sub_dirs[3], filename_temp_discharge)
-                dataframe_to_csv(temps_discharge, filepath_logs_temps_discharge)
-            PlotTemps.plot_temps(temps_discharge, cycle_stats.stats['cell_name'], separate_temps,\
-                    save_filepath=filepath_graph_temps_discharge, show_graph=False, suffix = 'discharge')
-        
-        #Change timestamp to be seconds from cycle start for the graph instead of epoch
-        df = timestamp_to_cycle_start(df)
-        
-        #Show plot
-        plot_iv(df, save_filepath=filepath_graph, show_graph=show_discharge_graphs)
-
-
-def process_single_ir_cycle(df):
-    #find index of last extry in first step
+    filename_graph = 'GraphIV ' + filename
+    filename_stats = 'Cycle_Statistics.csv'	
     
+    #Create directory names to store graphs etc.
+    filepath_graph = os.path.join(filedir, sub_dirs[0], filename_graph)
+    filepath_stats = os.path.join(filedir, sub_dirs[1], filename_stats)		
+    
+    #Calculate stats and export
+    cycle_stats = Templates.CycleStats()
+    cycle_stats.stats['cell_name'] = cell_name
+    
+    #Calculate capacity and get temperature datasets
+    temps_charge = calc_capacity(df, cycle_stats, charge=True, temp_log_dir = temp_log_dir, show_ica_graphs = show_ica_graphs)
+    temps_discharge = calc_capacity(df, cycle_stats, charge=False, temp_log_dir = temp_log_dir, show_ica_graphs = show_ica_graphs)
+    dict_to_csv(cycle_stats.stats, filepath_stats)
+    
+    #Plot temperatures
+    if temps_charge is not None:
+        temps_charge = timestamp_to_cycle_start(temps_charge)
+        filename_temp_charge = 'Temps_Charge ' + filename
+        filepath_graph_temps_charge = os.path.join(filedir, sub_dirs[2], filename_temp_charge)
+        if separate_temps:
+            filepath_logs_temps_charge = os.path.join(filedir, sub_dirs[3], filename_temp_charge)
+            dataframe_to_csv(temps_charge, filepath_logs_temps_charge)
+        PlotTemps.plot_temps(temps_charge, cycle_stats.stats['cell_name'], separate_temps,\
+                save_filepath=filepath_graph_temps_charge, show_graph=False, suffix = 'charge')
+    if temps_discharge is not None:
+        temps_discharge = timestamp_to_cycle_start(temps_discharge)
+        filename_temp_discharge = 'Temps_Discharge ' + filename
+        filepath_graph_temps_discharge = os.path.join(filedir, sub_dirs[2], filename_temp_discharge)
+        if separate_temps:
+            filepath_logs_temps_discharge = os.path.join(filedir, sub_dirs[3], filename_temp_discharge)
+            dataframe_to_csv(temps_discharge, filepath_logs_temps_discharge)
+        PlotTemps.plot_temps(temps_discharge, cycle_stats.stats['cell_name'], separate_temps,\
+                save_filepath=filepath_graph_temps_discharge, show_graph=False, suffix = 'discharge')
+    
+    #Change timestamp to be seconds from cycle start for the graph instead of epoch
+    df = timestamp_to_cycle_start(df)
+    
+    #Show plot
+    plot_iv(df, save_filepath=filepath_graph, show_graph=show_discharge_graphs)
+
+
+def process_single_ir_test(df, printout = False):
+    #find index of last extry in first step
     #Data_Timestamp_From_Step_Start goes from high back to low - diff is negative.
-    df['step_time_diff'] = df['Data_Timestamp_From_Step_Start'].diff().fillna(0)
-    row_index_2nd_step = df['step_time_diff'].argmin()
+    df['step_time_diff_single_step'] = df['Data_Timestamp_From_Step_Start'].diff().fillna(0)
+    row_index_2nd_step = df['step_time_diff_single_step'].argmin()
     
     
     #split data into 1st step and 2nd step
@@ -324,10 +320,63 @@ def process_single_ir_cycle(df):
     
     #r = v/i
     ir = (s2_v - s1_v) / (s2_i - s1_i)
-    print("Internal Resistance: {} Ohms, {} mOhms".format(ir, ir*1000))
+    if printout:
+        print("Internal Resistance: {} Ohms, {} mOhms".format(ir, ir*1000))
     
     return ir
     
+def process_repeated_ir_test(df, return_type = 'array'):
+    #find index of last extry in first step
+    
+    #Data_Timestamp_From_Step_Start goes from high back to low - diff is negative.
+    df['step_time_diff'] = df['Data_Timestamp_From_Step_Start'].diff().fillna(-1)
+    df['internal_resistance_ohms'] = pd.NA
+    
+    #Need to split up the data into a df for each step.
+    #indexes where a new step starts:
+    indexes_new_ir_test = df['step_time_diff'].where(df['step_time_diff'] < 0).dropna().iloc[0::2].index.to_numpy()
+    indexes_at_current_change = df['step_time_diff'].where(df['step_time_diff'] < 0).dropna().iloc[1::2].index.to_numpy()
+    
+    for i in range(len(indexes_new_ir_test)-1):
+        #get ir
+        df_2_steps = df.iloc[indexes_new_ir_test[i]:indexes_new_ir_test[i+1]].copy()
+        ir_step = process_single_ir_test(df_2_steps)
+        
+        #put it in the right spot in the df
+        df['internal_resistance_ohms'].iloc[indexes_at_current_change[i]] = ir_step
+    
+    if return_type == 'df':
+        return df
+    elif return_type == 'array':
+        return df['internal_resistance_ohms'].dropna().values
+    
+def process_repeated_ir_discharge_test(df, filename, filedir, sub_dirs):
+    #get index and ir value for each IR test
+    df = add_soc_by_coulomb_counting(df)
+    df = process_repeated_ir_test(df, return_type = 'df')
+    
+    #remove NaN values in IR
+    df.dropna(inplace=True)
+    #remove everything except soc and ir values
+    df_soc_ir = df[['soc', 'internal_resistance_ohms']]
+    
+    #Modify file names for saving graphs and other files
+    filename_SoC_IR = 'SoC-IR ' + filename
+    
+    #Create directory names to store graphs etc.
+    filepath_SoC_IR = os.path.join(filedir, sub_dirs[1], filename_SoC_IR)	
+    
+    #export csv
+    df_soc_ir.to_csv(filepath_SoC_IR, index=False)
+
+def add_soc_by_coulomb_counting(df):
+    #We know for a full cycle, we start with a full charge and end with a full discharge
+    df['SecsFromLastTimestamp'] = df['Data_Timestamp'].diff().fillna(0)
+    df['Capacity_Ah_Step'] = df['Current'] * df['SecsFromLastTimestamp'] / 3600
+    total_capacity = df['Capacity_Ah_Step'].sum()
+    df['Capacity_Ah_Up_To'] = df['Capacity_Ah_Step'].cumsum()
+    df['soc'] = 1 - (df['Capacity_Ah_Up_To'] / total_capacity)
+    return df
 
 if __name__ == '__main__':
     filepaths = FileIO.get_multiple_filepaths()
@@ -357,7 +406,9 @@ if __name__ == '__main__':
     cycle_type = None
     supported_cycle_types = [
                             "Standard Charge-Discharge Cycle",
-                            "Single IR Test"
+                            "Single IR Test",
+                            "Repeated IR Test",
+                            "Repeated IR Discharge Test",
                             ]
     cycle_type = eg.choicebox(title = "Cycle Type",
                               msg = "Choose the cycle type of the files selected",
@@ -382,6 +433,10 @@ if __name__ == '__main__':
         
         if cycle_type == "Standard Charge-Discharge Cycle":
             process_standard_charge_discharge_cycle(filedir, filename, subdirs, df, separate_temps, temp_log_dir, show_ica_graphs, show_discharge_graphs)
-        elif cycle_type == "Single IR Test":
-            process_single_ir_cycle(df)
+        elif cycle_type == "Single IR Test": #Prints out an IR value
+            process_single_ir_test(df, printout = True)
+        elif cycle_type == "Repeated IR Test": #Prints out array with IR values
+            process_repeated_ir_test(df)
+        elif cycle_type == "Repeated IR Discharge Test": #Creates a csv with SoC and IR
+            process_repeated_ir_discharge_test(df, filename, filedir, sub_dirs)
         
