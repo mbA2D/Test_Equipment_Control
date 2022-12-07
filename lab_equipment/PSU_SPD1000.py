@@ -71,7 +71,7 @@ class SPD1000:
         time.sleep(0.1)
         self.lock_commands(False)
         time.sleep(0.1)
-        self.toggle_output(False)
+        self.toggle_output(False) #Apparently RST does not turn off the output?
         time.sleep(0.1)
         self.set_current(0)
         time.sleep(0.1)
