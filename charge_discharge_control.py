@@ -914,6 +914,8 @@ def charge_discharge_control(res_ids_dict, data_out_queue = None, data_in_queue 
                 for count_2, cycle_settings in enumerate(cycle_settings_list):
                     end_condition = 'none'
                     
+                    time.sleep(0.1) #testing
+                    
                     #Set label text for current and next status
                     current_status = cycle_settings["cycle_type"]
                     try:
