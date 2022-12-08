@@ -405,14 +405,14 @@ if __name__ == '__main__':
     #Determining the cycle type
     cycle_type = None
     supported_cycle_types = [
-                            "Standard Charge-Discharge Cycle",
-                            "Single IR Test",
-                            "Repeated IR Test",
-                            "Repeated IR Discharge Test",
+                            "Standard_Charge-Discharge_Cycle",
+                            "Single_IR_Test",
+                            "Repeated_IR_Test",
+                            "Repeated_IR_Discharge Test",
                             ]
-    cycle_type = eg.choicebox(title = "Cycle Type",
-                              msg = "Choose the cycle type of the files selected",
-                              choices = supported_cycle_types)
+    #cycle_type = eg.choicebox(title = "Cycle Type",
+    #                          msg = "Choose the cycle type of the files selected",
+    #                          choices = supported_cycle_types)
     
     #go through each voltage log and check it
     for filepath in filepaths:
@@ -423,20 +423,35 @@ if __name__ == '__main__':
         df = pd.read_csv(filepath)
         
         filename_parts = filename.split()
-
-        cell_name = filename_parts[0]
-        log_date = filename_parts[1]
-        log_time = filename_parts[2]
+        if len(filename_parts) == 3:
+            cell_name = filename_parts[0]
+            log_date = filename_parts[1]
+            log_time = filename_parts[2]
+            cycle_type = "Standard_Charge-Discharge_Cycle"
+        elif len(filename_parts) == 4:
+            cell_name = filename_parts[0]
+            cycle_type = filename_parts[1]
+            log_date = filename_parts[2]
+            log_time = filename_parts[3]
 
 
         ################ THIS ALL HAPPENS FOR A STANDARD CHARGE-DISCHARGE CYCLE ########################
         
-        if cycle_type == "Standard Charge-Discharge Cycle":
+        if  cycle_type == "Standard_Charge-Discharge_Cycle" or \
+            cycle_type == "Single_CC_Cycle" or \
+            cycle_type == "One_Setting_Continuous_CC_Cycles_With_Rest" or \
+            cycle_type == "Two_Setting_Continuous_CC_Cycles_With_Rest" or \
+            cycle_type == "CC_Charge_Only" or \
+            cycle_type == "CC_Discharge_Only":
+            
             process_standard_charge_discharge_cycle(filedir, filename, subdirs, df, separate_temps, temp_log_dir, show_ica_graphs, show_discharge_graphs)
-        elif cycle_type == "Single IR Test": #Prints out an IR value
+        
+        elif cycle_type == "Single_IR_Test": #Prints out an IR value
             process_single_ir_test(df, printout = True)
-        elif cycle_type == "Repeated IR Test": #Prints out array with IR values
+        
+        elif cycle_type == "Repeated_IR_Test": #Prints out array with IR values
             process_repeated_ir_test(df)
-        elif cycle_type == "Repeated IR Discharge Test": #Creates a csv with SoC and IR
+        
+        elif cycle_type == "Repeated_IR_Discharge_Test": #Creates a csv with SoC and IR
             process_repeated_ir_discharge_test(df, filename, filedir, sub_dirs)
         

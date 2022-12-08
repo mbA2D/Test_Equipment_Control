@@ -812,15 +812,15 @@ def get_cycle_settings_list_of_lists(cycle_type):
     cycle_types = Templates.CycleTypes.cycle_types
     
     #different cycle types that are available
-    cycle_types["Single CC Cycle"]['func_call'] = single_cc_cycle_info
-    cycle_types["One Setting Continuous CC Cycles With Rest"]['func_call'] = one_level_continuous_cc_cycles_with_rest_info
-    cycle_types["Two Setting Continuous CC Cycles With Rest"]['func_call'] = two_level_continuous_cc_cycles_with_rest_info
-    cycle_types["CC Charge Only"]['func_call'] = charge_only_cycle_info
-    cycle_types["CC Discharge Only"]['func_call'] = discharge_only_cycle_info
-    cycle_types["Step Cycle"]['func_call'] = multi_step_cell_info
-    cycle_types["Continuous Step Cycles"]['func_call'] = continuous_step_cycles_info
-    cycle_types["Single IR Test"]['func_call'] = single_ir_test_info
-    cycle_types["Repeated IR Test"]['func_call'] = repeated_ir_test_info
+    cycle_types["Single_CC_Cycle"]['func_call'] = single_cc_cycle_info
+    cycle_types["One_Setting_Continuous_CC_Cycles_With_Rest"]['func_call'] = one_level_continuous_cc_cycles_with_rest_info
+    cycle_types["Two_Setting_Continuous_CC_Cycles_With_Rest"]['func_call'] = two_level_continuous_cc_cycles_with_rest_info
+    cycle_types["CC_Charge_Only"]['func_call'] = charge_only_cycle_info
+    cycle_types["CC_Discharge_Only"]['func_call'] = discharge_only_cycle_info
+    cycle_types["Step_Cycle"]['func_call'] = multi_step_cell_info
+    cycle_types["Continuous_Step_Cycles"]['func_call'] = continuous_step_cycles_info
+    cycle_types["Single_IR_Test"]['func_call'] = single_ir_test_info
+    cycle_types["Repeated_IR_Discharge_Test"]['func_call'] = repeated_ir_test_info
     
     #gather the list settings based on the cycle type
     cycle_settings_list_of_lists = list()
@@ -902,7 +902,6 @@ def charge_discharge_control(res_ids_dict, data_out_queue = None, data_in_queue 
         if input_dict['eq_req_dict']['psu'] and eq_dict['psu'] == None:
             print("Power Supply required for cycle type but none connected! Exiting")
             return
-        #TODO - check cycles with multiple types
         
         initialize_connected_equipment(eq_dict)
         #Now initialize all the equipment that is connected
@@ -917,7 +916,7 @@ def charge_discharge_control(res_ids_dict, data_out_queue = None, data_in_queue 
         
         for count_1, cycle_settings_list in enumerate(input_dict['cycle_settings_list_of_lists']):
             print("CH{} - Cycle {} Starting".format(ch_num, cycle_num), flush=True)
-            filepath = FileIO.start_file(input_dict['directory'], input_dict['cell_name'])
+            filepath = FileIO.start_file(input_dict['directory'], "{} {}".format(input_dict['cell_name'], input_dict['cycle_type']))
             
             try:
                 for count_2, cycle_settings in enumerate(cycle_settings_list):

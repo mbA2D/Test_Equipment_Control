@@ -34,15 +34,15 @@ class CycleStats:
 class CycleTypes:
 	
 	cycle_types = {
-		"Single CC Cycle": 								{'func_call': '', 'str_chg_opt': True},
-		"One Setting Continuous CC Cycles With Rest": 	{'func_call': '', 'str_chg_opt': True},
-		"Two Setting Continuous CC Cycles With Rest": 	{'func_call': '', 'str_chg_opt': True},
-		"CC Charge Only": 								{'func_call': '', 'str_chg_opt': False},
-		"CC Discharge Only": 							{'func_call': '', 'str_chg_opt': False},
-		"Step Cycle":									{'func_call': '', 'str_chg_opt': False},
-		"Continuous Step Cycles":						{'func_call': '', 'str_chg_opt': True},
-        "Single IR Test":	        					{'func_call': '', 'str_chg_opt': False},
-        "Repeated IR Test":                	            {'func_call': '', 'str_chg_opt': True}
+		"Single_CC_Cycle": 								{'func_call': '', 'str_chg_opt': True},
+		"One_Setting_Continuous_CC_Cycles_With_Rest": 	{'func_call': '', 'str_chg_opt': True},
+		"Two_Setting_Continuous_CC_Cycles_With_Rest": 	{'func_call': '', 'str_chg_opt': True},
+		"CC_Charge_Only": 								{'func_call': '', 'str_chg_opt': False},
+		"CC_Discharge_Only": 							{'func_call': '', 'str_chg_opt': False},
+		"Step_Cycle":									{'func_call': '', 'str_chg_opt': False},
+		"Continuous_Step_Cycles":						{'func_call': '', 'str_chg_opt': True},
+        "Single_IR_Test":	        					{'func_call': '', 'str_chg_opt': False},
+        "Repeated_IR_Discharge_Test":      	            {'func_call': '', 'str_chg_opt': True}
 	}
 	
 	cycle_requirements = {
