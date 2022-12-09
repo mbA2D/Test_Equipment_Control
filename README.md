@@ -2,7 +2,8 @@
 Controlling Various Lab Test Equipment
 
 TODO List
- - Add crude internal resistance test through the step profiles
+ - DONE - Add internal resistance test through the step profiles
+ - DONE - Add capability to test SoC vs Internal Resistance
  - Properly synchronize voltage and current measurements (only available on certain equipment).
  - finish adding ICA: smooth data before analysis
  - HPPC test profile creation gui
