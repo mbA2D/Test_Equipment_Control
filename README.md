@@ -2,6 +2,7 @@
 Controlling Various Lab Test Equipment
 
 TODO List
+ - Add a way to get output state of all equipment so we can remove redundant disable and waits
  - DONE - Add internal resistance test through the step profiles
  - DONE - Add capability to test SoC vs Internal Resistance
  - Properly synchronize voltage and current measurements (only available on certain equipment).
