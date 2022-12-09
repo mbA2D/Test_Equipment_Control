@@ -38,6 +38,8 @@ from lab_equipment import DMM_Fake
 
 def setup_remote_sense(instrument, use_remote_sense):
 	try:
+		#This should turn into a general 'setup equipment function'
+		
 		if instrument.has_remote_sense:
 			if use_remote_sense == None:
 				#ask to use remote sense
@@ -73,9 +75,9 @@ def connect_to_eq(key, class_name, res_id, use_remote_sense = None, multi_channe
 	#return the actual equipment object instead of the equipment dictionary
 	if key == 'eload':
 		instrument = eLoads.choose_eload(class_name, res_id, use_remote_sense)[1]
-	if key == 'psu':
+	elif key == 'psu':
 		instrument = powerSupplies.choose_psu(class_name, res_id, use_remote_sense)[1]
-	if key == 'dmm' or ('dmm' in key): #for dmm_i and dmm_v keys
+	elif key == 'dmm' or ('dmm' in key): #for dmm_i and dmm_v keys
 		instrument = dmms.choose_dmm(class_name, resource_id = res_id, multi_ch_event_and_queue_dict = multi_channel_event_and_queue_dict, use_remote_sense = use_remote_sense)[1]
 	time.sleep(0.1)
 	return instrument
@@ -91,16 +93,14 @@ def get_res_id_dict_and_disconnect(eq_list):
 		eq_res_id_dict['res_id'] = {}
 		eq_res_id_dict['res_id']['class_name_1'] = eq_list[1].class_name_1
 		eq_res_id_dict['res_id']['class_name_2'] = eq_list[1].class_name_2
-		eq_res_id_dict['res_id']['res_id_1'] = None #For fake instruments
-		eq_res_id_dict['res_id']['res_id_2'] = None #For fake instruments
 		try:
 			eq_res_id_dict['res_id']['res_id_1'] = eq_list[1].eload1.inst.resource_name
 		except AttributeError:
-			pass #For fake instruments
+			eq_res_id_dict['res_id']['res_id_1'] = None #For fake instruments
 		try:
 			eq_res_id_dict['res_id']['res_id_2'] = eq_list[1].eload2.inst.resource_name
 		except AttributeError:
-			pass #For fake instruments
+			eq_res_id_dict['res_id']['res_id_2'] = None #For fake instruments
 		eq_res_id_dict['res_id']['use_remote_sense_1'] = eq_list[1].use_remote_sense_1
 		eq_res_id_dict['res_id']['use_remote_sense_2'] = eq_list[1].use_remote_sense_2
 	elif 'Fake' in class_name:
@@ -124,6 +124,31 @@ def get_res_id_dict_and_disconnect(eq_list):
 		pass #temporary fix for 'virtual and fake instruments' - TODO - figure out a way to do this more properly
 	
 	return eq_res_id_dict
+
+
+class otherEquipment:
+	part_numbers = {
+		'A2D Relay Board': 		'OTHER_A2D_Relay_Board',
+		'Fake item':			'Fake_Item'
+	}
+		
+	@classmethod
+	def choose_equipment(self, class_name = None, resource_id = None, setup_dict = None):
+		if class_name == None:
+			msg = "What type of equipment?"
+			title = "Equipment Series Selection"
+			class_name = eg.choicebox(msg, title, otherEquipment.part_numbers.keys())
+
+		if class_name == None:
+			msgbox("Failed to select the equipment.")
+			return			
+		
+		if class_name == 'A2D Relay Board':
+			other_equipment = Eload_BK8600.BK8600(resource_id = resource_id)
+			
+		setup_dict = setup_equipment(other_equipment, setup_dict)
+		return class_name, eload, use_remote_sense
+
 
 class eLoads:
 	part_numbers = {

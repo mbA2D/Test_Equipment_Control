@@ -15,7 +15,7 @@ import FileIO
 import jsonIO
 
 
-##################### EQUIPMENT SETUP ####################
+################################################## EQUIPMENT SETUP #############################################
 
 def init_eload(eload):
     eload.toggle_output(False)
@@ -49,17 +49,48 @@ def initialize_connected_equipment(eq_dict):
     if eq_dict['dmm_i'] != None:
         init_dmm_i(eq_dict['dmm_i'])
 
+def disable_equipment_single(equipment):
+	equipment.set_current(0) #Turn current to 0 first to try and eliminate arcing in a relay inside an eload that disconnects the output
+    time.sleep(0.05)
+    equipment.toggle_output(False)
+
 def disable_equipment(eq_dict):
     if eq_dict['psu'] != None:
-        eq_dict['psu'].set_current(0) #Turn current to 0 first to try and eliminate arcing in a relay inside an eload that disconnects the output
-        time.sleep(0.05)
-        eq_dict['psu'].toggle_output(False)
+        disable_equipment_single(eq_dict['psu'])
     if eq_dict['eload'] != None:
-        eq_dict['eload'].set_current(0) #Turn current to 0 first to try and eliminate arcing in a relay inside a power supply that disconnects the output
-        time.sleep(0.05)
-        eq_dict['eload'].toggle_output(False)
+        disable_equipment_single(eq_dict['eload'])
 
-####################### TEST CONTROL #####################
+def connect_proper_equipment(eq_dict, eq_req_for_cycle_dict):
+	#If a relay board is connected (that can connect or disconnect equipment) then we want to have only the necessary equipment connected on each cycle
+	#For now, we will assume that all 'relay boards' can only be connected to PSUs or eLoads - which channels these are connected to happens on setup of the relay board.
+	#But only 2 channels and only 1 of each equipment.
+	
+	#TODO - add a voltage check to see if equipment switched properly.
+	
+	#Disconnect first (break before make)
+	#if not required but it is connected, then break connection
+	if !eq_req_for_cycle_dict['psu'] and eq_dict['relay_board'].psu_connected():
+		disable_equipment_single(eq_dict['psu'])
+		eq_dict['relay_board'].connect_psu(False)
+	if !eq_req_for_cycle_dict['eload'] and eq_dict['relay_board'].eload_connected():
+		disable_equipment_single(eq_dict['eload'])
+		eq_dict['relay_board'].connect_eload(False)
+	
+	#Connect second (break before make)
+	#if required but is not connected, then make connection
+	if eq_req_for_cycle_dict['psu'] and !eq_dict['relay_board'].psu_connected(): #if changing states
+		#ensure psu output is disabled before connecting
+		disable_equipment_single(eq_dict['psu'])
+		eq_dict['relay_board'].connect_psu(True)
+	if eq_req_for_cycle_dict['eload'] and !eq_dict['relay_board'].eload_connected():
+		#ensure eload output is disabled before connecting
+		disable_equipment_single(eq_dict['eload'])
+		eq_dict['relay_board'].connect_eload(True)
+
+	time.sleep(0.2) #Delay to make sure all the relays click.
+
+
+###################################################### TEST CONTROL ###################################################
 
 def start_charge(end_voltage, constant_current, eq_dict):
     time.sleep(0.2)
@@ -548,7 +579,7 @@ def find_eq_req_steps(step_settings):
     return eq_req_dict
 
 
-################################## CHOOSING CYCLE SETTINGS TYPES ################################
+###################################################### GATHERING REQUIRED INPUTS FOR EACH CYCLE TYPE ########################################################
 
 def single_cc_cycle_info():
     #charge then discharge
@@ -774,7 +805,11 @@ def convert_repeated_ir_settings_to_steps(test_settings):
         settings_list.append(step_2_settings)
         
     return settings_list
-    
+
+
+################################################### SETUP TO GET INPUT DICT #########################################
+
+
 def ask_storage_charge():
     message = "Do you want to do a storage charge?\n" + \
                 "Recommended to do one. Leaving a cell discharged increases\n" + \
@@ -837,20 +872,30 @@ def get_cycle_settings_list_of_lists(cycle_type):
         
     return cycle_settings_list_of_lists
 
+def get_eq_req_for_cycle(settings_list):
+	eq_req_dict = {'psu': False, 'eload': False}
+	cycle_requirements = Templates.CycleTypes.cycle_requirements
+	
+	for settings in settings_list:
+        if settings["cycle_type"] == 'step':
+            eq_req_from_settings = find_eq_req_steps(settings)
+            eq_req_dict['psu'] = eq_req_dict['psu'] or eq_req_from_settings['psu']
+            eq_req_dict['eload'] = eq_req_dict['eload'] or eq_req_from_settings['eload']
+        else:
+            eq_req_dict['psu'] = eq_req_dict['psu'] or cycle_requirements[settings["cycle_type"]]['supply_req']
+            eq_req_dict['eload'] = eq_req_dict['eload'] or cycle_requirements[settings["cycle_type"]]['load_req']
+			
+	return eq_req_dict
+
 def get_eq_req_dict(cycle_settings_list_of_lists):
     #REQUIRED EQUIPMENT
     eq_req_dict = {'psu': False, 'eload': False}
     cycle_requirements = Templates.CycleTypes.cycle_requirements
     
     for settings_list in cycle_settings_list_of_lists:
-        for settings in settings_list:
-            if settings["cycle_type"] == 'step':
-                eq_req_from_settings = find_eq_req_steps(settings)
-                eq_req_dict['psu'] = eq_req_dict['psu'] or eq_req_from_settings['psu']
-                eq_req_dict['eload'] = eq_req_dict['eload'] or eq_req_from_settings['eload']
-            else:
-                eq_req_dict['psu'] = eq_req_dict['psu'] or cycle_requirements[settings["cycle_type"]]['supply_req']
-                eq_req_dict['eload'] = eq_req_dict['eload'] or cycle_requirements[settings["cycle_type"]]['load_req']
+        eq_req_for_cycle_dict = get_eq_req_for_cycle(settings_list)
+		eq_req_dict['psu'] = eq_req_dict['psu'] or eq_req_for_cycle_dict['psu']
+		eq_req_dict['eload'] = eq_req_dict['eload'] or eq_req_for_cycle_dict['eload']
     
     return eq_req_dict
 
@@ -919,6 +964,13 @@ def charge_discharge_control(res_ids_dict, data_out_queue = None, data_in_queue 
             filepath = FileIO.start_file(input_dict['directory'], "{} {}".format(input_dict['cell_name'], input_dict['cycle_type']))
             
             try:
+			
+				#TODO - If we have a relay board to disconnect equipment, ensure we are still connected to the correct equipment
+				if eq_dict['relay_board'] != None:
+					#determine the equipment that we need for this cycle
+					eq_req_for_cycle_dict = get_eq_req_for_cycle(cycle_settings_list)
+					connect_proper_equipment(eq_dict, eq_req_for_cycle_dict)
+			
                 for count_2, cycle_settings in enumerate(cycle_settings_list):
                     end_condition = 'none'
                     
