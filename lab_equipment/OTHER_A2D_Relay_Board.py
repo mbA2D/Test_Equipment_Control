@@ -36,11 +36,11 @@ class A2D_Relay_Board:
 			for resource in resources:
 				try:
 					instrument = rm.open_resource(resource)
-					instrument.read_termination = A2D_DAQ.read_termination
-					instrument.write_termination = A2D_DAQ.write_termination
-					instrument.baud_rate = A2D_DAQ.baud_rate
-					instrument.query_delay = A2D_DAQ.query_delay
-					instrument.chunk_size = A2D_DAQ.chunk_size
+					instrument.read_termination = A2D_Relay_Board.read_termination
+					instrument.write_termination = A2D_Relay_Board.write_termination
+					instrument.baud_rate = A2D_Relay_Board.baud_rate
+					instrument.query_delay = A2D_Relay_Board.query_delay
+					instrument.chunk_size = A2D_Relay_Board.chunk_size
 					sleep(2) #wait for arduino reset - this could make it take a while. Maybe there's a better way?
 					instrument_idn = instrument.query("*IDN?")
 					idns_dict[resource] = instrument_idn
@@ -130,4 +130,4 @@ class A2D_Relay_Board:
 	
 if __name__ == "__main__":
 	#connect to the daq
-	daq = A2D_DAQ()
+	relay_board = A2D_Relay_Board()
