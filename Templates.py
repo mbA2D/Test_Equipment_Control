@@ -34,13 +34,23 @@ class CycleStats:
 class CycleTypes:
 	
 	cycle_types = {
-		"Single CC Cycle": 								{'func_call': '', 'str_chg_opt': True, 'load_req': True, 'supply_req': True},
-		"One Setting Continuous CC Cycles With Rest": 	{'func_call': '', 'str_chg_opt': True,'load_req': True, 'supply_req': True},
-		"Two Setting Continuous CC Cycles With Rest": 	{'func_call': '', 'str_chg_opt': True,'load_req': True, 'supply_req': True},
-		"CC Charge Only": 								{'func_call': '', 'str_chg_opt': False,'load_req': False, 'supply_req': True},
-		"CC Discharge Only": 							{'func_call': '', 'str_chg_opt': False,'load_req': True, 'supply_req': False},
-		"Step Cycle":									{'func_call': '', 'str_chg_opt': False,'load_req': False, 'supply_req': False},
-		"Continuous Step Cycles":						{'func_call': '', 'str_chg_opt': True, 'load_req': False, 'supply_req': False}
+		"Single_CC_Cycle": 								{'func_call': '', 'str_chg_opt': True},
+		"One_Setting_Continuous_CC_Cycles_With_Rest": 	{'func_call': '', 'str_chg_opt': True},
+		"Two_Setting_Continuous_CC_Cycles_With_Rest": 	{'func_call': '', 'str_chg_opt': True},
+		"CC_Charge_Only": 								{'func_call': '', 'str_chg_opt': False},
+		"CC_Discharge_Only": 							{'func_call': '', 'str_chg_opt': False},
+		"Step_Cycle":									{'func_call': '', 'str_chg_opt': False},
+		"Continuous_Step_Cycles":						{'func_call': '', 'str_chg_opt': True},
+        "Single_IR_Test":	        					{'func_call': '', 'str_chg_opt': False},
+        "Repeated_IR_Discharge_Test":      	            {'func_call': '', 'str_chg_opt': True}
+	}
+	
+	cycle_requirements = {
+		"charge": 		{'load_req': False, 'supply_req': True},
+		"discharge": 	{'load_req': True,  'supply_req': False},
+		"step": 		{'load_req': False, 'supply_req': False},
+		"rest": 		{'load_req': False, 'supply_req': False},
+		"cycle": 		{'load_req': True,  'supply_req': True}
 	}
 
 ###############  CYCLE  #######################
@@ -54,7 +64,7 @@ class CycleSettings:
 			"charge_end_a": 			0.3,
 			"rest_after_charge_min": 	20, 
 			"discharge_end_v": 			2.5,
-			"discharge_a": 				1,
+			"discharge_a": 				-1,
 			"rest_after_discharge_min": 20,
 			"meas_log_int_s": 			1
 		}
@@ -79,8 +89,8 @@ class ChargeSettings(CycleSettings):
 		self.settings = {
 			"cycle_type":				'charge',
 			"charge_end_v": 			4.2,
-			"charge_a": 				7.5,
-			"charge_end_a": 			0.3,
+			"charge_a": 				1,
+			"charge_end_a": 			0.1,
 			"meas_log_int_s": 			1
 		}
 		self.valid_strings = {
@@ -95,11 +105,25 @@ class DischargeSettings(CycleSettings):
 		self.settings = { 
 			"cycle_type":				'discharge',
 			"discharge_end_v": 			2.5,
-			"discharge_a": 				52.5,
+			"discharge_a": 				-1,
 			"meas_log_int_s": 			1
 		}
 		self.valid_strings = {
 			"cycle_type":				('discharge',)
+		}
+
+###############  DISCHARGE  #####################
+
+class RestSettings(CycleSettings):
+
+	def __init__(self):
+		self.settings = { 
+			"cycle_type":				'rest',
+			"rest_time_min":			5,
+			"meas_log_int_s": 			1
+		}
+		self.valid_strings = {
+			"cycle_type":				('rest',)
 		}
 
 #################  STEPS FOR CONTROLLING BATTERY TEST  ############
@@ -126,6 +150,47 @@ class StepSettings(CycleSettings):
 			"drive_style":				('current_a', 'voltage_v', 'none'),
 			"end_style":				('time_s', 'current_a', 'voltage_v'),
 			"end_condition":			('greater', 'lesser')
+		}
+
+################ INTERNAL RESISTANCE BATTERY TEST ##############
+
+class SingleIRSettings(CycleSettings):
+    def __init__(self):
+        self.settings = {
+            "cycle_type":               'single_ir_test',
+            "current_1_a":              -1,
+            "time_1_s":                 5,
+            "current_2_a":              -5,
+            "time_2_s":                 5,
+			"psu_voltage_if_pos_i":		0,
+            "meas_log_int_s":			1
+        }
+        self.valid_strings = {
+			"cycle_type":				('single_ir_test',)
+		}
+
+class RepeatedIRSettings(CycleSettings):
+    def __init__(self):
+        self.settings = {
+            "cycle_type":               'repeated_ir_test',
+			"charge_end_v": 			4.2,
+			"charge_a": 				1,
+			"charge_end_a": 			0.1,
+			"rest_after_charge_min":	20,
+            "current_1_a":              -1,
+            "time_1_s":                 5,
+            "current_2_a":              -5,
+            "time_2_s":                 5,
+			"psu_voltage_if_pos_i":		0,
+            "meas_log_int_s":			1,
+			"safety_min_voltage_v":		2.45,
+			"safety_max_voltage_v":		4.25,
+			"safety_min_current_a":		-10,
+			"safety_max_current_a":		10,
+            "estimated_capacity_ah":    2.5
+        }
+        self.valid_strings = {
+			"cycle_type":				('repeated_ir_test',)
 		}
 
 ####################  DC DC TESTING  ############
