@@ -36,37 +36,75 @@ from lab_equipment import A2D_DAQ_control #Just for num_channels at the moment
 from lab_equipment import DMM_A2D_DAQ_CH
 from lab_equipment import DMM_Fake
 
-def setup_remote_sense(instrument, use_remote_sense):
-	try:
-		#This should turn into a general 'setup equipment function'
+#Other Equipment
+from lab_equipment import OTHER_A2D_Relay_Board
+
+
+def setup_instrument(instrument, setup_dict):
+	#This should turn into a general 'setup equipment function'
+	if setup_dict == None:
+		setup_dict = {}
+	
+	#REMOTE SENSE
+	if hasattr(instrument, 'has_remote_sense') and instrument.has_remote_sense:
+		if 'remote_sense' not in setup_dict.keys():
+			setup_dict['remote_sense'] = None
 		
-		if instrument.has_remote_sense:
-			if use_remote_sense == None:
-				#ask to use remote sense
-				msg = "Do you want to use remote sense on this instrument?"
-				title = "Remote Sense"
-				use_remote_sense = eg.ynbox(msg, title)
-			time.sleep(0.5) #delay to allow the instrument to process commands after re-booting.
-							#Ran into an issue with the DL3000 where it would display 'sense' on the screen, but
-							#the sensing relay would not be on. Adding a delay here seems to have fixed it.
-							#The sense line relay did not have time to toggle between a quick on-off-on sequence
-			instrument.remote_sense(use_remote_sense)
-			return use_remote_sense
-	except AttributeError:
-		pass
-	return None
+		if setup_dict['remote_sense'] == None:
+			#ask to use remote sense
+			msg = "Do you want to use remote sense on this instrument?"
+			title = "Remote Sense"
+			use_remote_sense = eg.ynbox(msg, title)
+			setup_dict['remote_sense'] = use_remote_sense
+			
+		time.sleep(0.5) #delay to allow the instrument to process commands after re-booting.
+						#Ran into an issue with the DL3000 where it would display 'sense' on the screen, but
+						#the sensing relay would not be on. Adding a delay here seems to have fixed it.
+						#The sense line relay did not have time to toggle between a quick on-off-on sequence
+		
+		instrument.remote_sense(setup_dict['remote_sense'])
+	
+	#A2D Relay Board Channel Allocation
+	if isinstance(instrument, OTHER_A2D_Relay_Board.A2D_Relay_Board):
+		#special setup for this instrument
+		#Need to determine if channel has an eload or a psu.
+		#Assume only 2 channels for now.
+		#Cannot have multiple of the same device yet.
+		if 'num_channels' not in setup_dict.keys():
+			title = "Relay Board Setup"
+			num_channels = eg.integerbox(msg = "How Many Channels?",
+										title = title, default = 2,
+										lowerbound = 1, upperbound = 999)
+			setup_dict['num_channels'] = num_channels
+			
+		instrument.num_channels = setup_dict['num_channels']
+		
+		if 'equipment_type_connected' not in setup_dict.keys():
+			title = "Relay Board Setup"
+			choices = ['eload', 'psu']
+			equipment_type_connected = list()
+			for i in range(num_channels):
+				msg = "What is connected to channel {}?".format(i)
+				response = eq.choicebox(msg, title, choices)
+				equipment_type_connected[i] = response
+			
+			setup_dict['equipment_type_connected'] = equipment_type_connected
+		
+		instrument.equipment_type_connected = setup_dict['equipment_type_connected']
+		
+	return setup_dict
 
 def get_equipment_dict(res_ids_dict, multi_channel_event_and_queue_dict = None):
 	eq_dict = {}
 	for key in res_ids_dict:
 		if res_ids_dict[key] != None and res_ids_dict[key]['res_id'] != None:
-			eq_dict[key] = connect_to_eq(key, res_ids_dict[key]['class_name'], res_ids_dict[key]['res_id'], res_ids_dict[key]['use_remote_sense'], multi_channel_event_and_queue_dict)
+			eq_dict[key] = connect_to_eq(key, res_ids_dict[key]['class_name'], res_ids_dict[key]['res_id'], res_ids_dict[key]['setup_dict'], multi_channel_event_and_queue_dict)
 		else:
 			eq_dict[key] = None
 	return eq_dict
 
-def connect_to_eq(key, class_name, res_id, use_remote_sense = None, multi_channel_event_and_queue_dict = None):
-	#Key should be 'eload', 'psu', or 'dmm'
+def connect_to_eq(key, class_name, res_id, setup_dict = None, multi_channel_event_and_queue_dict = None):
+	#Key should be 'eload', 'psu', 'dmm', 'relay_board'
 	#'dmm' with any following characters will be considered a dmm
 	instrument = None
 	
@@ -74,21 +112,23 @@ def connect_to_eq(key, class_name, res_id, use_remote_sense = None, multi_channe
 	
 	#return the actual equipment object instead of the equipment dictionary
 	if key == 'eload':
-		instrument = eLoads.choose_eload(class_name, res_id, use_remote_sense)[1]
+		instrument = eLoads.choose_eload(class_name, res_id, setup_dict)[1]
 	elif key == 'psu':
-		instrument = powerSupplies.choose_psu(class_name, res_id, use_remote_sense)[1]
-	elif key == 'dmm' or ('dmm' in key): #for dmm_i and dmm_v keys
-		instrument = dmms.choose_dmm(class_name, resource_id = res_id, multi_ch_event_and_queue_dict = multi_channel_event_and_queue_dict, use_remote_sense = use_remote_sense)[1]
+		instrument = powerSupplies.choose_psu(class_name, res_id, setup_dict)[1]
+	elif key == 'dmm' or ('dmm' in key): #for dmm_i and dmm_v keys and dmm_t
+		instrument = dmms.choose_dmm(class_name, resource_id = res_id, multi_ch_event_and_queue_dict = multi_channel_event_and_queue_dict, setup_dict = setup_dict)[1]
+	elif key == 'relay_board':
+		instrument = otherEquipment.choose_equipment(class_name, res_id, setup_dict)[1]
 	time.sleep(0.1)
 	return instrument
 
 def get_res_id_dict_and_disconnect(eq_list):
 	#get resource id
 	class_name = eq_list[0]
-	eq_res_id_dict = {'class_name': class_name, 'res_id': None, 'use_remote_sense': None}
+	eq_res_id_dict = {'class_name': class_name, 'res_id': None, 'setup_dict': {}}
 	if class_name == 'MATICIAN_FET_BOARD_CH' or class_name == 'A2D_DAQ_CH':
 		eq_res_id_dict['res_id'] = {'board_name': eq_list[1].board_name, 'ch_num': eq_list[1].ch_num}
-		eq_res_id_dict['use_remote_sense'] = False
+		#eq_res_id_dict['setup_dict']['remote_sense'] = False
 	elif class_name == 'Parallel Eloads':
 		eq_res_id_dict['res_id'] = {}
 		eq_res_id_dict['res_id']['class_name_1'] = eq_list[1].class_name_1
@@ -101,15 +141,15 @@ def get_res_id_dict_and_disconnect(eq_list):
 			eq_res_id_dict['res_id']['res_id_2'] = eq_list[1].eload2.inst.resource_name
 		except AttributeError:
 			eq_res_id_dict['res_id']['res_id_2'] = None #For fake instruments
-		eq_res_id_dict['res_id']['use_remote_sense_1'] = eq_list[1].use_remote_sense_1
-		eq_res_id_dict['res_id']['use_remote_sense_2'] = eq_list[1].use_remote_sense_2
+		eq_res_id_dict['setup_dict']['remote_sense_1'] = eq_list[1].use_remote_sense_1
+		eq_res_id_dict['setup_dict']['remote_sense_2'] = eq_list[1].use_remote_sense_2
 	elif 'Fake' in class_name:
 		eq_res_id_dict['res_id'] = 'Fake'
-		eq_res_id_dict['use_remote_sense'] = eq_list[2]
+		eq_res_id_dict['setup_dict'] = eq_list[2]
 	else:
 		try:
 			eq_res_id_dict['res_id'] = eq_list[1].inst.resource_name
-			eq_res_id_dict['use_remote_sense'] = eq_list[2]
+			eq_res_id_dict['setup_dict'] = eq_list[2]
 		except AttributeError:
 			print("No res_id for instrument")
 		
@@ -129,7 +169,7 @@ def get_res_id_dict_and_disconnect(eq_list):
 class otherEquipment:
 	part_numbers = {
 		'A2D Relay Board': 		'OTHER_A2D_Relay_Board',
-		'Fake item':			'Fake_Item'
+		'Fake item':			'Fake_Item' #Need 2 items for a choicebox
 	}
 		
 	@classmethod
@@ -144,10 +184,10 @@ class otherEquipment:
 			return			
 		
 		if class_name == 'A2D Relay Board':
-			other_equipment = Eload_BK8600.BK8600(resource_id = resource_id)
+			instrument = OTHER_A2D_Relay_Board.A2D_Relay_Board(resource_id = resource_id)
 			
-		setup_dict = setup_equipment(other_equipment, setup_dict)
-		return class_name, eload, use_remote_sense
+		setup_dict = setup_instrument(instrument, setup_dict)
+		return class_name, instrument, setup_dict
 
 
 class eLoads:
@@ -161,7 +201,7 @@ class eLoads:
 	}
 		
 	@classmethod
-	def choose_eload(self, class_name = None, resource_id = None, use_remote_sense = None):
+	def choose_eload(self, class_name = None, resource_id = None, setup_dict = None):
 		if class_name == None:
 			msg = "In which series is the E-Load?"
 			title = "E-Load Series Selection"
@@ -184,8 +224,8 @@ class eLoads:
 		elif class_name == 'Fake Test Eload':
 			eload = Eload_Fake.Fake_Eload(resource_id = resource_id)
 			
-		use_remote_sense = setup_remote_sense(eload, use_remote_sense)
-		return class_name, eload, use_remote_sense
+		setup_dict = setup_instrument(eload, setup_dict)
+		return class_name, eload, setup_dict
 
 
 class powerSupplies:
@@ -201,7 +241,7 @@ class powerSupplies:
 	}
 	
 	@classmethod
-	def choose_psu(self, class_name = None, resource_id = None, use_remote_sense = None):
+	def choose_psu(self, class_name = None, resource_id = None, setup_dict = None):
 		if class_name == None:
 			msg = "In which series is the PSU?"
 			title = "PSU Series Selection"
@@ -228,8 +268,8 @@ class powerSupplies:
 		elif class_name == 'Fake Test PSU':
 			psu = PSU_Fake.Fake_PSU(resource_id = resource_id)
 			
-		use_remote_sense = setup_remote_sense(psu, use_remote_sense)
-		return class_name, psu, use_remote_sense
+		setup_dict = setup_instrument(psu, setup_dict)
+		return class_name, psu, setup_dict
 
 
 class dmms:
@@ -242,8 +282,7 @@ class dmms:
 	}
 	
 	@classmethod
-	def choose_dmm(self, class_name = None, resource_id = None, multi_ch_event_and_queue_dict = None, use_remote_sense = None):
-		#use_remote_sense is here to have similar interface to other functions, but does nothing in this case
+	def choose_dmm(self, class_name = None, resource_id = None, multi_ch_event_and_queue_dict = None, setup_dict = None):
 		if class_name == None:
 			msg = "In which series is the DMM?"
 			title = "DMM Series Selection"

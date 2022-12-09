@@ -17,11 +17,8 @@ class A2D_Relay_Board:
 	def __init__(self, resource_id = None):
 		rm = pyvisa.ResourceManager('@py')
 		
-		self.num_channels = 2
-		self.equipment_type_connected = list()
-		
-		for i in range(self.num_channels):
-			self.equipment_type_connected.append(None)
+		self.num_channels = None
+		self.equipment_type_connected = None
 			
 		self.eload_connected = False
 		self.psu_connected = False
@@ -81,15 +78,6 @@ class A2D_Relay_Board:
 			
 			print('Connected to: {name}'.format(name = self.inst.query('*IDN?')))
 			
-		#Need to determine if channel has an eload or a psu.
-		#Assume only 2 channels for now.
-		#Cannot have multiple of the same device yet.
-		title = "Relay Board Setup"
-		choices = ['eload', 'psu']
-		for i in range(self.num_channels):
-			msg = "What is connected to channel {}?".format(i)
-			response = eq.choicebox(msg, title, choices) #This needs to get thrown in with resource_id somehow so we don't have to define it every time.
-			self.equipment_type_connected[i] = response
 		
 	def __del__(self):
 		try:
