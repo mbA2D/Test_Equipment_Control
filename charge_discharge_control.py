@@ -58,11 +58,11 @@ def initialize_connected_equipment(eq_dict):
 
 def disable_equipment_single(equipment):
     if equipment != None:
-        time.sleep(0.01)
+        time.sleep(0.02)
         equipment.set_current(0) #Turn current to 0 first to try and eliminate arcing in a relay inside an eload that disconnects the output
-        time.sleep(0.01)
+        time.sleep(0.02)
         equipment.toggle_output(False)
-        time.sleep(0.01)
+        time.sleep(0.02)
 
 def disable_equipment(eq_dict):
     if eq_dict['psu'] != None:
@@ -163,12 +163,13 @@ def start_step(step_settings, eq_dict):
         if step_settings["drive_value_other"] >= 0:
             disable_equipment(eq_dict) #turn off eload
             if eq_dict['psu'] != None:
+                time.sleep(0.02)
                 eq_dict['psu'].set_current(step_settings["drive_value_other"])
-                time.sleep(0.01)
+                time.sleep(0.02)
                 eq_dict['psu'].set_voltage(step_settings["drive_value"])
-                time.sleep(0.01)
+                time.sleep(0.02)
                 eq_dict['psu'].toggle_output(True)
-                time.sleep(0.01)
+                time.sleep(0.02)
         #TODO - needs CV mode on eloads
         else:
             print("Voltage Driven Step Not Yet Implemented for negative current. Exiting.")
