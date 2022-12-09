@@ -85,8 +85,8 @@ def setup_instrument(instrument, setup_dict):
 			equipment_type_connected = list()
 			for i in range(num_channels):
 				msg = "What is connected to channel {}?".format(i)
-				response = eq.choicebox(msg, title, choices)
-				equipment_type_connected[i] = response
+				response = eg.choicebox(msg, title, choices)
+				equipment_type_connected.append(response)
 			
 			setup_dict['equipment_type_connected'] = equipment_type_connected
 		

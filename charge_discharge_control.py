@@ -68,8 +68,8 @@ def disable_equipment(eq_dict):
     if eq_dict['eload'] != None:
         disable_equipment_single(eq_dict['eload'])
     if eq_dict.get('relay_board') != None: #TODO - figure out voltage measurement during idle. This might disconnect all our equipment.
-        relay_board.connect_eload(False)
-        relay_board.connect_psu(False)
+        eq_dict['relay_board'].connect_eload(False)
+        eq_dict['relay_board'].connect_psu(False)
 
 def connect_proper_equipment(eq_dict, eq_req_for_cycle_dict):
     #If a relay board is connected (that can connect or disconnect equipment) then we want to have only the necessary equipment connected on each cycle
