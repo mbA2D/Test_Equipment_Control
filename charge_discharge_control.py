@@ -58,9 +58,11 @@ def initialize_connected_equipment(eq_dict):
 
 def disable_equipment_single(equipment):
     if equipment != None:
+        time.sleep(0.01)
         equipment.set_current(0) #Turn current to 0 first to try and eliminate arcing in a relay inside an eload that disconnects the output
-        time.sleep(0.05)
+        time.sleep(0.01)
         equipment.toggle_output(False)
+        time.sleep(0.01)
 
 def disable_equipment(eq_dict):
     if eq_dict['psu'] != None:
@@ -104,18 +106,20 @@ def connect_proper_equipment(eq_dict, eq_req_for_cycle_dict):
 ###################################################### TEST CONTROL ###################################################
 
 def start_charge(end_voltage, constant_current, eq_dict):
-    time.sleep(0.2)
+    time.sleep(0.02)
     eq_dict['psu'].set_current(constant_current)
-    time.sleep(0.05)
+    time.sleep(0.02)
     eq_dict['psu'].set_voltage(end_voltage)
-    time.sleep(0.05)
+    time.sleep(0.02)
     eq_dict['psu'].toggle_output(True)
-    time.sleep(0.05)
+    time.sleep(0.02)
 
 def start_discharge(constant_current, eq_dict):
+    time.sleep(0.02)
     eq_dict['eload'].set_current(constant_current)
-    time.sleep(0.05)
+    time.sleep(0.02)
     eq_dict['eload'].toggle_output(True)
+    time.sleep(0.02)
     
 def start_step(step_settings, eq_dict):
     #This function will set all the supplies to the settings given in the step
@@ -126,11 +130,13 @@ def start_step(step_settings, eq_dict):
             #charge - turn off eload first if connected, leave psu on.
             disable_equipment_single(eq_dict['eload'])
             if eq_dict['psu'] != None:
+                time.sleep(0.02)
                 eq_dict['psu'].set_current(step_settings["drive_value"])
-                time.sleep(0.01)
+                time.sleep(0.02)
                 eq_dict['psu'].set_voltage(step_settings["drive_value_other"])
-                time.sleep(0.01)
+                time.sleep(0.02)
                 eq_dict['psu'].toggle_output(True)
+                time.sleep(0.02)
             else:
                 print("No PSU Connected. Can't Charge! Exiting.")
                 return False
@@ -138,9 +144,11 @@ def start_step(step_settings, eq_dict):
             #discharge - turn off power supply if connected, leave eload on.
             disable_equipment_single(eq_dict['psu'])
             if eq_dict['eload'] != None:
+                time.sleep(0.02)
                 eq_dict['eload'].set_current(step_settings["drive_value"])
-                time.sleep(0.01)
+                time.sleep(0.02)
                 eq_dict['eload'].toggle_output(True)
+                time.sleep(0.02)
                 #we're in constant current mode - can't set a voltage.
             else:
                 print("No Eload Connected. Can't Discharge! Exiting.")
@@ -156,8 +164,11 @@ def start_step(step_settings, eq_dict):
             disable_equipment(eq_dict) #turn off eload
             if eq_dict['psu'] != None:
                 eq_dict['psu'].set_current(step_settings["drive_value_other"])
+                time.sleep(0.01)
                 eq_dict['psu'].set_voltage(step_settings["drive_value"])
+                time.sleep(0.01)
                 eq_dict['psu'].toggle_output(True)
+                time.sleep(0.01)
         #TODO - needs CV mode on eloads
         else:
             print("Voltage Driven Step Not Yet Implemented for negative current. Exiting.")

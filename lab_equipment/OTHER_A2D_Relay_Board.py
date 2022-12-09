@@ -20,8 +20,8 @@ class A2D_Relay_Board:
 		self.num_channels = None
 		self.equipment_type_connected = None
 			
-		self.eload_connected = False
-		self.psu_connected = False
+		self._eload_connected = False
+		self._psu_connected = False
 		
 		if(resource_id == None):
 			resources = rm.list_resources()
@@ -97,10 +97,10 @@ class A2D_Relay_Board:
 		
 		self.inst.write('INSTR:DAQ:SET:OUTP (@{ch}),{val}'.format(ch = psu_channel, val = value))
 		
-		self.psu_connected = state
+		self._psu_connected = state
 	
 	def psu_connected(self):
-		return self.psu_connected
+		return self._psu_connected
 		
 	def connect_eload(self, state):
 		value = 0
@@ -114,10 +114,10 @@ class A2D_Relay_Board:
 		
 		self.inst.write('INSTR:DAQ:SET:OUTP (@{ch}),{val}'.format(ch = eload_channel, val = value))
 	
-		self.eload_connected = state
+		self._eload_connected = state
 	
 	def eload_connected(self):
-		return self.eload_connected
+		return self._eload_connected
 	
 	def reset(self):
 		self.inst.write('*RST')
