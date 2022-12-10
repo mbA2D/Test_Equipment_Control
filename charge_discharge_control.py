@@ -15,7 +15,7 @@ import FileIO
 import jsonIO
 
 
-##################### EQUIPMENT SETUP ####################
+################################################## EQUIPMENT SETUP #############################################
 
 def init_eload(eload):
     eload.toggle_output(False)
@@ -39,6 +39,11 @@ def init_dmm_i(dmm):
     #test measurement to ensure everything is set up correctly
     #and the fisrt measurement which often takes longer is out of the way
 
+def init_relay_board(relay_board):
+    #turn off all channels
+    relay_board.connect_eload(False)
+    relay_board.connect_psu(False)
+    
 def initialize_connected_equipment(eq_dict):
     if eq_dict['eload'] != None:	
         init_eload(eq_dict['eload'])
@@ -48,32 +53,73 @@ def initialize_connected_equipment(eq_dict):
         init_dmm_v(eq_dict['dmm_v'])
     if eq_dict['dmm_i'] != None:
         init_dmm_i(eq_dict['dmm_i'])
+    if eq_dict.get('relay_board') != None:
+        init_relay_board(eq_dict['relay_board'])
+
+def disable_equipment_single(equipment):
+    if equipment != None:
+        time.sleep(0.02)
+        equipment.set_current(0) #Turn current to 0 first to try and eliminate arcing in a relay inside an eload that disconnects the output
+        time.sleep(0.02)
+        equipment.toggle_output(False)
+        time.sleep(0.02)
 
 def disable_equipment(eq_dict):
     if eq_dict['psu'] != None:
-        eq_dict['psu'].set_current(0) #Turn current to 0 first to try and eliminate arcing in a relay inside an eload that disconnects the output
-        time.sleep(0.05)
-        eq_dict['psu'].toggle_output(False)
+        disable_equipment_single(eq_dict['psu'])
     if eq_dict['eload'] != None:
-        eq_dict['eload'].set_current(0) #Turn current to 0 first to try and eliminate arcing in a relay inside a power supply that disconnects the output
-        time.sleep(0.05)
-        eq_dict['eload'].toggle_output(False)
+        disable_equipment_single(eq_dict['eload'])
+    if eq_dict.get('relay_board') != None: #TODO - figure out voltage measurement during idle. This might disconnect all our equipment.
+        eq_dict['relay_board'].connect_eload(False)
+        eq_dict['relay_board'].connect_psu(False)
 
-####################### TEST CONTROL #####################
+def connect_proper_equipment(eq_dict, eq_req_for_cycle_dict):
+    #If a relay board is connected (that can connect or disconnect equipment) then we want to have only the necessary equipment connected on each cycle
+    #For now, we will assume that all 'relay boards' can only be connected to PSUs or eLoads - which channels these are connected to happens on setup of the relay board.
+    #But only 2 channels and only 1 of each equipment.
+    
+    #TODO - add a voltage check to see if equipment switched properly.
+    
+    #Disconnect first (break before make)
+    #if not required but it is connected, then break connection
+    if not eq_req_for_cycle_dict['psu'] and eq_dict['relay_board'].psu_connected():
+        disable_equipment_single(eq_dict['psu'])
+        eq_dict['relay_board'].connect_psu(False)
+    if not eq_req_for_cycle_dict['eload'] and eq_dict['relay_board'].eload_connected():
+        disable_equipment_single(eq_dict['eload'])
+        eq_dict['relay_board'].connect_eload(False)
+    
+    #Connect second (break before make)
+    #if required but is not connected, then make connection
+    if eq_req_for_cycle_dict['psu'] and not eq_dict['relay_board'].psu_connected(): #if changing states
+        #ensure psu output is disabled before connecting
+        disable_equipment_single(eq_dict['psu'])
+        eq_dict['relay_board'].connect_psu(True)
+    if eq_req_for_cycle_dict['eload'] and not eq_dict['relay_board'].eload_connected():
+        #ensure eload output is disabled before connecting
+        disable_equipment_single(eq_dict['eload'])
+        eq_dict['relay_board'].connect_eload(True)
+
+    time.sleep(0.2) #Delay to make sure all the relays click.
+
+
+###################################################### TEST CONTROL ###################################################
 
 def start_charge(end_voltage, constant_current, eq_dict):
-    time.sleep(0.2)
+    time.sleep(0.02)
     eq_dict['psu'].set_current(constant_current)
-    time.sleep(0.05)
+    time.sleep(0.02)
     eq_dict['psu'].set_voltage(end_voltage)
-    time.sleep(0.05)
+    time.sleep(0.02)
     eq_dict['psu'].toggle_output(True)
-    time.sleep(0.05)
+    time.sleep(0.02)
 
 def start_discharge(constant_current, eq_dict):
+    time.sleep(0.02)
     eq_dict['eload'].set_current(constant_current)
-    time.sleep(0.05)
+    time.sleep(0.02)
     eq_dict['eload'].toggle_output(True)
+    time.sleep(0.02)
     
 def start_step(step_settings, eq_dict):
     #This function will set all the supplies to the settings given in the step
@@ -82,27 +128,27 @@ def start_step(step_settings, eq_dict):
     if step_settings["drive_style"] == 'current_a':
         if step_settings["drive_value"] > 0:
             #charge - turn off eload first if connected, leave psu on.
-            local_eq_dict = eq_dict.copy()
-            local_eq_dict['psu'] = None
-            disable_equipment(local_eq_dict)
+            disable_equipment_single(eq_dict['eload'])
             if eq_dict['psu'] != None:
+                time.sleep(0.02)
                 eq_dict['psu'].set_current(step_settings["drive_value"])
-                time.sleep(0.01)
+                time.sleep(0.02)
                 eq_dict['psu'].set_voltage(step_settings["drive_value_other"])
-                time.sleep(0.01)
+                time.sleep(0.02)
                 eq_dict['psu'].toggle_output(True)
+                time.sleep(0.02)
             else:
                 print("No PSU Connected. Can't Charge! Exiting.")
                 return False
         elif step_settings["drive_value"] < 0:
             #discharge - turn off power supply if connected, leave eload on.
-            local_eq_dict = eq_dict.copy()
-            local_eq_dict['eload'] = None
-            disable_equipment(local_eq_dict)
+            disable_equipment_single(eq_dict['psu'])
             if eq_dict['eload'] != None:
+                time.sleep(0.02)
                 eq_dict['eload'].set_current(step_settings["drive_value"])
-                time.sleep(0.01)
+                time.sleep(0.02)
                 eq_dict['eload'].toggle_output(True)
+                time.sleep(0.02)
                 #we're in constant current mode - can't set a voltage.
             else:
                 print("No Eload Connected. Can't Discharge! Exiting.")
@@ -115,11 +161,18 @@ def start_step(step_settings, eq_dict):
     elif step_settings["drive_style"] == 'voltage_v':
         #positive current
         if step_settings["drive_value_other"] >= 0:
-            disable_equipment(eq_dict) #turn off eload
+            disable_equipment_single(eq_dict['eload']) #turn off eload
             if eq_dict['psu'] != None:
+                time.sleep(0.02)
                 eq_dict['psu'].set_current(step_settings["drive_value_other"])
+                time.sleep(0.02)
                 eq_dict['psu'].set_voltage(step_settings["drive_value"])
+                time.sleep(0.02)
                 eq_dict['psu'].toggle_output(True)
+                time.sleep(0.02)
+            else:
+                print("No PSU Connected. Can't Charge! Exiting.")
+                return False
         #TODO - needs CV mode on eloads
         else:
             print("Voltage Driven Step Not Yet Implemented for negative current. Exiting.")
@@ -133,12 +186,15 @@ def start_step(step_settings, eq_dict):
         disable_equipment(eq_dict)
     
     #return True for a successful step start.
+    #print("start_step returning True")
     return True
 
 def evaluate_end_condition(step_settings, data, data_in_queue):
     #evaluates different end conditions (voltage, current, time)
     #returns true if the end condition has been met (e.g. voltage hits lower bound, current hits lower bound, etc.)
     #also returns true if any of the safety settings have been exceeded
+    
+    #print(data)
     
     #REQUEST TO END
     if end_signal(data_in_queue):
@@ -175,8 +231,10 @@ def evaluate_end_condition(step_settings, data, data_in_queue):
     elif step_settings["end_condition"] == 'lesser':
         #For positive current less than value endpoint, also check the voltage to be close to the end voltage
         if step_settings["end_style"] == 'current_a' and step_settings["drive_style"] == 'voltage_v' and step_settings["end_value"] > 0:
-            if data["Voltage"] > 0.99*step_settings["end_value_other"] and left_comparator < step_settings["end_value"]:
+            if data["Voltage"] > 0.99*step_settings["drive_value"] and left_comparator < step_settings["end_value"]:
                 return 'end_condition'
+            else:
+                return 'none'
         elif left_comparator < step_settings["end_value"]:
             return 'end_condition'
         else:
@@ -339,7 +397,7 @@ def discharge_cell(log_filepath, cycle_settings, eq_dict, data_out_queue = None,
 def step_cell(log_filepath, step_settings, eq_dict, data_out_queue = None, data_in_queue = None):
     
     if start_step(step_settings, eq_dict):
-        
+        #print("Finished Start Step")
         step_start_time = time.time()
         
         data = dict()
@@ -347,9 +405,9 @@ def step_cell(log_filepath, step_settings, eq_dict, data_out_queue = None, data_
         data["Data_Timestamp_From_Step_Start"] = 0
         
         #If we are charging to the end of a CC cycle, then we need to not exit immediately.
-        if (step_settings["drive_style"] == 'voltage_v' and
-            step_settings["end_style"] == 'current_a' and
-            step_settings["end_condition"] == 'lesser'):
+        if (step_settings["drive_style"] == "voltage_v" and
+            step_settings["end_style"] == "current_a" and
+            step_settings["end_condition"] == "lesser"):
         
             data["Current"] = step_settings["drive_value_other"]
         
@@ -548,7 +606,7 @@ def find_eq_req_steps(step_settings):
     return eq_req_dict
 
 
-################################## CHOOSING CYCLE SETTINGS TYPES ################################
+###################################################### GATHERING REQUIRED INPUTS FOR EACH CYCLE TYPE ########################################################
 
 def single_cc_cycle_info():
     #charge then discharge
@@ -774,7 +832,11 @@ def convert_repeated_ir_settings_to_steps(test_settings):
         settings_list.append(step_2_settings)
         
     return settings_list
-    
+
+
+################################################### SETUP TO GET INPUT DICT #########################################
+
+
 def ask_storage_charge():
     message = "Do you want to do a storage charge?\n" + \
                 "Recommended to do one. Leaving a cell discharged increases\n" + \
@@ -837,20 +899,30 @@ def get_cycle_settings_list_of_lists(cycle_type):
         
     return cycle_settings_list_of_lists
 
+def get_eq_req_for_cycle(settings_list):
+    eq_req_dict = {'psu': False, 'eload': False}
+    cycle_requirements = Templates.CycleTypes.cycle_requirements
+    
+    for settings in settings_list:
+        if settings["cycle_type"] == 'step':
+            eq_req_from_settings = find_eq_req_steps(settings)
+            eq_req_dict['psu'] = eq_req_dict['psu'] or eq_req_from_settings['psu']
+            eq_req_dict['eload'] = eq_req_dict['eload'] or eq_req_from_settings['eload']
+        else:
+            eq_req_dict['psu'] = eq_req_dict['psu'] or cycle_requirements[settings["cycle_type"]]['supply_req']
+            eq_req_dict['eload'] = eq_req_dict['eload'] or cycle_requirements[settings["cycle_type"]]['load_req']
+            
+    return eq_req_dict
+
 def get_eq_req_dict(cycle_settings_list_of_lists):
     #REQUIRED EQUIPMENT
     eq_req_dict = {'psu': False, 'eload': False}
     cycle_requirements = Templates.CycleTypes.cycle_requirements
     
     for settings_list in cycle_settings_list_of_lists:
-        for settings in settings_list:
-            if settings["cycle_type"] == 'step':
-                eq_req_from_settings = find_eq_req_steps(settings)
-                eq_req_dict['psu'] = eq_req_dict['psu'] or eq_req_from_settings['psu']
-                eq_req_dict['eload'] = eq_req_dict['eload'] or eq_req_from_settings['eload']
-            else:
-                eq_req_dict['psu'] = eq_req_dict['psu'] or cycle_requirements[settings["cycle_type"]]['supply_req']
-                eq_req_dict['eload'] = eq_req_dict['eload'] or cycle_requirements[settings["cycle_type"]]['load_req']
+        eq_req_for_cycle_dict = get_eq_req_for_cycle(settings_list)
+        eq_req_dict['psu'] = eq_req_dict['psu'] or eq_req_for_cycle_dict['psu']
+        eq_req_dict['eload'] = eq_req_dict['eload'] or eq_req_for_cycle_dict['eload']
     
     return eq_req_dict
 
@@ -873,7 +945,7 @@ def get_equipment_dict(res_ids_dict, multi_channel_event_and_queue_dict):
     eq_dict = {}
     for key in res_ids_dict:
         if res_ids_dict[key] != None and res_ids_dict[key]['res_id'] != None:
-            eq_dict[key] = eq.connect_to_eq(key, res_ids_dict[key]['class_name'], res_ids_dict[key]['res_id'], res_ids_dict[key]['use_remote_sense'], multi_channel_event_and_queue_dict)
+            eq_dict[key] = eq.connect_to_eq(key, res_ids_dict[key]['class_name'], res_ids_dict[key]['res_id'], res_ids_dict[key]['setup_dict'], multi_channel_event_and_queue_dict)
         else:
             eq_dict[key] = None
     return eq_dict
@@ -919,6 +991,13 @@ def charge_discharge_control(res_ids_dict, data_out_queue = None, data_in_queue 
             filepath = FileIO.start_file(input_dict['directory'], "{} {}".format(input_dict['cell_name'], input_dict['cycle_type']))
             
             try:
+            
+                #TODO - If we have a relay board to disconnect equipment, ensure we are still connected to the correct equipment
+                if eq_dict.get('relay_board') != None:
+                    #determine the equipment that we need for this cycle
+                    eq_req_for_cycle_dict = get_eq_req_for_cycle(cycle_settings_list)
+                    connect_proper_equipment(eq_dict, eq_req_for_cycle_dict)
+            
                 for count_2, cycle_settings in enumerate(cycle_settings_list):
                     end_condition = 'none'
                     
@@ -949,6 +1028,7 @@ def charge_discharge_control(res_ids_dict, data_out_queue = None, data_in_queue 
                     #Step Functions
                     elif current_status == 'step':
                         end_condition = single_step_cycle(filepath, cycle_settings, eq_dict, data_out_queue = data_out_queue, data_in_queue = data_in_queue, ch_num = ch_num)
+                        #print(end_condition)
                         if end_condition == 'safety_condition':
                             disable_equipment(eq_dict)
                             break
