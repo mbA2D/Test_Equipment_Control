@@ -161,7 +161,7 @@ def start_step(step_settings, eq_dict):
     elif step_settings["drive_style"] == 'voltage_v':
         #positive current
         if step_settings["drive_value_other"] >= 0:
-            disable_equipment(eq_dict) #turn off eload
+            disable_equipment_single(eq_dict['eload']) #turn off eload
             if eq_dict['psu'] != None:
                 time.sleep(0.02)
                 eq_dict['psu'].set_current(step_settings["drive_value_other"])
@@ -170,6 +170,9 @@ def start_step(step_settings, eq_dict):
                 time.sleep(0.02)
                 eq_dict['psu'].toggle_output(True)
                 time.sleep(0.02)
+            else:
+                print("No PSU Connected. Can't Charge! Exiting.")
+                return False
         #TODO - needs CV mode on eloads
         else:
             print("Voltage Driven Step Not Yet Implemented for negative current. Exiting.")
@@ -183,12 +186,15 @@ def start_step(step_settings, eq_dict):
         disable_equipment(eq_dict)
     
     #return True for a successful step start.
+    #print("start_step returning True")
     return True
 
 def evaluate_end_condition(step_settings, data, data_in_queue):
     #evaluates different end conditions (voltage, current, time)
     #returns true if the end condition has been met (e.g. voltage hits lower bound, current hits lower bound, etc.)
     #also returns true if any of the safety settings have been exceeded
+    
+    #print(data)
     
     #REQUEST TO END
     if end_signal(data_in_queue):
@@ -225,8 +231,10 @@ def evaluate_end_condition(step_settings, data, data_in_queue):
     elif step_settings["end_condition"] == 'lesser':
         #For positive current less than value endpoint, also check the voltage to be close to the end voltage
         if step_settings["end_style"] == 'current_a' and step_settings["drive_style"] == 'voltage_v' and step_settings["end_value"] > 0:
-            if data["Voltage"] > 0.99*step_settings["end_value_other"] and left_comparator < step_settings["end_value"]:
+            if data["Voltage"] > 0.99*step_settings["drive_value"] and left_comparator < step_settings["end_value"]:
                 return 'end_condition'
+            else:
+                return 'none'
         elif left_comparator < step_settings["end_value"]:
             return 'end_condition'
         else:
@@ -389,7 +397,7 @@ def discharge_cell(log_filepath, cycle_settings, eq_dict, data_out_queue = None,
 def step_cell(log_filepath, step_settings, eq_dict, data_out_queue = None, data_in_queue = None):
     
     if start_step(step_settings, eq_dict):
-        
+        #print("Finished Start Step")
         step_start_time = time.time()
         
         data = dict()
@@ -397,9 +405,9 @@ def step_cell(log_filepath, step_settings, eq_dict, data_out_queue = None, data_
         data["Data_Timestamp_From_Step_Start"] = 0
         
         #If we are charging to the end of a CC cycle, then we need to not exit immediately.
-        if (step_settings["drive_style"] == 'voltage_v' and
-            step_settings["end_style"] == 'current_a' and
-            step_settings["end_condition"] == 'lesser'):
+        if (step_settings["drive_style"] == "voltage_v" and
+            step_settings["end_style"] == "current_a" and
+            step_settings["end_condition"] == "lesser"):
         
             data["Current"] = step_settings["drive_value_other"]
         
@@ -1020,6 +1028,7 @@ def charge_discharge_control(res_ids_dict, data_out_queue = None, data_in_queue 
                     #Step Functions
                     elif current_status == 'step':
                         end_condition = single_step_cycle(filepath, cycle_settings, eq_dict, data_out_queue = data_out_queue, data_in_queue = data_in_queue, ch_num = ch_num)
+                        #print(end_condition)
                         if end_condition == 'safety_condition':
                             disable_equipment(eq_dict)
                             break
