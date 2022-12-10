@@ -2,7 +2,10 @@
 Controlling Various Lab Test Equipment
 
 TODO List
- - Add a way to get output state of all equipment so we can remove redundant disable and waits
+ - Add a way to get output state of all equipment so we can remove redundant disable and waits.
+ - Make all instruments 'virtual' - e.g. controlled globally and not by the individual battery test channel processes. This opens the door to scheduled use of equipment, sharing between channels, and using all channels of multi channel devices.
+ - Create safety limits for extra measurement devices - e.g. cell monitors on multi-cell battery packs, temperature sensors.
+ - Make a way to add temperature control of the ambient temp through heaters - heaters will have external controller, just need to pass setpoint.
  - DONE - Add internal resistance test through the step profiles
  - DONE - Add capability to test SoC vs Internal Resistance
  - Properly synchronize voltage and current measurements (only available on certain equipment).
