@@ -6,12 +6,14 @@ TODO List
  - Make all instruments 'virtual' - e.g. controlled globally and not by the individual battery test channel processes. This opens the door to scheduled use of equipment, sharing between channels, and using all channels of multi channel devices.
  - Create safety limits for extra measurement devices - e.g. cell monitors on multi-cell battery packs, temperature sensors.
  - Make a way to add temperature control of the ambient temp through heaters - heaters will have external controller, just need to pass setpoint.
- - Separate safety conditions from end cycle conditions
+ - Separate safety conditions for each channel from end cycle conditions
  - Add safety conditions to all types of cycles (just make them all use step at the core)
  - Add support for range switching of eloads between different cycles (e.g. use 4A range for a 1A discharge and 40A range for 5A discharge).
+ - Allow 1 device to have multiple uses (e.g. a relay board and voltage/current/temperature monitor all in one) - will be easier when all equipment is virtual
+ - Add features to relay board to define which inputs could connect to which outputs (e.g. share 2 power supplies and 2 eloads between 4 cells).
  - DONE - Add internal resistance test through the step profiles
  - DONE - Add capability to test SoC vs Internal Resistance
- - Properly synchronize voltage and current measurements (only available on certain equipment).
+ - Properly synchronize voltage and current measurements (only available on certain equipment). - Low Priority
  - finish adding ICA: smooth data before analysis
  - HPPC test profile creation gui
  - DONE - Add parallel eloads ability to draw more power
