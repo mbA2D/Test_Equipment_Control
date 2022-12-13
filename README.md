@@ -2,6 +2,7 @@
 Controlling Various Lab Test Equipment
 
 TODO List
+ - Common equipment selection template - instead of a for loop and if statements in each device file
  - Add a way to get output state of all equipment so we can remove redundant disable and waits.
  - Make all instruments 'virtual' - e.g. controlled globally and not by the individual battery test channel processes. This opens the door to scheduled use of equipment, sharing between channels, and using all channels of multi channel devices.
  - Create safety limits for extra measurement devices - e.g. cell monitors on multi-cell battery packs, temperature sensors.
