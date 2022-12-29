@@ -3,62 +3,18 @@
 
 import pyvisa
 import time
-import easygui as eg
-import serial
+from .PyVisaDeviceTemplate import PowerSupplyDevice
 
 # Power Supply
-class E3631A:
+class E3631A(PowerSupplyDevice):
 	
 	query_delay = 0.75
 	has_remote_sense = False
 	can_measure_v_while_off = True #Have not checked this.
+	pyvisa_backend = '@ivi'
 	
 	# Initialize the E3631A Power Supply
-	def __init__(self, resource_id = None):
-		rm = pyvisa.ResourceManager()
-		
-		if(resource_id == None):
-			resources = rm.list_resources()
-			
-			################# IDN VERSION #################
-			#Attempt to connect to each Visa Resource and get the IDN response
-			title = "Power Supply Selection"
-			if(len(resources) == 0):
-				resource_id = 0
-				print("No PyVisa Resources Available. Connection attempt will exit with errors")
-			idns_dict = {}
-			for resource in resources:
-				try:
-					instrument = rm.open_resource(resource)
-					instrument.query_delay = self.query_delay
-					instrument_idn = instrument.query("*IDN?")
-					idns_dict[resource] = instrument_idn
-					instrument.close()
-				except (pyvisa.errors.VisaIOError, PermissionError, serial.serialutil.SerialException):
-					pass
-					
-			#Now we have all the available resources that we can connect to, with their IDNs.
-			resource_id = 0
-			if(len(idns_dict.values()) == 0):
-				print("No Equipment Available. Connection attempt will exit with errors")
-			elif(len(idns_dict.values()) == 1):
-				msg = "There is only 1 Visa Equipment available.\nWould you like to use it?\n{}".format(list(idns_dict.values())[0])
-				if(eg.ynbox(msg, title)):
-					idn = list(idns_dict.values())[0]
-			else:
-				msg = "Select the Power Supply Model:"
-				idn = eg.choicebox(msg, title, idns_dict.values())
-			#Now we know which IDN we want to connect to
-			#swap keys and values and then connect
-			if idn != None:
-				resources_dict = dict((v,k) for k,v in idns_dict.items())
-				resource_id = resources_dict[idn]
-		
-		self.inst = rm.open_resource(resource_id)
-		self.inst.query_delay = self.query_delay
-		
-		self.inst_idn = self.inst.query("*IDN?")
-		print("Connected to {}\n".format(self.inst_idn))
+	def initialize(self):
 		self.inst.write("*RST")
 		
 		split_string = self.inst_idn.split(",")
@@ -67,7 +23,7 @@ class E3631A:
 		self.zero_number = split_string[2]
 		self.version_number = split_string[3]
 		
-		#Choose channel 1 by default
+		#Choose channel 2 by default
 		self.select_channel(2)
 		
 		self.lock_front_panel(True)
@@ -78,6 +34,8 @@ class E3631A:
 		#channel is a number - 1,2,3
 		if(channel <= 3) and (channel > 0):
 			self.inst.write("INST:NSEL {}".format(channel))
+		else:
+			print("Invalid Channel")
 	
 	def set_current(self, current_setpoint_A):
 		self.inst.write("CURR {}".format(current_setpoint_A))

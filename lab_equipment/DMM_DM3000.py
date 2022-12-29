@@ -2,61 +2,18 @@
 #Manuals: https://www.rigolna.com/products/digital-multimeters/dm3000/
 
 import pyvisa
-import time
-import easygui as eg
-import serial
+from .PyVisaDeviceTemplate import DMMDevice
 
 # DMM
-class DM3000:
+class DM3000(DMMDevice):
 	# Initialize the DM3000 DMM
 	
 	read_termination = '\n'
 	timeout = 5000 #5 second timeout
-	
-	def __init__(self, resource_id = None):
-		rm = pyvisa.ResourceManager()
+	pyvisa_backend = '@ivi'
 		
-		if(resource_id == None):
-			resources = rm.list_resources()
-
-			################# IDN VERSION #################
-			#Attempt to connect to each Visa Resource and get the IDN response
-			title = "DMM Selection"
-			if(len(resources) == 0):
-				resource_id = 0
-				print("No PyVisa Resources Available. Connection attempt will exit with errors")
-			idns_dict = {}
-			for resource in resources:
-				try:
-					instrument = rm.open_resource(resource)
-					instrument.read_termination = DM3000.read_termination
-					instrument.timeout = DM3000.timeout
-					instrument_idn = instrument.query("*IDN?")
-					idns_dict[resource] = instrument_idn
-					instrument.close()
-				except (pyvisa.errors.VisaIOError, PermissionError, serial.serialutil.SerialException):
-					pass
-					
-			#Now we have all the available resources that we can connect to, with their IDNs.
-			resource_id = 0
-			if(len(idns_dict.values()) == 0):
-				print("No Equipment Available. Connection attempt will exit with errors")
-			elif(len(idns_dict.values()) == 1):
-				msg = "There is only 1 Visa Equipment available.\nWould you like to use it?\n{}".format(list(idns_dict.values())[0])
-				if(eg.ynbox(msg, title)):
-					idn = list(idns_dict.values())[0]
-			else:
-				msg = "Select the DMM Model:"
-				idn = eg.choicebox(msg, title, idns_dict.values())
-			#Now we know which IDN we want to connect to
-			#swap keys and values and then connect
-			resources_dict = dict((v,k) for k,v in idns_dict.items())
-			resource_id = resources_dict[idn]
-		
-		
-		
-		self.inst = rm.open_resource(resource_id)
-		self.inst.read_termination = DM3000.read_termination
+	def initialize(self):
+		self.inst.write("*RST")
 		
 		self.volt_ranges = {0.2: 0,
 							2: 1,
@@ -80,9 +37,6 @@ class DM3000:
 						  "RANGE": None,
 						  "RES": None,
 						  "NPLC": None}
-		
-		print("Connected to %s\n" % self.inst.query("*IDN?"))
-		self.inst.write("*RST")
 		
 	def measure_voltage(self, res = 2, volt_range = 'AUTO'):
 		

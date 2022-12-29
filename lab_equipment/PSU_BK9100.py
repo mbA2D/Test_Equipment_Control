@@ -16,6 +16,8 @@ class BK9100:
 	baud_rate = 9600
 	write_termination = '\r'
 	read_termination = '\r'
+	idn_available = False
+	pyvisa_backend = '@py'
 	
 	def __init__(self, resource_id = None):
 		rm = pyvisa.ResourceManager('@py')
@@ -62,6 +64,7 @@ class BK9100:
 		self.inst.write_termination = self.write_termination
 		self.inst.read_termination = self.read_termination
 		
+	def initialize(self):
 		#IDN and RST not implemented in this PSU
 		#print("Connected to %s\n" % self.inst.query("*IDN?"))
 		#self.inst.write("*RST")

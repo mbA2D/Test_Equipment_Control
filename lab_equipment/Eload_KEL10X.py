@@ -3,70 +3,20 @@
 
 import pyvisa
 import time
-import easygui as eg
-import serial
+from .PyVisaDeviceTemplate import EloadDevice
 
 # E-Load
-class KEL10X:
-	# Initialize the KEL10X E-Load
+class KEL10X(EloadDevice):
 	
 	baud_rate = 115200
 	read_termination = '\n'
 	query_delay = 0.05
 	has_remote_sense = True
+	pyvisa_backend = '@ivi'	
 	
-	def __init__(self, resource_id = None):
-		rm = pyvisa.ResourceManager()
-		
-		if(resource_id == None):
-			resources = rm.list_resources()
-			
-			################# IDN VERSION #################
-			#Attempt to connect to each Visa Resource and get the IDN response
-			title = "Eload Selection"
-			if(len(resources) == 0):
-				resource_id = 0
-				print("No PyVisa Resources Available. Connection attempt will exit with errors")
-			idns_dict = {}
-			for resource in resources:
-				try:
-					instrument = rm.open_resource(resource)
-					instrument.baud_rate = self.baud_rate
-					instrument.read_termination = self.read_termination
-					instrument.query_delay = self.query_delay
-					instrument_idn = instrument.query("*IDN?")
-					idns_dict[resource] = instrument_idn
-					instrument.close()
-				except (pyvisa.errors.VisaIOError, PermissionError, serial.serialutil.SerialException):
-					pass
-					
-			#Now we have all the available resources that we can connect to, with their IDNs.
-			resource_id = 0
-			if(len(idns_dict.values()) == 0):
-				print("No Equipment Available. Connection attempt will exit with errors")
-			elif(len(idns_dict.values()) == 1):
-				msg = "There is only 1 Visa Equipment available.\nWould you like to use it?\n{}".format(list(idns_dict.values())[0])
-				if(eg.ynbox(msg, title)):
-					idn = list(idns_dict.values())[0]
-			else:
-				msg = "Select the Eload Model:"
-				idn = eg.choicebox(msg, title, idns_dict.values())
-			#Now we know which IDN we want to connect to
-			#swap keys and values and then connect
-			if idn != None:
-				resources_dict = dict((v,k) for k,v in idns_dict.items())
-				resource_id = resources_dict[idn]
-		
-		self.inst = rm.open_resource(resource_id)
-        
-		self.inst.baud_rate = self.baud_rate
-		self.inst.read_termination = self.read_termination
-		self.inst.query_delay = self.query_delay
-        
-		self.instrument_idn = self.inst.query("*IDN?")
-		print("Connected to {}\n".format(self.instrument_idn))
-		
-		split_string = self.instrument_idn.split(" ")
+	# Specific initialization for the KEL10X E-Load	
+	def initialize(self):
+		split_string = self.inst_idn.split(" ")
 		self.model_number = split_string[0]
 		self.version_number = split_string[1]
 		self.serial_number = split_string[2]

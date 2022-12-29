@@ -2,66 +2,20 @@
 #Links helpful for finding commands: https://lygte-info.dk/project/TestControllerIntro
 
 import pyvisa
-import time
-import easygui as eg
-import serial
+from .PyVisaDeviceTemplate import DMMDevice
 
 #DMM
-class SDM3065X:
+class SDM3065X(DMMDevice):
 	# Initialize the SDM3065X E-Load
 	
 	read_termination = '\n'
 	timeout = 5000 #5 second timeout
+	pyvisa_backend = '@ivi'
 	
 	defaults = {"NPLC": 1,
 				"VOLT_DC_RANGE": 'AUTO'}
-	
-	def __init__(self, resource_id = None):
-		rm = pyvisa.ResourceManager()
 		
-		if(resource_id == None):
-			resources = rm.list_resources()
-
-			################# IDN VERSION #################
-			#Attempt to connect to each Visa Resource and get the IDN response
-			title = "DMM Selection"
-			if(len(resources) == 0):
-				resource_id = 0
-				print("No PyVisa Resources Available. Connection attempt will exit with errors")
-			idns_dict = {}
-			for resource in resources:
-				try:
-					instrument = rm.open_resource(resource)
-					instrument.read_termination = SDM3065X.read_termination
-					instrument.timeout = SDM3065X.timeout
-					instrument_idn = instrument.query("*IDN?")
-					idns_dict[resource] = instrument_idn
-					instrument.close()
-				except (pyvisa.errors.VisaIOError, PermissionError, serial.serialutil.SerialException):
-					pass
-					
-			#Now we have all the available resources that we can connect to, with their IDNs.
-			resource_id = 0
-			if(len(idns_dict.values()) == 0):
-				print("No Equipment Available. Connection attempt will exit with errors")
-			elif(len(idns_dict.values()) == 1):
-				msg = "There is only 1 Visa Equipment available.\nWould you like to use it?\n{}".format(list(idns_dict.values())[0])
-				if(eg.ynbox(msg, title)):
-					idn = list(idns_dict.values())[0]
-			else:
-				msg = "Select the DMM Model:"
-				idn = eg.choicebox(msg, title, idns_dict.values())
-			#Now we know which IDN we want to connect to
-			#swap keys and values and then connect
-			if idn != None:
-				resources_dict = dict((v,k) for k,v in idns_dict.items())
-				resource_id = resources_dict[idn]
-		
-		
-		
-		self.inst = rm.open_resource(resource_id)
-		self.inst.read_termination = SDM3065X.read_termination
-		self.inst.timeout = SDM3065X.timeout
+	def initialize(self):
 		
 		self.volt_ranges = {0.2: '200mv',
 							2: '2V',
