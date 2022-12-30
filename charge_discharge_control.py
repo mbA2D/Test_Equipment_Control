@@ -624,7 +624,7 @@ def one_level_continuous_cc_cycles_with_rest_info():
     cycle_settings = Templates.CycleSettings()
     cycle_settings.get_cycle_settings()
     num_cycles = eg.integerbox(msg = "How Many Cycles?",
-                                title = "Degradation Cycle", default = 1,
+                                title = "Cycle Type 1", default = 1,
                                 lowerbound = 0, upperbound = 999)
 
     cycle_settings_list = list()
@@ -641,22 +641,22 @@ def two_level_continuous_cc_cycles_with_rest_info():
     
     #Cycle type 1
     cycle_1_settings = Templates.CycleSettings()
-    cycle_1_settings.get_cycle_settings("Cycle 1")
+    cycle_1_settings.get_cycle_settings("Cycle Type 1")
     num_cycles_type_1 = eg.integerbox(msg = "How Many Cycles of Type 1?",
-                                            title = "Cycle 1", default = 9,
-                                            lowerbound = 0, upperbound = 99)
+                                            title = "Cycle Type 1", default = 9,
+                                            lowerbound = 0, upperbound = 999)
 
     #Cycle type 2
     cycle_2_settings = Templates.CycleSettings()
-    cycle_2_settings.get_cycle_settings("Cycle 2")
+    cycle_2_settings.get_cycle_settings("Cycle Type 2")
     num_cycles_type_2 = eg.integerbox(msg = "How Many Cycles of Type 2?",
-                                            title = "Cycle 2", default = 1,
-                                            lowerbound = 0, upperbound = 99)
+                                            title = "Cycle Type 2", default = 1,
+                                            lowerbound = 0, upperbound = 999)
 
     #test cycles - charge and discharge how many times?
     num_test_cycles = eg.integerbox(msg = "How Many Test Cycles?",
                                             title = "Test Cycles", default = 1,
-                                            lowerbound = 0, upperbound = 99)
+                                            lowerbound = 0, upperbound = 999)
 
     cycle_settings_list = list()
 
@@ -669,24 +669,69 @@ def two_level_continuous_cc_cycles_with_rest_info():
     return cycle_settings_list
 
 def charge_only_cycle_info():
-    cycle_settings_list = list()
+    charge_test_settings = Templates.ChargeSettings()
+    charge_test_settings.get_cycle_settings("Charge Only")
     
-    charge_only_settings = Templates.ChargeSettings()
-    charge_only_settings.get_cycle_settings("Charge Only")
+    #Transform charge settings to step settings.
+    charge_settings = charge_test_settings.settings
+    step_settings_list = list()
+    step_settings_list.append(convert_charge_settings_to_steps(charge_settings))
+
+    return step_settings_list
+   
+def convert_charge_settings_to_steps(charge_settings, model_step_settings = None):
+    if model_step_settings is None:
+        step_1 = Templates.StepSettings()
+    else:
+        step_1 = model_step_settings
     
-    cycle_settings_list.append((charge_only_settings.settings,))
+    step_1.settings["drive_style"] = 'voltage_v'
+    step_1.settings["drive_value"] = charge_settings["charge_end_v"]
+    step_1.settings["drive_value_other"] = charge_settings["charge_a"]
+    step_1.settings["end_style"] = 'current_a'
+    step_1.settings["end_condition"] = 'lesser'
+    step_1.settings["end_value"] = charge_settings["charge_end_a"]
+    step_1.settings["safety_min_voltage_v"] = charge_settings["safety_min_voltage_v"]
+    step_1.settings["safety_max_voltage_v"] = charge_settings["safety_max_voltage_v"]
+    step_1.settings["safety_min_current_a"] = charge_settings["safety_min_current_a"]
+    step_1.settings["safety_max_current_a"] = charge_settings["safety_max_current_a"]
+    step_1.settings["safety_max_time_s"] = charge_settings["safety_max_time_s"]
     
-    return cycle_settings_list
-    
+    return_list = list()
+    return_list.append(step_1.settings)
+    return return_list
+
 def discharge_only_cycle_info():
-    cycle_settings_list = list()
+    discharge_test_settings = Templates.DischargeSettings()
+    discharge_test_settings.get_cycle_settings("Discharge Only")
     
-    discharge_only_settings = Templates.DischargeSettings()
-    discharge_only_settings.get_cycle_settings("Discharge Only")
+    #Transform discharge settings to step settings.
+    discharge_settings = discharge_test_settings.settings
+    step_settings_list = list()
+    step_settings_list.append(convert_discharge_settings_to_steps(discharge_settings))
+
+    return step_settings_list
+
+def convert_discharge_settings_to_steps(discharge_settings, model_step_settings = None):
+    if model_step_settings is None:
+        step_1 = Templates.StepSettings()
+    else:
+        step_1 = model_step_settings
     
-    cycle_settings_list.append((discharge_only_settings.settings,))
+    step_1.settings["drive_style"] = 'current_a'
+    step_1.settings["drive_value"] = discharge_settings["discharge_a"]
+    step_1.settings["end_style"] = 'voltage_v'
+    step_1.settings["end_condition"] = 'lesser'
+    step_1.settings["end_value"] = discharge_settings["discharge_end_v"]
+    step_1.settings["safety_min_voltage_v"] = discharge_settings["safety_min_voltage_v"]
+    step_1.settings["safety_max_voltage_v"] = discharge_settings["safety_max_voltage_v"]
+    step_1.settings["safety_min_current_a"] = discharge_settings["safety_min_current_a"]
+    step_1.settings["safety_max_current_a"] = discharge_settings["safety_max_current_a"]
+    step_1.settings["safety_max_time_s"] = discharge_settings["safety_max_time_s"]
     
-    return cycle_settings_list
+    return_list = list()
+    return_list.append(step_1.settings)
+    return return_list
 
 def single_step_cell_info():
     step_settings_list = list()
@@ -743,34 +788,29 @@ def single_ir_test_info():
     
 def convert_single_ir_settings_to_steps(ir_settings, model_step_settings = None):
     if model_step_settings is None:
-        step_1 = Templates.StepSettings()
-        step_2 = Templates.StepSettings()
-    else:
-        step_1 = model_step_settings
-        step_2 = model_step_settings
+        model_step_settings = Templates.StepSettings()
+        
+        model_step_settings.settings["drive_style"] = 'current_a'
+        model_step_settings.settings["drive_value_other"] = ir_settings["psu_voltage_if_pos_i"]
+        model_step_settings.settings["end_style"] = 'time_s'
+        model_step_settings.settings["end_condition"] = 'greater'
+        model_step_settings.settings["safety_min_current_a"] = ir_settings["safety_min_current_a"]
+        model_step_settings.settings["safety_max_current_a"] = ir_settings["safety_max_current_a"]
+        model_step_settings.settings["safety_min_voltage_v"] = ir_settings["safety_min_voltage_v"]
+        model_step_settings.settings["safety_max_voltage_v"] = ir_settings["safety_max_voltage_v"]
+        model_step_settings.settings["safety_max_time_s"] = ir_settings["safety_max_time_s"]
     
-    max_current_limit = abs(max(ir_settings["current_1_a"], ir_settings["current_2_a"]))*1.5
-    min_current_limit = -abs(min(ir_settings["current_1_a"], ir_settings["current_2_a"]))*1.5
-    max_time = max(ir_settings["time_1_s"], ir_settings["time_2_s"])
+    step_1_settings = model_step_settings.settings.copy()
+    step_2_settings = model_step_settings.settings.copy()
     
-    step_1.settings["drive_style"] = 'current_a'
-    step_2.settings["drive_style"] = 'current_a'
-    step_1.settings["drive_value"] = ir_settings["current_1_a"]
-    step_2.settings["drive_value"] = ir_settings["current_2_a"]
-    step_1.settings["drive_value_other"] = ir_settings["psu_voltage_if_pos_i"]
-    step_2.settings["drive_value_other"] = ir_settings["psu_voltage_if_pos_i"]
-    step_1.settings["end_value"] = ir_settings["time_1_s"]
-    step_2.settings["end_value"] = ir_settings["time_2_s"]
-    step_1.settings["safety_min_current_a"] = min_current_limit
-    step_2.settings["safety_min_current_a"] = min_current_limit
-    step_1.settings["safety_max_current_a"] = max_current_limit
-    step_2.settings["safety_max_current_a"] = max_current_limit
-    step_1.settings["safety_max_time_s"] = max_time*1.5
-    step_2.settings["safety_max_time_s"] = max_time*1.5
+    step_1_settings["drive_value"] = ir_settings["current_1_a"]
+    step_2_settings["drive_value"] = ir_settings["current_2_a"]
+    step_1_settings["end_value"] = ir_settings["time_1_s"]
+    step_2_settings["end_value"] = ir_settings["time_2_s"]
     
     return_list = list()
-    return_list.append(step_1.settings)
-    return_list.append(step_2.settings)
+    return_list.append(step_1_settings)
+    return_list.append(step_2_settings)
     return return_list
     
     
