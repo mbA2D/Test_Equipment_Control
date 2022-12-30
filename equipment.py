@@ -38,6 +38,7 @@ from lab_equipment import DMM_Fake
 
 #Other Equipment
 from lab_equipment import OTHER_A2D_Relay_Board
+from lab_equipment import OTHER_Arduino_IO_Module
 
 
 def setup_instrument(instrument, setup_dict):
@@ -169,7 +170,7 @@ def get_res_id_dict_and_disconnect(eq_list):
 class otherEquipment:
 	part_numbers = {
 		'A2D Relay Board': 		'OTHER_A2D_Relay_Board',
-		'Fake item':			'Fake_Item' #Need 2 items for a choicebox
+		'Arduino IO Module':	'OTHER_Arduino_IO_Module'
 	}
 		
 	@classmethod
@@ -185,6 +186,8 @@ class otherEquipment:
 		
 		if class_name == 'A2D Relay Board':
 			instrument = OTHER_A2D_Relay_Board.A2D_Relay_Board(resource_id = resource_id)
+         elif class_name == 'Arduino IO Module':
+			instrument = OTHER_Arduino_IO_Module.Arduino_IO(resource_id = resource_id)
 			
 		setup_dict = setup_instrument(instrument, setup_dict)
 		return class_name, instrument, setup_dict
