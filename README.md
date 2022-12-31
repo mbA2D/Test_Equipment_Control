@@ -7,7 +7,8 @@ TODO List
  - Make all instruments 'virtual' - e.g. controlled globally and not by the individual battery test channel processes. This opens the door to scheduled use of equipment, sharing between channels, and using all channels of multi channel devices.
  - Create safety limits for extra measurement devices - e.g. cell monitors on multi-cell battery packs, temperature sensors.
  - Make a way to add temperature control of the ambient temp through heaters - heaters will have external controller, just need to pass setpoint.
- - Separate safety conditions for each channel from end cycle conditions
+ - DONE - Separate safety conditions for each channel from end cycle conditions
+ - Create a way to 'simulate a cell', connect multiple pieces of 'fake' equipment to a 'battery equivalent circuit'
  - DONE - Add safety conditions to all types of cycles (just make them all use step at the core)
  - Add a way to show a 'charge' or 'discharge' or 'ir test' instead of just showing 'step'
  - Add support for range switching of eloads between different cycles (e.g. use 4A range for a 1A discharge and 40A range for 5A discharge).

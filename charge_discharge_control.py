@@ -104,7 +104,7 @@ def connect_proper_equipment(eq_dict, eq_req_for_cycle_dict):
 
 
 ###################################################### TEST CONTROL ###################################################
-
+'''
 def start_charge(end_voltage, constant_current, eq_dict):
     time.sleep(0.02)
     eq_dict['psu'].set_current(constant_current)
@@ -120,7 +120,8 @@ def start_discharge(constant_current, eq_dict):
     time.sleep(0.02)
     eq_dict['eload'].toggle_output(True)
     time.sleep(0.02)
-    
+'''   
+   
 def start_step(step_settings, eq_dict):
     #This function will set all the supplies to the settings given in the step
     
@@ -213,9 +214,11 @@ def evaluate_end_condition(step_settings, data, data_in_queue):
         data["Data_Timestamp_From_Step_Start"] > step_settings["safety_max_time_s"]):
         
         return 'safety_condition'
-            
     
-    #END CONDITIONS
+    
+    end_reason = None
+    
+    #Ending the Step
     if step_settings["end_style"] == 'current_a':
         left_comparator = data["Current"]
     elif step_settings["end_style"] == 'voltage_v':
@@ -223,24 +226,41 @@ def evaluate_end_condition(step_settings, data, data_in_queue):
     elif step_settings["end_style"] == 'time_s':
         left_comparator = data["Data_Timestamp_From_Step_Start"]
     
+    
     if step_settings["end_condition"] == 'greater':
         if left_comparator > step_settings["end_value"]:
             return 'end_condition'
         else:
-            return 'none'
+            end_reason = 'none'
     elif step_settings["end_condition"] == 'lesser':
         #For positive current less than value endpoint, also check the voltage to be close to the end voltage
         if step_settings["end_style"] == 'current_a' and step_settings["drive_style"] == 'voltage_v' and step_settings["end_value"] > 0:
-            if data["Voltage"] > 0.99*step_settings["drive_value"] and left_comparator < step_settings["end_value"]:
+            if data["Voltage"] > 0.98*step_settings["drive_value"] and left_comparator < step_settings["end_value"]:
                 return 'end_condition'
             else:
-                return 'none'
+                end_reason = 'none'
         elif left_comparator < step_settings["end_value"]:
             return 'end_condition'
         else:
-            return 'none'
+            end_reason = 'none'
     
-    #return True so that we end the step if the settings were incorrectly configured.
+    
+    #Ending the cycle:
+    cycle_end_voltage = step_settings.get("cycle_end_voltage_v")
+    if cycle_end_voltage is not None:
+        if data["Voltage"] <= cycle_end_voltage:
+            return 'cycle_end_condition'
+            
+    cycle_end_time = step_settings.get("cycle_end_time_s")
+    if cycle_end_time is not None:
+        if data["Data_Timestamp_From_Step_Start"] <= cycle_end_time:
+            return 'cycle_end_condition'
+    
+    
+    if end_reason == 'none':
+        return end_reason
+    
+    #return settings so that we end the step if the settings were incorrectly configured.
     return 'settings'
 
 
@@ -295,7 +315,14 @@ def end_signal(data_in_queue):
     except queue.Empty:
         pass
     return end_signal
-
+    
+def idle_cell(eq_dict, data_out_queue = None, data_in_queue = None):
+    #Measures voltage (and current if available) when no other process is running to have live voltage updates
+    while not end_signal(data_in_queue):
+        measure_battery(eq_dict, data_out_queue = data_out_queue)
+        time.sleep(1)
+        
+'''
 def charge_cell(log_filepath, cycle_settings, eq_dict, data_out_queue = None, data_in_queue = None, ch_num = None):
     #start the charging
     #Start the data so we don't immediately trigger end conditions
@@ -320,12 +347,6 @@ def charge_cell(log_filepath, cycle_settings, eq_dict, data_out_queue = None, da
         
     disable_equipment(eq_dict)
     return end_reason
-
-def idle_cell(eq_dict, data_out_queue = None, data_in_queue = None):
-    #Measures voltage (and current if available) when no other process is running to have live voltage updates
-    while not end_signal(data_in_queue):
-        measure_battery(eq_dict, data_out_queue = data_out_queue)
-        time.sleep(1)
 
 def rest_cell(log_filepath, cycle_settings, eq_dict, rest_time_s, data_out_queue = None, data_in_queue = None, ch_num = None):
     #rest - do nothing for X time but continue monitoring voltage
@@ -393,6 +414,7 @@ def discharge_cell(log_filepath, cycle_settings, eq_dict, data_out_queue = None,
     
     disable_equipment(eq_dict)
     return end_reason
+'''
 
 def step_cell(log_filepath, step_settings, eq_dict, data_out_queue = None, data_in_queue = None):
     
@@ -429,7 +451,7 @@ def step_cell(log_filepath, step_settings, eq_dict, data_out_queue = None, data_
         return 'settings'
 
 ################################## SETTING CYCLE, CHARGE, DISCHARGE ############################
-
+'''
 #run a single cycle on a cell while logging data
 def cycle_cell(filepath, cycle_settings, eq_dict, data_out_queue = None, data_in_queue = None, ch_num = None):
     #v_meas_eq is the measurement equipment to use for measuring the voltage.
@@ -480,6 +502,7 @@ def cycle_cell(filepath, cycle_settings, eq_dict, data_out_queue = None, data_in
     
     return end_reason
 
+
 def charge_cycle(filepath, charge_settings, eq_dict, data_out_queue = None, data_in_queue = None, ch_num = None):
 
     local_eq_dict = eq_dict.copy()
@@ -508,6 +531,7 @@ def discharge_cycle(filepath, charge_settings, eq_dict, data_out_queue = None, d
     
     return end_reason
 
+
 def rest_cycle(filepath, rest_settings, eq_dict, data_out_queue = None, data_in_queue = None, ch_num = None):
     
     local_eq_dict = eq_dict.copy()
@@ -528,6 +552,7 @@ def rest_cycle(filepath, rest_settings, eq_dict, data_out_queue = None, data_in_
     end_reason = rest_cell(filepath, rest_settings, local_eq_dict, rest_time_s, data_out_queue = data_out_queue, data_in_queue = data_in_queue, ch_num = ch_num)
     
     return end_reason
+'''
 
 def idle_cell_cycle(eq_dict, data_out_queue = None, data_in_queue = None):
     
@@ -1116,6 +1141,7 @@ def charge_discharge_control(res_ids_dict, data_out_queue = None, data_in_queue 
                     
                     data_out_queue.put_nowait({'type': 'status', 'data': (current_status, next_status)})
                     
+                    '''
                     #Charge only - only using the power supply
                     if current_status == 'charge':
                         end_condition = charge_cycle(filepath, cycle_settings, eq_dict, data_out_queue = data_out_queue, data_in_queue = data_in_queue, ch_num = ch_num)
@@ -1128,19 +1154,19 @@ def charge_discharge_control(res_ids_dict, data_out_queue = None, data_in_queue 
                     elif current_status == 'rest':
                         end_condition = rest_cycle(filepath, cycle_settings, eq_dict, data_out_queue = data_out_queue, data_in_queue = data_in_queue, ch_num = ch_num)
                     
-                    #Step Functions
-                    elif current_status == 'step':
-                        end_condition = single_step_cycle(filepath, cycle_settings, eq_dict, data_out_queue = data_out_queue, data_in_queue = data_in_queue, ch_num = ch_num)
-                        #print(end_condition)
-                        if end_condition == 'safety_condition':
-                            disable_equipment(eq_dict)
-                            break
-                            
                     #Cycle the cell - using both psu and eload
                     elif current_status == 'cycle':
                         end_condition = cycle_cell(filepath, cycle_settings, eq_dict, data_out_queue = data_out_queue, data_in_queue = data_in_queue, ch_num = ch_num)
+                    '''
                     
-                    if end_condition == 'end_request':
+                    #Step Functions
+                    if current_status == 'step':
+                        end_condition = single_step_cycle(filepath, cycle_settings, eq_dict, data_out_queue = data_out_queue, data_in_queue = data_in_queue, ch_num = ch_num)
+                    if end_condition == 'cycle_end_condition':
+                        disable_equipment(eq_dict)
+                        break
+                    
+                    if end_condition == 'end_request' or 'safety_condition':
                         end_list_of_lists = True
                         break
                 
