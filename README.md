@@ -10,7 +10,11 @@ TODO List
  - DONE - Separate safety conditions for each channel from end cycle conditions
  - Create a way to 'simulate a cell', connect multiple pieces of 'fake' equipment to a 'battery equivalent circuit'
  - DONE - Add safety conditions to all types of cycles (just make them all use step at the core)
- - Add a way to show a 'charge' or 'discharge' or 'ir test' instead of just showing 'step'
+ - DONE - Add a way to show a 'charge' or 'discharge' or 'ir test' instead of just showing 'step'
+ - Change log file name to show which cycle_display name instead of just date, time, and cell name
+ - DONE - Add WARNING on the GUI if a safety setting was hit
+ - Show which safety error was hit on GUI instead of needing to search through the logs
+ - Add a button on the GUI to advance to the next cycle or step
  - Add support for range switching of eloads between different cycles (e.g. use 4A range for a 1A discharge and 40A range for 5A discharge).
  - Allow 1 device to have multiple uses (e.g. a relay board and voltage/current/temperature monitor all in one) - will be easier when all equipment is virtual
  - Add features to relay board to define which inputs could connect to which outputs (e.g. share 2 power supplies and 2 eloads between 4 cells). (Board definition file for different relay boards?)

@@ -90,12 +90,16 @@ class MainTestWindow(QMainWindow):
         self.data_label_list = {}
         self.current_status_label_list = {}
         self.next_status_label_list = {}
+        self.safety_label_list = {}
+        self.button_clear_safety_list = {}
+        
         self.button_assign_eq_list = {}
         self.button_configure_test_list = {}
         self.button_import_test_list = {}
         self.button_export_test_list = {}
         self.button_start_test_list = {}
         self.button_stop_test_list = {}
+        
         self.data_from_ch_queue_list = {}
         self.data_to_ch_queue_list = {}
         self.data_to_idle_ch_queue_list = {}
@@ -150,12 +154,16 @@ class MainTestWindow(QMainWindow):
             self.data_label_list[ch_num] = QLabel("CH: {}\nV: \nI:".format(ch_num))
             self.current_status_label_list[ch_num] = QLabel("Current Status: Idle")
             self.next_status_label_list[ch_num] = QLabel("Next Status: N/A")
+            self.safety_label_list[ch_num] = QLabel("Safety: OK")
+            self.button_clear_safety_list[ch_num] = QPushButton("Clear Safety Error")
+            
             self.button_assign_eq_list[ch_num] = QPushButton("Assign Equipment")
             self.button_configure_test_list[ch_num] = QPushButton("Configure Test")
             self.button_import_test_list[ch_num] = QPushButton("Import Test")
             self.button_export_test_list[ch_num] = QPushButton("Export Test")
             self.button_start_test_list[ch_num] = QPushButton("Start Test")
             self.button_stop_test_list[ch_num] = QPushButton("Stop Test")
+            
             self.data_from_ch_queue_list[ch_num] = Queue()
             self.data_to_ch_queue_list[ch_num] = Queue()
             self.data_to_idle_ch_queue_list[ch_num] = Queue()
@@ -165,6 +173,9 @@ class MainTestWindow(QMainWindow):
             #setting up buttons
             self.button_edit_cell_name_list[ch_num].setCheckable(False)
             self.button_edit_cell_name_list[ch_num].clicked.connect(partial(self.edit_cell_name, ch_num))
+            
+            self.button_clear_safety_list[ch_num].setCheckable(False)
+            self.button_clear_safety_list[ch_num].clicked.connect(partial(self.clear_safety_error, ch_num))
             
             self.button_assign_eq_list[ch_num].setCheckable(False)
             self.button_assign_eq_list[ch_num].clicked.connect(partial(self.assign_equipment_process, ch_num))
@@ -191,6 +202,8 @@ class MainTestWindow(QMainWindow):
             left_col_layout.addWidget(self.data_label_list[ch_num])
             left_col_layout.addWidget(self.current_status_label_list[ch_num])
             left_col_layout.addWidget(self.next_status_label_list[ch_num])
+            left_col_layout.addWidget(self.safety_label_list[ch_num])
+            left_col_layout.addWidget(self.button_clear_safety_list[ch_num])
             
             left_col_widget = QWidget()
             left_col_widget.setLayout(left_col_layout)
@@ -245,7 +258,7 @@ class MainTestWindow(QMainWindow):
             #Update cell name
             self.cell_name_label_list[ch_num].setText(new_test_configuration['cdc_input_dict']['cell_name'])
             #Set the next status label
-            self.next_status_label_list[ch_num].setText(f"Next Status: {new_test_configuration['cdc_input_dict']['cycle_settings_list_of_lists'][0][0]['cycle_type']}")
+            self.next_status_label_list[ch_num].setText(f"Next Status: {new_test_configuration['cdc_input_dict']['cycle_settings_list_of_lists'][0][0]['cycle_display']}")
             print("CH{} - Configured Test".format(new_test_configuration['ch_num']))
         except queue.Empty:
             pass #No new data was available		
@@ -273,7 +286,7 @@ class MainTestWindow(QMainWindow):
                         #Set the current status to idle and next status to 'N/A' or the next cycle
                         self.current_status_label_list[ch_num].setText('Current Status: Idle')
                         try:
-                            self.next_status_label_list[ch_num].setText(f"Next Status: {self.cdc_input_dict_list[ch_num]['cycle_settings_list_of_lists'][0][0]['cycle_type']}")
+                            self.next_status_label_list[ch_num].setText(f"Next Status: {self.cdc_input_dict_list[ch_num]['cycle_settings_list_of_lists'][0][0]['cycle_display']}")
                         except (KeyError, TypeError):
                             self.next_status_label_list[ch_num].setText('Next Status: N/A')
                             
@@ -287,6 +300,10 @@ class MainTestWindow(QMainWindow):
                     self.next_status_label_list[ch_num].setText(f"Next Status: {data_from_ch['data'][1]}")
                 elif data_from_ch['type'] == 'measurement':
                     self.data_dict_list[ch_num] = data_from_ch['data']
+                elif data_from_ch['type'] == 'end_condition':
+                    if data_from_ch['data'] == 'safety_condition':
+                        self.safety_label_list[ch_num].setText('Safety: ERROR')
+                        
                 
             except queue.Empty:
                 pass #No new data was available
@@ -441,6 +458,9 @@ class MainTestWindow(QMainWindow):
     
     def edit_cell_name(self, ch_num):
         self.edit_cell_name_process(ch_num = ch_num)
+        
+    def clear_safety_error(self, ch_num):
+        self.safety_label_list[ch_num].setText('Safety: OK')
     
     def edit_cell_name_process(self, ch_num):
         if self.edit_cell_name_process_list[ch_num] is not None and self.edit_cell_name_process_list[ch_num].is_alive():

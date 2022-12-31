@@ -742,6 +742,7 @@ def convert_rest_settings_to_steps(rest_settings, model_step_settings = None):
     else:
         step_1 = model_step_settings
     
+    step_1.settings["cycle_display"] = rest_settings["cycle_display"]
     step_1.settings["drive_style"] = 'none'
     step_1.settings["end_style"] = 'time_s'
     step_1.settings["end_condition"] = 'greater'
@@ -773,6 +774,7 @@ def convert_charge_settings_to_steps(charge_settings, model_step_settings = None
     else:
         step_1 = model_step_settings
     
+    step_1.settings["cycle_display"] = charge_settings["cycle_display"]
     step_1.settings["drive_style"] = 'voltage_v'
     step_1.settings["drive_value"] = charge_settings["charge_end_v"]
     step_1.settings["drive_value_other"] = charge_settings["charge_a"]
@@ -806,6 +808,7 @@ def convert_discharge_settings_to_steps(discharge_settings, model_step_settings 
     else:
         step_1 = model_step_settings
     
+    step_1.settings["cycle_display"] = discharge_settings["cycle_display"]
     step_1.settings["drive_style"] = 'current_a'
     step_1.settings["drive_value"] = discharge_settings["discharge_a"]
     step_1.settings["end_style"] = 'voltage_v'
@@ -878,6 +881,7 @@ def convert_single_ir_settings_to_steps(ir_settings, model_step_settings = None)
     if model_step_settings is None:
         model_step_settings = Templates.StepSettings()
         
+        model_step_settings.settings["cycle_display"] = ir_settings["cycle_display"]
         model_step_settings.settings["drive_style"] = 'current_a'
         model_step_settings.settings["drive_value_other"] = ir_settings["psu_voltage_if_pos_i"]
         model_step_settings.settings["end_style"] = 'time_s'
@@ -907,22 +911,22 @@ def repeated_ir_test_info():
     ir_test_settings.get_cycle_settings("Repeated IR Test")
 
     charge_settings = Templates.ChargeSettings()
-    
     charge_settings.settings["charge_end_v"] = ir_test_settings.settings["charge_end_v"]
     charge_settings.settings["charge_a"] = ir_test_settings.settings["charge_a"]
     charge_settings.settings["charge_end_a"] = ir_test_settings.settings["charge_end_a"]
     charge_settings.settings["meas_log_int_s"] = ir_test_settings.settings["meas_log_int_s"]
+    charge_step_settings = convert_charge_settings_to_steps(charge_settings.settings)
     
     rest_settings = Templates.RestSettings()
-    
     rest_settings.settings["meas_log_int_s"] = ir_test_settings.settings["meas_log_int_s"]
     rest_settings.settings["rest_time_min"] = ir_test_settings.settings["rest_after_charge_min"]
+    rest_step_settings = convert_rest_settings_to_steps(rest_settings.settings)
     
     step_settings_list = convert_repeated_ir_settings_to_steps(ir_test_settings.settings)
     
     settings_list = list()
-    settings_list.append((charge_settings.settings,))
-    settings_list.append((rest_settings.settings,))
+    settings_list.append(charge_step_settings)
+    settings_list.append(rest_step_settings)
     settings_list.append(step_settings_list)
     
     return settings_list
@@ -931,6 +935,7 @@ def convert_repeated_ir_settings_to_steps(test_settings):
     model_step_settings = Templates.StepSettings()
     max_time = max(test_settings["time_1_s"], test_settings["time_2_s"])
     
+    model_step_settings.settings["cycle_display"] = test_settings["cycle_display"]
     model_step_settings.settings["drive_style"] = 'current_a'
     model_step_settings.settings["drive_value_other"] = test_settings["psu_voltage_if_pos_i"]
     model_step_settings.settings["safety_min_current_a"] = test_settings["safety_min_current_a"]
@@ -1113,6 +1118,7 @@ def charge_discharge_control(res_ids_dict, data_out_queue = None, data_in_queue 
         #cycle x times
         cycle_num = 0
         end_list_of_lists = False
+        end_condition = 'none'
         
         for count_1, cycle_settings_list in enumerate(input_dict['cycle_settings_list_of_lists']):
             print("CH{} - Cycle {} Starting".format(ch_num, cycle_num), flush=True)
@@ -1130,41 +1136,46 @@ def charge_discharge_control(res_ids_dict, data_out_queue = None, data_in_queue 
                     end_condition = 'none'
                     
                     #Set label text for current and next status
-                    current_status = cycle_settings["cycle_type"]
+                    current_cycle_type = cycle_settings["cycle_type"]
+                    current_display_status = cycle_settings["cycle_display"]
                     try:
-                        next_status = cycle_settings_list[count_2 + 1]["cycle_type"]
+                        next_display_status = cycle_settings_list[count_2 + 1]["cycle_display"]
                     except (IndexError, TypeError):
                         try:
-                            next_status = input_dict['cycle_settings_list_of_lists'][count_1 + 1][0]["cycle_type"]
+                            next_display_status = input_dict['cycle_settings_list_of_lists'][count_1 + 1][0]["cycle_display"]
                         except (IndexError, TypeError):
-                            next_status = "Idle"
+                            next_display_status = "Idle"
                     
-                    data_out_queue.put_nowait({'type': 'status', 'data': (current_status, next_status)})
+                    data_out_queue.put_nowait({'type': 'status', 'data': (current_display_status, next_display_status)})
                     
                     '''
                     #Charge only - only using the power supply
-                    if current_status == 'charge':
+                    if current_cycle_type == 'charge':
                         end_condition = charge_cycle(filepath, cycle_settings, eq_dict, data_out_queue = data_out_queue, data_in_queue = data_in_queue, ch_num = ch_num)
                         
                     #Discharge only - only using the eload
-                    elif current_status == 'discharge':
+                    elif current_cycle_type == 'discharge':
                         end_condition = discharge_cycle(filepath, cycle_settings, eq_dict, data_out_queue = data_out_queue, data_in_queue = data_in_queue, ch_num = ch_num)
                     
                     #Rest only
-                    elif current_status == 'rest':
+                    elif current_cycle_type == 'rest':
                         end_condition = rest_cycle(filepath, cycle_settings, eq_dict, data_out_queue = data_out_queue, data_in_queue = data_in_queue, ch_num = ch_num)
                     
                     #Cycle the cell - using both psu and eload
-                    elif current_status == 'cycle':
+                    elif current_cycle_type == 'cycle':
                         end_condition = cycle_cell(filepath, cycle_settings, eq_dict, data_out_queue = data_out_queue, data_in_queue = data_in_queue, ch_num = ch_num)
                     '''
                     
                     #Step Functions
-                    if current_status == 'step':
+                    if current_cycle_type == 'step':
                         end_condition = single_step_cycle(filepath, cycle_settings, eq_dict, data_out_queue = data_out_queue, data_in_queue = data_in_queue, ch_num = ch_num)
                     if end_condition == 'cycle_end_condition':
                         disable_equipment(eq_dict)
                         break
+                    
+                    if end_condition == 'safety_condition':
+                        #send something back to the main queue to say a safety condition was hit.
+                        data_out_queue.put_nowait({'type': 'end_condition', 'data': 'safety_condition'})
                     
                     if end_condition == 'end_request' or 'safety_condition':
                         end_list_of_lists = True
@@ -1179,8 +1190,11 @@ def charge_discharge_control(res_ids_dict, data_out_queue = None, data_in_queue 
             cycle_num += 1
         
         disable_equipment(eq_dict)
-
-        print("CH{} - All Cycles Completed: {}".format(ch_num, time.ctime()), flush=True)
+        
+        if end_condition == 'safety_condition':
+            print("CH{} - SAFETY LIMIT HIT: {}".format(ch_num, time.ctime()), flush=True)
+        else:
+            print("CH{} - All Cycles Completed: {}".format(ch_num, time.ctime()), flush=True)
     except Exception:
         traceback.print_exc()
 

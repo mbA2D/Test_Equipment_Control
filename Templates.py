@@ -59,6 +59,7 @@ class CycleSettings:
     def __init__(self):
         self.settings = { 
             "cycle_type":				'cycle',
+            "cycle_display":            'Cycle',
             "charge_end_v": 			4.2,
             "charge_a": 				1,
             "charge_end_a": 			0.3,
@@ -74,7 +75,8 @@ class CycleSettings:
             "safety_max_time_s":		100 #positive values give a value in seconds, negative values and 0 will disable the time safety check
         }
         self.valid_strings = {
-            "cycle_type":				('cycle',)
+            "cycle_type":				('cycle',),
+            "cycle_display":            ('Cycle',)
         }
     
     def get_cycle_settings(self, cycle_name = ""):
@@ -93,6 +95,7 @@ class ChargeSettings(CycleSettings):
     def __init__(self):
         self.settings = {
             "cycle_type":				'charge',
+            "cycle_display":            'Charge',
             "charge_end_v": 			4.2,
             "charge_a": 				1,
             "charge_end_a": 			0.1,
@@ -104,7 +107,8 @@ class ChargeSettings(CycleSettings):
             "safety_max_time_s":		100 #positive values give a value in seconds, negative values and 0 will disable the time safety check
         }
         self.valid_strings = {
-            "cycle_type":				('charge',)
+            "cycle_type":				('charge',),
+            "cycle_display":            ('Charge',)
         }
         
 ###############  DISCHARGE  #####################
@@ -114,6 +118,7 @@ class DischargeSettings(CycleSettings):
     def __init__(self):
         self.settings = { 
             "cycle_type":				'discharge',
+            "cycle_display":            'Discharge',
             "discharge_end_v": 			2.5,
             "discharge_a": 				-1,
             "meas_log_int_s": 			1,
@@ -124,7 +129,8 @@ class DischargeSettings(CycleSettings):
             "safety_max_time_s":		100 #positive values give a value in seconds, negative values and 0 will disable the time safety check
         }
         self.valid_strings = {
-            "cycle_type":				('discharge',)
+            "cycle_type":				('discharge',),
+            "cycle_display":			('Discharge',)
         }
 
 ###############  REST  #####################
@@ -134,6 +140,7 @@ class RestSettings(CycleSettings):
     def __init__(self):
         self.settings = { 
             "cycle_type":				'rest',
+            "cycle_display":			'Rest',
             "rest_time_min":			5,
             "meas_log_int_s": 			1,
             "safety_min_voltage_v":		2.45,
@@ -143,7 +150,8 @@ class RestSettings(CycleSettings):
             "safety_max_time_s":		100 #positive values give a value in seconds, negative values and 0 will disable the time safety check
         }
         self.valid_strings = {
-            "cycle_type":				('rest',)
+            "cycle_type":				('rest',),
+            "cycle_display":            ('Rest',)
         }
 
 #################  STEPS  ############
@@ -152,6 +160,7 @@ class StepSettings(CycleSettings):
     def __init__(self):
         self.settings = {
             "cycle_type":				'step',
+            "cycle_display":			'Step',
             "drive_style":				'none', #'current_a', 'voltage_v', 'none'
             "drive_value":				0,
             "drive_value_other":		0,
@@ -167,6 +176,7 @@ class StepSettings(CycleSettings):
         }
         self.valid_strings = {
             "cycle_type":				('step',),
+            "cycle_display":            ('Step',),
             "drive_style":				('current_a', 'voltage_v', 'none'),
             "end_style":				('time_s', 'current_a', 'voltage_v'),
             "end_condition":			('greater', 'lesser')
@@ -178,6 +188,7 @@ class SingleIRSettings(CycleSettings):
     def __init__(self):
         self.settings = {
             "cycle_type":               'single_ir_test',
+            "cycle_display":            'Single_IR_Test',
             "current_1_a":              -1,
             "time_1_s":                 5,
             "current_2_a":              -5,
@@ -191,13 +202,15 @@ class SingleIRSettings(CycleSettings):
             "safety_max_time_s":		100 #positive values give a value in seconds, negative values and 0 will disable the time safety check
         }
         self.valid_strings = {
-            "cycle_type":				('single_ir_test',)
+            "cycle_type":				('single_ir_test',),
+            "cycle_display":            ('Single_IR_Test',)
         }
 
 class RepeatedIRSettings(CycleSettings):
     def __init__(self):
         self.settings = {
             "cycle_type":               'repeated_ir_test',
+            "cycle_display":            'Repeated_IR_Test',
             "charge_end_v": 			4.2,
             "charge_a": 				1,
             "charge_end_a": 			0.1,
@@ -216,7 +229,8 @@ class RepeatedIRSettings(CycleSettings):
             "estimated_capacity_ah":    2.5
         }
         self.valid_strings = {
-            "cycle_type":				('repeated_ir_test',)
+            "cycle_type":				('repeated_ir_test',),
+            "cycle_display":            ('Repeated_IR_Test',)
         }
 
 ####################  DC DC TESTING  ############
