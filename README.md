@@ -2,13 +2,14 @@
 Controlling Various Lab Test Equipment
 
 TODO List
- - Common equipment selection template - instead of a for loop and if statements in each device file
+ - DONE - Common equipment selection template - instead of a for loop and if statements in each device file
  - Add a way to get output state of all equipment so we can remove redundant disable and waits.
  - Make all instruments 'virtual' - e.g. controlled globally and not by the individual battery test channel processes. This opens the door to scheduled use of equipment, sharing between channels, and using all channels of multi channel devices.
  - Create safety limits for extra measurement devices - e.g. cell monitors on multi-cell battery packs, temperature sensors.
  - Make a way to add temperature control of the ambient temp through heaters - heaters will have external controller, just need to pass setpoint.
  - Separate safety conditions for each channel from end cycle conditions
- - Add safety conditions to all types of cycles (just make them all use step at the core)
+ - DONE - Add safety conditions to all types of cycles (just make them all use step at the core)
+ - Add a way to show a 'charge' or 'discharge' or 'ir test' instead of just showing 'step'
  - Add support for range switching of eloads between different cycles (e.g. use 4A range for a 1A discharge and 40A range for 5A discharge).
  - Allow 1 device to have multiple uses (e.g. a relay board and voltage/current/temperature monitor all in one) - will be easier when all equipment is virtual
  - Add features to relay board to define which inputs could connect to which outputs (e.g. share 2 power supplies and 2 eloads between 4 cells). (Board definition file for different relay boards?)
