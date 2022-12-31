@@ -1069,7 +1069,7 @@ def get_input_dict(ch_num = None, queue = None, current_cell_name = None):
     
     if queue != None:
         dict_to_put = {'ch_num': ch_num, 'cdc_input_dict': input_dict}
-        print(dict_to_put)
+        #print(dict_to_put)
         queue.put_nowait(dict_to_put)
     else:
         return input_dict

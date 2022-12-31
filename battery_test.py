@@ -447,8 +447,8 @@ class MainTestWindow(QMainWindow):
         
     def import_test_configuration_process(self, ch_num):
         if self.import_test_process_list[ch_num] is not None and self.import_test_process_list[ch_num].is_alive():
-                print("CH{} - There is an import already running".format(ch_num))
-                return
+            print("CH{} - There is an import already running".format(ch_num))
+            return
         try:
             self.import_test_process_list[ch_num] = Process(target=jsonIO.import_cycle_settings, args = ("", self.test_configuration_queue, ch_num))
             self.import_test_process_list[ch_num].start()
@@ -464,8 +464,8 @@ class MainTestWindow(QMainWindow):
     
     def edit_cell_name_process(self, ch_num):
         if self.edit_cell_name_process_list[ch_num] is not None and self.edit_cell_name_process_list[ch_num].is_alive():
-                print("CH{} - There is a cell name edit already running".format(ch_num))
-                return
+            print("CH{} - There is a cell name edit already running".format(ch_num))
+            return
         try:
             self.edit_cell_name_process_list[ch_num] = Process(target=cdc.get_cell_name, args = (ch_num, self.edit_cell_name_queue, self.cell_name_label_list[ch_num].text()))
             self.edit_cell_name_process_list[ch_num].start()
@@ -477,8 +477,8 @@ class MainTestWindow(QMainWindow):
     
     def configure_test_process(self, ch_num):
         if self.configure_test_process_list[ch_num] is not None and self.configure_test_process_list[ch_num].is_alive():
-                print("CH{} - There is a configuration already running".format(ch_num))
-                return
+            print("CH{} - There is a configuration already running".format(ch_num))
+            return
         try:
             self.configure_test_process_list[ch_num] = Process(target=cdc.get_input_dict, args = (ch_num, self.test_configuration_queue, self.cell_name_label_list[ch_num].text()))
             self.configure_test_process_list[ch_num].start()
