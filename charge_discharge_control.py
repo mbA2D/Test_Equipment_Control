@@ -610,29 +610,74 @@ def find_eq_req_steps(step_settings):
 
 def single_cc_cycle_info():
     #charge then discharge
-    cycle_settings = Templates.CycleSettings()
-    cycle_settings.get_cycle_settings()
+    cycle_test_settings = Templates.CycleSettings()
+    cycle_test_settings.get_cycle_settings("Cycle Test")
+
+    #Charge
+    charge_settings = Templates.ChargeSettings()
     
-    cycle_settings_list = list()
-    cycle_settings_list.append((cycle_settings.settings,))
+    charge_settings.settings["charge_end_v"] = cycle_test_settings.settings["charge_end_v"]
+    charge_settings.settings["charge_a"] = cycle_test_settings.settings["charge_a"]
+    charge_settings.settings["charge_end_a"] = cycle_test_settings.settings["charge_end_a"]
+    charge_settings.settings["meas_log_int_s"] = cycle_test_settings.settings["meas_log_int_s"]
+    charge_settings.settings["safety_max_current_a"] = cycle_test_settings.settings["safety_max_current_a"]
+    charge_settings.settings["safety_min_current_a"] = cycle_test_settings.settings["safety_min_current_a"]
+    charge_settings.settings["safety_max_voltage_v"] = cycle_test_settings.settings["safety_max_voltage_v"]
+    charge_settings.settings["safety_min_voltage_v"] = cycle_test_settings.settings["safety_min_voltage_v"]
+    charge_settings.settings["safety_max_time_s"] = cycle_test_settings.settings["safety_max_time_s"]
     
-    return cycle_settings_list
+    #Rest
+    rest_1_settings = Templates.RestSettings()
+    
+    rest_1_settings.settings["meas_log_int_s"] = cycle_test_settings.settings["meas_log_int_s"]
+    rest_1_settings.settings["rest_time_min"] = cycle_test_settings.settings["rest_after_charge_min"]
+    
+    #Discharge
+    discharge_settings = Templates.DischargeSettings()
+    
+    discharge_settings.settings["discharge_end_v"] = cycle_test_settings.settings["discharge_end_v"]
+    discharge_settings.settings["discharge_a"] = cycle_test_settings.settings["discharge_a"]
+    discharge_settings.settings["meas_log_int_s"] = cycle_test_settings.settings["meas_log_int_s"]
+    discharge_settings.settings["safety_max_current_a"] = cycle_test_settings.settings["safety_max_current_a"]
+    discharge_settings.settings["safety_min_current_a"] = cycle_test_settings.settings["safety_min_current_a"]
+    discharge_settings.settings["safety_max_voltage_v"] = cycle_test_settings.settings["safety_max_voltage_v"]
+    discharge_settings.settings["safety_min_voltage_v"] = cycle_test_settings.settings["safety_min_voltage_v"]
+    discharge_settings.settings["safety_max_time_s"] = cycle_test_settings.settings["safety_max_time_s"]
+    
+    #Rest
+    rest_2_settings = Templates.RestSettings()
+    
+    rest_2_settings.settings["meas_log_int_s"] = cycle_test_settings.settings["meas_log_int_s"]
+    rest_2_settings.settings["rest_time_min"] = cycle_test_settings.settings["rest_after_charge_min"]
+    
+    #Convert everything to steps
+    charge_step_settings = convert_charge_settings_to_steps(charge_settings.settings)
+    rest_1_step_settings = convert_rest_settings_to_steps(rest_1_settings.settings)
+    discharge_step_settings = convert_discharge_settings_to_steps(discharge_settings.settings)
+    rest_2_step_settings = convert_rest_settings_to_steps(rest_2_settings.settings)
+    
+    settings_list = list()
+    settings_list.append(charge_step_settings)
+    settings_list.append(rest_1_step_settings)
+    settings_list.append(discharge_step_settings)
+    settings_list.append(rest_2_step_settings)
+    
+    return settings_list
 
 def one_level_continuous_cc_cycles_with_rest_info():
     #cycles - e.g. charge at 1A, rest, discharge at 5A, rest, repeat X times.
     #get user to enter number of cycles
-    cycle_settings = Templates.CycleSettings()
-    cycle_settings.get_cycle_settings()
+    single_cycle_step_settings_list = single_cc_cycle_info()
     num_cycles = eg.integerbox(msg = "How Many Cycles?",
                                 title = "Cycle Type 1", default = 1,
                                 lowerbound = 0, upperbound = 999)
-
-    cycle_settings_list = list()
-
-    for i in range(num_cycles):
-        cycle_settings_list.append((cycle_settings.settings,))
     
-    return cycle_settings_list
+    multi_cycle_step_settings_list = list()
+    
+    for i in range(num_cycles):
+        multi_cycle_step_settings_list.extend(single_cycle_step_settings_list)
+    
+    return multi_cycle_step_settings_list
 
 def two_level_continuous_cc_cycles_with_rest_info():
     #A battery degradation test where the degradation is done at one current
@@ -640,33 +685,51 @@ def two_level_continuous_cc_cycles_with_rest_info():
     #e.g. 9 degradation cycles at current X, then 1 capacity measurement cycle at current Y.
     
     #Cycle type 1
-    cycle_1_settings = Templates.CycleSettings()
-    cycle_1_settings.get_cycle_settings("Cycle Type 1")
-    num_cycles_type_1 = eg.integerbox(msg = "How Many Cycles of Type 1?",
+    cycle_1_step_settings_list = single_cc_cycle_info()
+    num_cycles_type_1 = eg.integerbox(msg = "How Many Cycles of Type 1 in a row?",
                                             title = "Cycle Type 1", default = 9,
                                             lowerbound = 0, upperbound = 999)
 
     #Cycle type 2
-    cycle_2_settings = Templates.CycleSettings()
-    cycle_2_settings.get_cycle_settings("Cycle Type 2")
-    num_cycles_type_2 = eg.integerbox(msg = "How Many Cycles of Type 2?",
+    cycle_2_step_settings_list = single_cc_cycle_info()
+    num_cycles_type_2 = eg.integerbox(msg = "How Many Cycles of Type 2 in a row?",
                                             title = "Cycle Type 2", default = 1,
                                             lowerbound = 0, upperbound = 999)
 
     #test cycles - charge and discharge how many times?
-    num_test_cycles = eg.integerbox(msg = "How Many Test Cycles?",
+    num_test_cycles = eg.integerbox(msg = "How Many Test Cycles of X Cycle 1 then Y Cycle 2?",
                                             title = "Test Cycles", default = 1,
                                             lowerbound = 0, upperbound = 999)
 
-    cycle_settings_list = list()
+    multi_cycle_settings_list = list()
 
     for j in range(num_test_cycles):
         for i in range(num_cycles_type_1):
-            cycle_settings_list.append((cycle_1_settings.settings,))
+            multi_cycle_settings_list.extend(cycle_1_step_settings_list)
         for i in range(num_cycles_type_2):
-            cycle_settings_list.append((cycle_2_settings.settings,))
+            multi_cycle_settings_list.extend(cycle_2_step_settings_list)
     
-    return cycle_settings_list
+    return multi_cycle_settings_list
+
+def convert_rest_settings_to_steps(rest_settings, model_step_settings = None):
+    if model_step_settings is None:
+        step_1 = Templates.StepSettings()
+    else:
+        step_1 = model_step_settings
+    
+    step_1.settings["drive_style"] = 'none'
+    step_1.settings["end_style"] = 'time_s'
+    step_1.settings["end_condition"] = 'greater'
+    step_1.settings["end_value"] = rest_settings["rest_time_min"]*60
+    step_1.settings["safety_min_voltage_v"] = rest_settings["safety_min_voltage_v"]
+    step_1.settings["safety_max_voltage_v"] = rest_settings["safety_max_voltage_v"]
+    step_1.settings["safety_min_current_a"] = rest_settings["safety_min_current_a"]
+    step_1.settings["safety_max_current_a"] = rest_settings["safety_max_current_a"]
+    step_1.settings["safety_max_time_s"] = rest_settings["safety_max_time_s"]
+    
+    return_list = list()
+    return_list.append(step_1.settings)
+    return return_list
 
 def charge_only_cycle_info():
     charge_test_settings = Templates.ChargeSettings()

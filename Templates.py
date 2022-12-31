@@ -66,7 +66,12 @@ class CycleSettings:
             "discharge_end_v": 			2.5,
             "discharge_a": 				-1,
             "rest_after_discharge_min": 20,
-            "meas_log_int_s": 			1
+            "meas_log_int_s": 			1,
+            "safety_min_voltage_v":		2.45,
+            "safety_max_voltage_v":		4.25,
+            "safety_min_current_a":		-10,
+            "safety_max_current_a":		10,
+            "safety_max_time_s":		100 #positive values give a value in seconds, negative values and 0 will disable the time safety check
         }
         self.valid_strings = {
             "cycle_type":				('cycle',)
@@ -130,7 +135,12 @@ class RestSettings(CycleSettings):
         self.settings = { 
             "cycle_type":				'rest',
             "rest_time_min":			5,
-            "meas_log_int_s": 			1
+            "meas_log_int_s": 			1,
+            "safety_min_voltage_v":		2.45,
+            "safety_max_voltage_v":		4.25,
+            "safety_min_current_a":		-10,
+            "safety_max_current_a":		10,
+            "safety_max_time_s":		100 #positive values give a value in seconds, negative values and 0 will disable the time safety check
         }
         self.valid_strings = {
             "cycle_type":				('rest',)
