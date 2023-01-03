@@ -186,6 +186,7 @@ class MainTestWindow(QMainWindow):
             self.data_to_idle_ch_queue_list[ch_num] = Queue()
             self.data_dict_list[ch_num] = {}
             self.ch_graph_widget[ch_num] = pg.PlotWidget(background='w')
+            self.ch_graph_widget[ch_num].setMouseEnabled(False, False)
             
             #setting up buttons
             self.button_edit_cell_name_list[ch_num].setCheckable(False)
