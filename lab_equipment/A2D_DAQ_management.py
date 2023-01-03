@@ -18,7 +18,7 @@ def create_event_and_queue_dicts(num_devices = 1, num_ch_per_device = A2D_DAQ_co
 				't_queue': Queue()
 			} 
 	
-	#Create a new process to manage all the fet boards
+	#Create a new process to manage the A2D DAQ board
 	management_queue = Queue()
 	multi_ch_device_process = Process(target = a2d_daq_management, args = (dict_for_event_and_queue, management_queue))
 	multi_ch_device_process.start()

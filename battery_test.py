@@ -1,6 +1,10 @@
 #Program to run the charge discharge control in different processes for each channel.
 
-from PyQt6.QtWidgets import QApplication, QMainWindow, QPushButton, QLabel, QVBoxLayout, QHBoxLayout, QWidget, QGridLayout
+#Actions and menus from this tutorial: https://realpython.com/python-menus-toolbars/
+
+
+from PyQt6.QtWidgets import QApplication, QMainWindow, QPushButton, QLabel, QVBoxLayout, QHBoxLayout, QWidget, QGridLayout, QMenuBar
+from PyQt6.QtGui import QAction
 from PyQt6 import QtCore
 from pyqtgraph import PlotWidget, plot
 import pyqtgraph as pg
@@ -42,19 +46,6 @@ class MainTestWindow(QMainWindow):
         
         self.setWindowTitle("Battery Tester App")
         self.central_layout = QVBoxLayout()
-        
-        #Create a button at the top to connect multi-channel equipment
-        self.connect_multi_ch_button = QPushButton("Connect Multi Channel Equipment")
-        self.connect_multi_ch_button.clicked.connect(self.multi_ch_devices_process)
-        self.central_layout.addWidget(self.connect_multi_ch_button)
-        #Button for Export Equipment setup
-        self.export_equipment_assignment_btn = QPushButton("Export Equipment Assignment")
-        self.export_equipment_assignment_btn.clicked.connect(self.export_equipment_assignment)
-        self.central_layout.addWidget(self.export_equipment_assignment_btn)
-        #Button for Import Equipment setup
-        self.import_equipment_assignment_btn = QPushButton("Import Equipment Assignment")
-        self.import_equipment_assignment_btn.clicked.connect(self.import_equipment_assignment)
-        self.central_layout.addWidget(self.import_equipment_assignment_btn)
         
         self.channels_layout = QGridLayout()
         channels_widget = QWidget()
@@ -106,7 +97,33 @@ class MainTestWindow(QMainWindow):
         self.data_dict_list = {}
         self.ch_graph_widget = {}
         
+        self.create_actions()
+        self.connect_actions()
+        self.create_menu_bar()
+        
         self.setup_channels()
+        
+    def create_actions(self):
+        self.connect_multi_ch_eq_action = QAction("Connect Multi-Channel Equipment", self)
+        self.import_equipment_assignment_action = QAction("Import Equipment Assignment", self)
+        self.export_equipment_assignment_action = QAction("Export Equipment Assignment", self)
+    
+    def connect_actions(self):
+        self.connect_multi_ch_eq_action.triggered.connect(self.multi_ch_devices_process)
+        self.import_equipment_assignment_action.triggered.connect(self.import_equipment_assignment)
+        self.export_equipment_assignment_action.triggered.connect(self.export_equipment_assignment)
+    
+    def create_menu_bar(self):
+        menu_bar = QMenuBar(self)
+        
+        file_menu = menu_bar.addMenu("File")
+        file_menu.addAction(self.connect_multi_ch_eq_action)
+        file_menu.addAction(self.import_equipment_assignment_action)
+        file_menu.addAction(self.export_equipment_assignment_action)
+        
+        self.setMenuBar(menu_bar)
+        
+        
     
     def clear_layout(self, layout):
         #https://stackoverflow.com/questions/4528347/clear-all-widgets-in-a-layout-in-pyqt
