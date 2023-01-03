@@ -79,8 +79,7 @@ class MainTestWindow(QMainWindow):
         self.cell_name_label_list = {}
         self.button_edit_cell_name_list = {}
         self.data_label_list = {}
-        self.current_status_label_list = {}
-        self.next_status_label_list = {}
+        self.status_label_list = {}
         self.safety_label_list = {}
         self.button_clear_safety_list = {}
         
@@ -169,8 +168,7 @@ class MainTestWindow(QMainWindow):
             self.cell_name_label_list[ch_num] = QLabel("N/A")
             self.button_edit_cell_name_list[ch_num] = QPushButton("Edit Cell Name")
             self.data_label_list[ch_num] = QLabel("CH: {}\nV: \nI:".format(ch_num))
-            self.current_status_label_list[ch_num] = QLabel("Current Status: Idle")
-            self.next_status_label_list[ch_num] = QLabel("Next Status: N/A")
+            self.status_label_list[ch_num] = QLabel("Current Status: Idle\nNext Status: N/A")
             self.safety_label_list[ch_num] = QLabel("Safety: OK")
             self.button_clear_safety_list[ch_num] = QPushButton("Clear Safety Error")
             
@@ -218,8 +216,7 @@ class MainTestWindow(QMainWindow):
             left_col_layout.addWidget(self.cell_name_label_list[ch_num])
             left_col_layout.addWidget(self.button_edit_cell_name_list[ch_num])
             left_col_layout.addWidget(self.data_label_list[ch_num])
-            left_col_layout.addWidget(self.current_status_label_list[ch_num])
-            left_col_layout.addWidget(self.next_status_label_list[ch_num])
+            left_col_layout.addWidget(self.status_label_list[ch_num])
             left_col_layout.addWidget(self.safety_label_list[ch_num])
             left_col_layout.addWidget(self.button_clear_safety_list[ch_num])
             
@@ -276,7 +273,11 @@ class MainTestWindow(QMainWindow):
             #Update cell name
             self.cell_name_label_list[ch_num].setText(new_test_configuration['cdc_input_dict']['cell_name'])
             #Set the next status label
-            self.next_status_label_list[ch_num].setText(f"Next Status: {new_test_configuration['cdc_input_dict']['cycle_settings_list_of_lists'][0][0]['cycle_display']}")
+            status_label_text = self.status_label_list[ch_num].text()
+            split_status_label_text = status_label_text.split(' ')
+            split_status_label_text[-1] = new_test_configuration['cdc_input_dict']['cycle_settings_list_of_lists'][0][0]['cycle_display']
+            status_label_text = ' '.join(split_status_label_text)
+            self.status_label_list[ch_num].setText(status_label_text)
             print("CH{} - Configured Test".format(new_test_configuration['ch_num']))
         except queue.Empty:
             pass #No new data was available		
@@ -302,20 +303,20 @@ class MainTestWindow(QMainWindow):
                     (self.mp_idle_process_list[ch_num] == None or
                     (self.mp_idle_process_list[ch_num] != None and not self.mp_idle_process_list[ch_num].is_alive())):
                         #Set the current status to idle and next status to 'N/A' or the next cycle
-                        self.current_status_label_list[ch_num].setText('Current Status: Idle')
+                        current_status = "Idle"
                         try:
-                            self.next_status_label_list[ch_num].setText(f"Next Status: {self.cdc_input_dict_list[ch_num]['cycle_settings_list_of_lists'][0][0]['cycle_display']}")
+                            next_status = self.cdc_input_dict_list[ch_num]['cycle_settings_list_of_lists'][0][0]['cycle_display']
                         except (KeyError, TypeError):
-                            self.next_status_label_list[ch_num].setText('Next Status: N/A')
-                            
+                            next_status = "N/A"
+                        self.status_label_list[ch_num].setText('Current Status: {}\nNext Status: {}'.format(current_status, next_status))
+                        
                         #start an idle process since nothing else is running
                         self.start_idle_process(ch_num)
                 
                 #Read from all queues if available
                 data_from_ch = self.data_from_ch_queue_list[ch_num].get_nowait()
                 if data_from_ch['type'] == 'status':
-                    self.current_status_label_list[ch_num].setText(f"Current Status: {data_from_ch['data'][0]}")
-                    self.next_status_label_list[ch_num].setText(f"Next Status: {data_from_ch['data'][1]}")
+                    self.status_label_list[ch_num].setText("Current Status: {}\nNext Status: {}".format(data_from_ch['data'][0], data_from_ch['data'][1]))
                 elif data_from_ch['type'] == 'measurement':
                     self.data_dict_list[ch_num] = data_from_ch['data']
                 elif data_from_ch['type'] == 'end_condition':
