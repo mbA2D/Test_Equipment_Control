@@ -11,7 +11,7 @@ TODO List
  - Create a way to 'simulate a cell', connect multiple pieces of 'fake' equipment to a 'battery equivalent circuit'
  - DONE - Add safety conditions to all types of cycles (just make them all use step at the core)
  - DONE - Add a way to show a 'charge' or 'discharge' or 'ir test' instead of just showing 'step'
- - Change log file name to show which cycle_display name instead of just date, time, and cell name, overall cycle type
+ - DONE - Change log file name to show which cycle_display name instead of just date, time, and cell name, overall cycle type
  - DONE - Add WARNING on the GUI if a safety setting was hit
  - Show which safety error was hit on GUI instead of needing to search through the logs
  - Add a button on the GUI to advance to the next cycle or step

@@ -37,6 +37,7 @@ class MainTestWindow(QMainWindow):
         self.num_battery_channels = 0
         
         self.resources_list = None
+        self.connect_equipment_process = None
         
         self.dict_for_event_and_queue = {}
         self.multi_ch_device_process = None
@@ -44,6 +45,7 @@ class MainTestWindow(QMainWindow):
     
         self.eq_assignment_queue = Queue()
         self.resources_list_queue = Queue()
+        self.new_equipment_queue = Queue()
         self.test_configuration_queue = Queue()
         self.edit_cell_name_queue = Queue()
         
@@ -111,12 +113,14 @@ class MainTestWindow(QMainWindow):
         self.import_equipment_assignment_action = QAction("Import Equipment Assignment", self)
         self.export_equipment_assignment_action = QAction("Export Equipment Assignment", self)
         self.scan_equipment_resources_action = QAction("Scan Resources", self)
+        self.connect_new_equipment_action = QAction("Connect New Equipment", self)
     
     def connect_actions(self):
         self.connect_multi_ch_eq_action.triggered.connect(self.multi_ch_devices_process)
         self.import_equipment_assignment_action.triggered.connect(self.import_equipment_assignment)
         self.export_equipment_assignment_action.triggered.connect(self.export_equipment_assignment)
-        self.scan_equipment_resources_action.triggered.connect(self.scan_resources_process)
+        self.scan_equipment_resources_action.triggered.connect(self.scan_resources)
+        self.connect_new_equipment_action.triggered.connect(self.connect_new_equipment)
     
     def create_menu_bar(self):
         menu_bar = QMenuBar(self)
@@ -126,25 +130,71 @@ class MainTestWindow(QMainWindow):
         file_menu.addAction(self.import_equipment_assignment_action)
         file_menu.addAction(self.export_equipment_assignment_action)
         file_menu.addAction(self.scan_equipment_resources_action)
+        file_menu.addAction(self.connect_new_equipment_action)
         
         self.setMenuBar(menu_bar)
         
     
     #Scan new equipment in a process so that we don't block the main window
-    def scan_resources_process(self):
+    def scan_resources(self):
         try:
-            if self.update_resources_process is not None and self.update_resources_process:
+            if self.update_resources_process is not None and self.update_resources_process.is_alive():
                 print("There is a process already running to update resources list")
                 return
-            self.update_resources_process = Process(target=self.update_resources_list, args = (self.resources_list_queue))
+            self.update_resources_process = Process(target=self.update_resources_list_process, args = (self.resources_list_queue))
             self.update_resources_process.start()
         except:
             traceback.print_exc()
             
-    def update_resources_list(self, resources_list_queue):
+    def update_resources_list_process(self, resources_list_queue):
         resources_list = eq.get_resources_list()
         resources_list_queue.put_nowait(resources_list)
     
+    def connect_new_equipment(self):
+        try:
+            if self.connect_equipment_process is not None and self.connect_equipment_process.is_alive():
+                print("There is a process already running to connect new equipment")
+                return
+            if self.resources_list == None or len(self.resources_list) == 0:
+                print("There are no resources to connect to. Scan resources first.")
+                return
+            self.connect_equipment_process = Process(target=self.connect_new_equipment_process, args = (self.resources_list, self.new_equipment_queue))
+            self.connect_equipment_process.start()
+        except:
+            traceback.print_exc()
+            
+    def connect_new_equipment_process(self, resources_list, new_equipment_queue):
+        #We do have at least 1 resource to connect to. 
+        #For multi-channel devices, we want to connect to the EQUIPMENT, not the CHANNEL.
+        
+        #What type of equipment are you connecting to?
+        equipment_selection_functions = { 
+            'psu':      eq.powerSupplies.choose_psu, 
+            'eload':    eq.eLoads.choose_eload,
+            'dmm':      eq.dmms.choose_dmm,
+            'other':    eq.otherEquipment.choose_equipment
+        }
+                    class_name = eg.choicebox(msg, title, eLoads.part_numbers.keys())
+        
+        msg = "Select Equipment Type"
+        title = "Equipment Selection"
+        equipment_selected = eg.choicebox(msg = msg, title = title, equipment_selection_functions.keys())
+        if equipment_selected == None:
+            return
+
+        #What model of equipment?
+            #use equipment.choose_dmm, etc.
+        equipment_list = equipment_selection_functions[equipment_selected](resources_list = resources_list)
+        
+        #Then get res id and disconnect
+        eq_res_id_dict = eq.get_res_id_dict_and_disconnect(equipment_list)
+        
+        #And put the res id to a queue
+        new_equipment_queue.put_nowait(eq_res_id_dict)
+        
+        #In update loop read the queue and create the equipment communication queues
+        
+        
     
     def clear_layout(self, layout):
         #https://stackoverflow.com/questions/4528347/clear-all-widgets-in-a-layout-in-pyqt
@@ -294,6 +344,26 @@ class MainTestWindow(QMainWindow):
         try:
             self.resources_list = self.resources_list_queue.get_nowait()
             print("Equipment Resources Updated")
+        except queue.Empty:
+            pass #No new data was available
+        
+        #Check the new equipment queue
+        try:
+            new_eq_res_id_dict = self.new_equipment_queue.get_nowait()
+            eq_idn = "test"
+            
+            #Create a process for this new piece of equipment
+            process = "test" #target = virtual PSU or DMM, etc. args = (new_eq_res_id_dict)
+            #And create a queue to put data in and get data out
+            queue_in = Queue()
+            queue_out = Queue()
+            
+            #Create a dict with a new process, 2 queues, and maybe some identifying info about the equipment
+            equipment_dict = {'idn': eq_idn: 'process': process, 'queue_in': queue_in, 'queue_out': queue_out}
+            #Then add that dict to connected_equipment_list
+            self.connected_equipment_list.append(equipment_dict)
+            
+            print("New Equipment Connected")
         except queue.Empty:
             pass #No new data was available
         
