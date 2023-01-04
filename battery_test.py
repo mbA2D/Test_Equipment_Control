@@ -539,8 +539,8 @@ class MainTestWindow(QMainWindow):
                                 data_in_queue = self.data_to_idle_ch_queue_list[ch_num], ch_num = ch_num)
     
     def idle_process(self, res_ids_dict, data_out_queue = None, data_in_queue = None, ch_num = None):
-        if res_ids_dict == None:
-            #no equipment assigned, don't start the test
+        if res_ids_dict == None or (res_ids_dict['psu'] == None and res_ids_dict['eload'] == None and res_ids_dict['dmm_v'] == None):
+            #no equipment assigned or no voltage measurement equipment, don't start the test
             return
         try:
             self.mp_idle_process_list[ch_num] = Process(target=cdc.idle_control, args = (res_ids_dict, data_out_queue, data_in_queue, self.dict_for_event_and_queue))
