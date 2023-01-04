@@ -428,11 +428,19 @@ if __name__ == '__main__':
             log_date = filename_parts[1]
             log_time = filename_parts[2]
             cycle_type = "Standard_Charge-Discharge_Cycle"
+            cycle_display = "Step"
         elif len(filename_parts) == 4:
             cell_name = filename_parts[0]
             cycle_type = filename_parts[1]
             log_date = filename_parts[2]
             log_time = filename_parts[3]
+            cycle_display = "Step"
+        elif len(filename_parts) == 5:
+            cell_name = filename_parts[0]
+            cycle_type = filename_parts[1]
+            cycle_display = filename_parts[2]
+            log_date = filename_parts[3]
+            log_time = filename_parts[4]
 
 
         ################ THIS ALL HAPPENS FOR A STANDARD CHARGE-DISCHARGE CYCLE ########################

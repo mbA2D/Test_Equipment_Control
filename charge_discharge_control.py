@@ -249,7 +249,7 @@ def evaluate_end_condition(step_settings, data, data_in_queue):
 
 ######################### MEASURING ######################
 
-def measure_battery(eq_dict, data_out_queue = None):
+def measure_battery(eq_dict, data_out_queue = None, step_index = 0):
     data_dict = {'type': 'measurement', 'data': {}}
     data_dict['data']["Voltage"] = 0
     if eq_dict['dmm_v'] != None:
@@ -258,11 +258,7 @@ def measure_battery(eq_dict, data_out_queue = None):
     if eq_dict['dmm_i'] != None:
         data_dict['data']["Current"] = eq_dict['dmm_i'].measure_current()
     data_dict['data']["Data_Timestamp"] = time.time()
-    
-    #Send voltage and current to be displayed in the main test window
-    if data_out_queue != None:
-        #add the new data to the output queue
-        data_out_queue.put_nowait(data_dict)
+    data_dict['data']["Step_Index"] = step_index
     
     #Now, measure all the extra devices that were added to the channel - these being less time-critical.
     prefix_list = ['v', 'i', 't']
@@ -283,6 +279,11 @@ def measure_battery(eq_dict, data_out_queue = None):
                 index = index + 1
         except KeyError:
             continue
+    
+    #Send voltage and current to be displayed in the main test window
+    if data_out_queue != None:
+        #add the new data to the output queue
+        data_out_queue.put_nowait(data_dict)
     
     return data_dict['data']
 
@@ -305,7 +306,7 @@ def idle_cell(eq_dict, data_out_queue = None, data_in_queue = None):
         measure_battery(eq_dict, data_out_queue = data_out_queue)
         time.sleep(1)
 
-def step_cell(log_filepath, step_settings, eq_dict, data_out_queue = None, data_in_queue = None):
+def step_cell(log_filepath, step_settings, eq_dict, data_out_queue = None, data_in_queue = None, step_index = 0):
     
     if start_step(step_settings, eq_dict):
         #print("Finished Start Step")
@@ -327,7 +328,7 @@ def step_cell(log_filepath, step_settings, eq_dict, data_out_queue = None, data_
         #Do the measurements and check the end conditions at every logging interval
         while end_condition == 'none':
             time.sleep(step_settings["meas_log_int_s"] - ((time.time() - step_start_time) % step_settings["meas_log_int_s"]))
-            data.update(measure_battery(eq_dict, data_out_queue = data_out_queue))
+            data.update(measure_battery(eq_dict, data_out_queue = data_out_queue, step_index = step_index))
             data["Data_Timestamp_From_Step_Start"] = (data["Data_Timestamp"] - step_start_time)
             end_condition = evaluate_end_condition(step_settings, data, data_in_queue)
             FileIO.write_data(log_filepath, data)
@@ -362,7 +363,7 @@ def idle_cell_cycle(eq_dict, data_out_queue = None, data_in_queue = None):
             
     idle_cell(local_eq_dict, data_out_queue = data_out_queue, data_in_queue = data_in_queue)
 
-def single_step_cycle(filepath, step_settings, eq_dict, data_out_queue = None, data_in_queue = None, ch_num = None):
+def single_step_cycle(filepath, step_settings, eq_dict, data_out_queue = None, data_in_queue = None, ch_num = None, step_index = 0):
     
     local_eq_dict = eq_dict.copy()
     
@@ -396,7 +397,7 @@ def single_step_cycle(filepath, step_settings, eq_dict, data_out_queue = None, d
             return 'settings'
     
     end_reason = 'none'
-    end_reason = step_cell(filepath, step_settings, local_eq_dict, data_out_queue = data_out_queue, data_in_queue = data_in_queue)
+    end_reason = step_cell(filepath, step_settings, local_eq_dict, data_out_queue = data_out_queue, data_in_queue = data_in_queue, step_index = step_index)
 
     return end_reason
 
@@ -424,7 +425,10 @@ def single_cc_cycle_info():
     #charge then discharge
     cycle_test_settings = Templates.CycleSettings()
     cycle_test_settings.get_cycle_settings("Cycle Test")
-
+    
+    if cycle_test_settings.settings == None:
+        return None
+    
     #Charge
     charge_settings = Templates.ChargeSettings()
     
@@ -480,9 +484,13 @@ def one_level_continuous_cc_cycles_with_rest_info():
     #cycles - e.g. charge at 1A, rest, discharge at 5A, rest, repeat X times.
     #get user to enter number of cycles
     single_cycle_step_settings_list = single_cc_cycle_info()
+    if single_cycle_step_settings_list == None:
+        return None
     num_cycles = eg.integerbox(msg = "How Many Cycles?",
                                 title = "Cycle Type 1", default = 1,
                                 lowerbound = 0, upperbound = 999)
+    if num_cycles == None:
+        return None
     
     multi_cycle_step_settings_list = list()
     
@@ -498,20 +506,30 @@ def two_level_continuous_cc_cycles_with_rest_info():
     
     #Cycle type 1
     cycle_1_step_settings_list = single_cc_cycle_info()
+    if cycle_1_step_settings_list == None:
+        return None
     num_cycles_type_1 = eg.integerbox(msg = "How Many Cycles of Type 1 in a row?",
                                             title = "Cycle Type 1", default = 9,
                                             lowerbound = 0, upperbound = 999)
+    if num_cycles_type_1 == None:
+        return None
 
     #Cycle type 2
     cycle_2_step_settings_list = single_cc_cycle_info()
+    if cycle_2_step_settings_list == None:
+        return None
     num_cycles_type_2 = eg.integerbox(msg = "How Many Cycles of Type 2 in a row?",
                                             title = "Cycle Type 2", default = 1,
                                             lowerbound = 0, upperbound = 999)
+    if num_cycles_type_2 == None:
+        return None
 
     #test cycles - charge and discharge how many times?
     num_test_cycles = eg.integerbox(msg = "How Many Test Cycles of X Cycle 1 then Y Cycle 2?",
                                             title = "Test Cycles", default = 1,
                                             lowerbound = 0, upperbound = 999)
+    if num_test_cycles == None:
+        return None
 
     multi_cycle_settings_list = list()
 
@@ -548,6 +566,9 @@ def charge_only_cycle_info():
     charge_test_settings = Templates.ChargeSettings()
     charge_test_settings.get_cycle_settings("Charge Only")
     
+    if charge_test_settings.settings == None:
+        return None
+    
     #Transform charge settings to step settings.
     charge_settings = charge_test_settings.settings
     step_settings_list = list()
@@ -581,6 +602,9 @@ def convert_charge_settings_to_steps(charge_settings, model_step_settings = None
 def discharge_only_cycle_info():
     discharge_test_settings = Templates.DischargeSettings()
     discharge_test_settings.get_cycle_settings("Discharge Only")
+    
+    if discharge_test_settings.settings == None:
+        return None
     
     #Transform discharge settings to step settings.
     discharge_settings = discharge_test_settings.settings
@@ -617,6 +641,9 @@ def single_step_cell_info():
     step_settings = Templates.StepSettings()
     step_settings.get_cycle_settings("Step")
     
+    if step_settings.settings == None:
+        return None
+    
     step_settings_list.append((step_settings.settings,))
     
     return step_settings_list
@@ -630,14 +657,21 @@ def multi_step_cell_info():
     
     if from_csv:
         step_settings_list = jsonIO.import_multi_step_from_csv()
+        if step_settings_list == None:
+            return None
     
     else:
         step_settings_list = list()
         msg = "Add a step to the cycle?"
         title = "Add Step"
         while eg.ynbox(msg = msg, title = title):
-            step_settings_list.append(single_step_cell_info()[0][0])
+            single_step_info = single_step_cell_info()
+            if single_step_info != None:
+                step_settings_list.append(single_step_info[0][0])
             msg = "Add another step to the cycle?"
+        
+        if len(step_setting_list) == 0:
+            return None
     
     step_settings_list = (step_settings_list,)
     
@@ -649,7 +683,12 @@ def continuous_step_cycles_info():
     msg = "Add another cycle?"
     title = "Add Cycle"
     while eg.ynbox(msg = msg, title = title):
-        cycle_settings_list.extend(multi_step_cell_info())
+        multi_step_list = multi_step_cell_info()
+        if multi_step_list != None:
+            cycle_settings_list.extend(multi_step_list)
+    
+    if len(cycle_settings_list) == 0:
+        return None
     
     return cycle_settings_list
     
@@ -657,6 +696,9 @@ def single_ir_test_info():
     #Create a cycle with 2 steps.
     ir_test_settings = Templates.SingleIRSettings()
     ir_test_settings.get_cycle_settings("Single IR Test")
+    
+    if ir_test_settings.settings == None:
+        return None
     
     ir_settings = ir_test_settings.settings
     step_settings_list = list()
@@ -696,7 +738,10 @@ def convert_single_ir_settings_to_steps(ir_settings, model_step_settings = None)
 def repeated_ir_test_info():
     ir_test_settings = Templates.RepeatedIRSettings()
     ir_test_settings.get_cycle_settings("Repeated IR Test")
-
+    
+    if ir_test_settings.settings == None:
+        return None
+    
     charge_settings = Templates.ChargeSettings()
     charge_settings.settings["charge_end_v"] = ir_test_settings.settings["charge_end_v"]
     charge_settings.settings["charge_a"] = ir_test_settings.settings["charge_a"]
@@ -772,14 +817,19 @@ def get_cell_name(ch_num = None, queue = None, current_text = None):
     #get the cell name
     cell_name = eg.enterbox(title = "Test Setup", msg = "Enter the Cell Name\n(Spaces will be replaced with underscores)",
                             default = default_name, strip = True)
-    #replace the spaces to keep file names consistent
-    cell_name = cell_name.replace(" ", "_")
     
-    if queue != None:
-        dict_to_put = {'ch_num': ch_num, 'cell_name': cell_name}
-        queue.put_nowait(dict_to_put)
+    #if we don't hit Cancel
+    if cell_name != None:
+        #replace the spaces to keep file names consistent
+        cell_name = cell_name.replace(" ", "_")
+        
+        if queue != None:
+            dict_to_put = {'ch_num': ch_num, 'cell_name': cell_name}
+            queue.put_nowait(dict_to_put)
+        else:
+            return cell_name
     else:
-        return cell_name
+        return None
     
 def get_cycle_type():
     cycle_types = Templates.CycleTypes.cycle_types
@@ -807,6 +857,9 @@ def get_cycle_settings_list_of_lists(cycle_type):
     #gather the list settings based on the cycle type
     cycle_settings_list_of_lists = list()
     cycle_settings_list_of_lists = cycle_types[cycle_type]['func_call']()
+    
+    if cycle_settings_list_of_lists == None:
+        return None
     
     #STORAGE CHARGE
     do_a_storage_charge = False
@@ -848,11 +901,28 @@ def get_eq_req_dict(cycle_settings_list_of_lists):
 
 def get_input_dict(ch_num = None, queue = None, current_cell_name = None):
     input_dict = {}
-    input_dict['cell_name'] = get_cell_name(current_text = current_cell_name)
-    input_dict['directory'] = FileIO.get_directory("Choose directory to save the cycle logs")
-    input_dict['cycle_type'] = get_cycle_type()
-    input_dict['cycle_settings_list_of_lists'] = get_cycle_settings_list_of_lists(input_dict['cycle_type'])
-    input_dict['eq_req_dict'] = get_eq_req_dict(input_dict['cycle_settings_list_of_lists'])
+    
+    cell_name = get_cell_name(current_text = current_cell_name)
+    if cell_name == None:
+        return None
+    input_dict['cell_name'] = cell_name
+    
+    directory = FileIO.get_directory("Choose directory to save the cycle logs")
+    if directory == None:
+        return None
+    input_dict['directory'] = directory
+    
+    cycle_type = get_cycle_type()
+    if cycle_type == None:
+        return None
+    input_dict['cycle_type'] = cycle_type
+    
+    cycle_settings_list_of_lists = get_cycle_settings_list_of_lists(input_dict['cycle_type'])
+    if cycle_settings_list_of_lists == None:
+        return None
+    input_dict['cycle_settings_list_of_lists'] = cycle_settings_list_of_lists
+    
+    input_dict['eq_req_dict'] = get_eq_req_dict(input_dict['cycle_settings_list_of_lists']) #This does not have a GUI associated.
     
     if queue != None:
         dict_to_put = {'ch_num': ch_num, 'cdc_input_dict': input_dict}
@@ -909,7 +979,7 @@ def charge_discharge_control(res_ids_dict, data_out_queue = None, data_in_queue 
         
         for count_1, cycle_settings_list in enumerate(input_dict['cycle_settings_list_of_lists']):
             print("CH{} - Cycle {} Starting".format(ch_num, cycle_num), flush=True)
-            filepath = FileIO.start_file(input_dict['directory'], "{} {}".format(input_dict['cell_name'], input_dict['cycle_type']))
+            filepath = FileIO.start_file(input_dict['directory'], "{} {} {}".format(input_dict['cell_name'], input_dict['cycle_type'], cycle_settings_list[0]["cycle_display"]))
             
             try:
             
@@ -937,7 +1007,7 @@ def charge_discharge_control(res_ids_dict, data_out_queue = None, data_in_queue 
                     
                     #Step Functions
                     if current_cycle_type == 'step':
-                        end_condition = single_step_cycle(filepath, cycle_settings, eq_dict, data_out_queue = data_out_queue, data_in_queue = data_in_queue, ch_num = ch_num)
+                        end_condition = single_step_cycle(filepath, cycle_settings, eq_dict, data_out_queue = data_out_queue, data_in_queue = data_in_queue, ch_num = ch_num, step_index = count_2)
                     if end_condition == 'cycle_end_condition':
                         disable_equipment(eq_dict)
                         break
