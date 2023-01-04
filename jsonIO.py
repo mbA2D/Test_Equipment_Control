@@ -77,13 +77,15 @@ def export_cycle_settings(settings, cycle_name = ""):
     file_name = eg.filesavebox(msg = "Choose a File to export {}settings to".format(cycle_name),
                                 title = "Settings", filetypes = ['*.json', 'JSON files'])
     
+    if file_name == None:
+        return
+    
     #force file name extension
     file_name = force_extension(file_name, '.json')
     
     #export the file
-    if(file_name != None):
-        with open(file_name, "w") as write_file:
-            json.dump(settings, write_file, indent = 4)
+    with open(file_name, "w") as write_file:
+        json.dump(settings, write_file, indent = 4)
 
 def import_multi_step_from_csv():
     file_name = eg.fileopenbox(msg = "Choose a File to import step settings from",
@@ -104,6 +106,10 @@ def import_cycle_settings(cycle_name = "", queue = None, ch_num = None):
     #get the file to import from
     file_name = eg.fileopenbox(msg = "Choose a File to import {}settings from".format(cycle_name),
                                 title = "Settings", filetypes = [['*.json', 'JSON files'],['*.csv', 'CSV files']])
+    
+    if file_name == None:
+        return None
+    
     settings = None
     
     #import the file
@@ -116,7 +122,7 @@ def import_cycle_settings(cycle_name = "", queue = None, ch_num = None):
         elif extension == '.csv':
             df = pd.read_csv(file_name)
             settings = df.to_dict(orient = 'records')[0]
-    
+
     if queue != None:
         settings = {'ch_num': ch_num, 'cdc_input_dict': settings}
         queue.put_nowait(settings)
