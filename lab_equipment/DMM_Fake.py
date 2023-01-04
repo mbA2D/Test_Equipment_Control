@@ -3,7 +3,7 @@
 #DMM
 class Fake_DMM:
 	
-	def __init__(self, resource_id = None):
+	def __init__(self, resource_id = None, resources_list = None):
 		pass
 		
 	def measure_voltage(self, nplc = None, volt_range = None):

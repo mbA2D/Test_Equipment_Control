@@ -2,6 +2,7 @@
 #organized into which ones have common function calls
 
 import easygui as eg
+import pyvisa
 
 #multi channel device management functions
 from BATT_HIL import fet_board_management as fbm
@@ -41,8 +42,27 @@ from lab_equipment import OTHER_A2D_Relay_Board
 from lab_equipment import OTHER_Arduino_IO_Module
 
 
+#def get_connection_settings_list():
+    #looks through all the devices that have libraries written and creates a dictionary with the possible combinations.
+    
+
+def get_resources_list():
+    #looks through all pyvisa backends to see which resources we can connect to.
+    resources_list = list()
+    backends = ['@py', '@ivi']
+    for backend in backends:
+        rm = pyvisa.ResourceManager(backend)
+        resource_list = rm.list_resources()
+        for resource in resource_list:
+            resources_list.append({'resource': resource, 'backend': backend})
+    return resources_list
+    #How do we know which device settings to use to communicate with it? Try all the settings until we get a legible response from IDN that we can use?
+
+#def get_available_equipment():
+    #uses the resources list and the possible connection settings to look through every device and try to get an IDN response from it.
+
+
 def setup_instrument(instrument, setup_dict):
-    #This should turn into a general 'setup equipment function'
     if setup_dict == None:
         setup_dict = {}
     
@@ -116,7 +136,7 @@ def connect_to_eq(key, class_name, res_id, setup_dict = None, multi_channel_even
         instrument = eLoads.choose_eload(class_name, res_id, setup_dict)[1]
     elif key == 'psu':
         instrument = powerSupplies.choose_psu(class_name, res_id, setup_dict)[1]
-    elif key == 'dmm' or ('dmm' in key): #for dmm_i and dmm_v keys and dmm_t
+    elif key == 'dmm' or ('dmm' in key): #for dmm_i and dmm_v and dmm_t keys
         instrument = dmms.choose_dmm(class_name, resource_id = res_id, multi_ch_event_and_queue_dict = multi_channel_event_and_queue_dict, setup_dict = setup_dict)[1]
     elif key == 'relay_board':
         instrument = otherEquipment.choose_equipment(class_name, res_id, setup_dict)[1]
@@ -129,7 +149,6 @@ def get_res_id_dict_and_disconnect(eq_list):
     eq_res_id_dict = {'class_name': class_name, 'res_id': None, 'setup_dict': {}}
     if class_name == 'MATICIAN_FET_BOARD_CH' or class_name == 'A2D_DAQ_CH':
         eq_res_id_dict['res_id'] = {'board_name': eq_list[1].board_name, 'ch_num': eq_list[1].ch_num}
-        #eq_res_id_dict['setup_dict']['remote_sense'] = False
     elif class_name == 'Parallel Eloads':
         eq_res_id_dict['res_id'] = {}
         eq_res_id_dict['res_id']['class_name_1'] = eq_list[1].class_name_1
@@ -142,8 +161,9 @@ def get_res_id_dict_and_disconnect(eq_list):
             eq_res_id_dict['res_id']['res_id_2'] = eq_list[1].eload2.inst.resource_name
         except AttributeError:
             eq_res_id_dict['res_id']['res_id_2'] = None #For fake instruments
-        eq_res_id_dict['setup_dict']['remote_sense_1'] = eq_list[1].use_remote_sense_1
-        eq_res_id_dict['setup_dict']['remote_sense_2'] = eq_list[1].use_remote_sense_2
+        #print('Adding setup_dict to res_id_dict')
+        eq_res_id_dict['res_id']['remote_sense_1'] = eq_list[1].use_remote_sense_1
+        eq_res_id_dict['res_id']['remote_sense_2'] = eq_list[1].use_remote_sense_2
     elif 'Fake' in class_name:
         eq_res_id_dict['res_id'] = 'Fake'
         eq_res_id_dict['setup_dict'] = eq_list[2]
@@ -174,7 +194,7 @@ class otherEquipment:
     }
         
     @classmethod
-    def choose_equipment(self, class_name = None, resource_id = None, setup_dict = None):
+    def choose_equipment(self, class_name = None, resource_id = None, setup_dict = None, resources_list = None):
         if class_name == None:
             msg = "What type of equipment?"
             title = "Equipment Series Selection"
@@ -185,9 +205,9 @@ class otherEquipment:
             return			
         
         if class_name == 'A2D Relay Board':
-            instrument = OTHER_A2D_Relay_Board.A2D_Relay_Board(resource_id = resource_id)
+            instrument = OTHER_A2D_Relay_Board.A2D_Relay_Board(resource_id = resource_id, resources_list = resources_list)
         elif class_name == 'Arduino IO Module':
-            instrument = OTHER_Arduino_IO_Module.Arduino_IO(resource_id = resource_id)
+            instrument = OTHER_Arduino_IO_Module.Arduino_IO(resource_id = resource_id, resources_list = resources_list)
             
         setup_dict = setup_instrument(instrument, setup_dict)
         return class_name, instrument, setup_dict
@@ -204,7 +224,7 @@ class eLoads:
     }
         
     @classmethod
-    def choose_eload(self, class_name = None, resource_id = None, setup_dict = None):
+    def choose_eload(self, class_name = None, resource_id = None, setup_dict = None, resources_list = None):
         if class_name == None:
             msg = "In which series is the E-Load?"
             title = "E-Load Series Selection"
@@ -215,17 +235,17 @@ class eLoads:
             return			
         
         if class_name == 'BK8600':
-            eload = Eload_BK8600.BK8600(resource_id = resource_id)
+            eload = Eload_BK8600.BK8600(resource_id = resource_id, resources_list = resources_list)
         elif class_name == 'DL3000':
-            eload = Eload_DL3000.DL3000(resource_id = resource_id)
+            eload = Eload_DL3000.DL3000(resource_id = resource_id, resources_list = resources_list)
         elif class_name == 'KEL10X':
-            eload = Eload_KEL10X.KEL10X(resource_id = resource_id)
+            eload = Eload_KEL10X.KEL10X(resource_id = resource_id, resources_list = resources_list)
         elif class_name == 'IT8500':
-            eload = Eload_IT8500.IT8500(resource_id = resource_id)
+            eload = Eload_IT8500.IT8500(resource_id = resource_id, resources_list = resources_list)
         elif class_name == 'Parallel Eloads':
-            eload = Eload_PARALLEL.PARALLEL(resource_id = resource_id)
+            eload = Eload_PARALLEL.PARALLEL(resource_id = resource_id, resources_list = resources_list)
         elif class_name == 'Fake Test Eload':
-            eload = Eload_Fake.Fake_Eload(resource_id = resource_id)
+            eload = Eload_Fake.Fake_Eload(resource_id = resource_id, resources_list = resources_list)
             
         setup_dict = setup_instrument(eload, setup_dict)
         return class_name, eload, setup_dict
@@ -244,7 +264,7 @@ class powerSupplies:
     }
     
     @classmethod
-    def choose_psu(self, class_name = None, resource_id = None, setup_dict = None):
+    def choose_psu(self, class_name = None, resource_id = None, setup_dict = None, resources_list = None):
         if class_name == None:
             msg = "In which series is the PSU?"
             title = "PSU Series Selection"
@@ -255,21 +275,21 @@ class powerSupplies:
             return
         
         if class_name == 'SPD1000':
-            psu = PSU_SPD1000.SPD1000(resource_id = resource_id)
+            psu = PSU_SPD1000.SPD1000(resource_id = resource_id, resources_list = resources_list)
         elif class_name == 'DP800':
-            psu = PSU_DP800.DP800(resource_id = resource_id)
+            psu = PSU_DP800.DP800(resource_id = resource_id, resources_list = resources_list)
         elif class_name == 'KWR10X or MP71025X':
-            psu = PSU_MP71025X.MP71025X(resource_id = resource_id)
+            psu = PSU_MP71025X.MP71025X(resource_id = resource_id, resources_list = resources_list)
         elif class_name == 'BK9100':
-            psu = PSU_BK9100.BK9100(resource_id = resource_id)
+            psu = PSU_BK9100.BK9100(resource_id = resource_id, resources_list = resources_list)
         elif class_name == 'N8700':
-            psu = PSU_N8700.N8700(resource_id = resource_id)
+            psu = PSU_N8700.N8700(resource_id = resource_id, resources_list = resources_list)
         elif class_name == 'KAXXXXP':
-            psu = PSU_KAXXXXP.KAXXXXP(resource_id = resource_id)
+            psu = PSU_KAXXXXP.KAXXXXP(resource_id = resource_id, resources_list = resources_list)
         elif class_name == 'E3631A':
-            psu = PSU_E3631A.E3631A(resource_id = resource_id)
+            psu = PSU_E3631A.E3631A(resource_id = resource_id, resources_list = resources_list)
         elif class_name == 'Fake Test PSU':
-            psu = PSU_Fake.Fake_PSU(resource_id = resource_id)
+            psu = PSU_Fake.Fake_PSU(resource_id = resource_id, resources_list = resources_list)
             
         setup_dict = setup_instrument(psu, setup_dict)
         return class_name, psu, setup_dict
@@ -285,7 +305,7 @@ class dmms:
     }
     
     @classmethod
-    def choose_dmm(self, class_name = None, resource_id = None, multi_ch_event_and_queue_dict = None, setup_dict = None):
+    def choose_dmm(self, class_name = None, resource_id = None, multi_ch_event_and_queue_dict = None, setup_dict = None, resources_list = None):
         if class_name == None:
             msg = "In which series is the DMM?"
             title = "DMM Series Selection"
@@ -296,11 +316,11 @@ class dmms:
             return			
         
         if(class_name == 'DM3000'):
-            dmm = DMM_DM3000.DM3000(resource_id = resource_id)
+            dmm = DMM_DM3000.DM3000(resource_id = resource_id, resources_list = resources_list)
         if class_name == 'SDM3065X':
-            dmm = DMM_SDM3065X.SDM3065X(resource_id = resource_id)
+            dmm = DMM_SDM3065X.SDM3065X(resource_id = resource_id, resources_list = resources_list)
         elif class_name == 'Fake Test DMM':
-            dmm = DMM_Fake.Fake_DMM(resource_id = resource_id)
+            dmm = DMM_Fake.Fake_DMM(resource_id = resource_id, resources_list = resources_list)
         elif class_name == 'A2D_DAQ_CH':
             #if running from this process then create the extra process from here.
             if multi_ch_event_and_queue_dict == None:

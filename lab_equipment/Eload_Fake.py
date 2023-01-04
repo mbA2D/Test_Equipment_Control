@@ -5,7 +5,7 @@ class Fake_Eload:
     
     has_remote_sense = False
 
-    def __init__(self, resource_id = None):
+    def __init__(self, resource_id = None, resources_list = None):
         self.max_power = 10000
         self.max_current = 1000
         self.mode = "CURR"

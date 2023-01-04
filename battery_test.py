@@ -36,11 +36,14 @@ class MainTestWindow(QMainWindow):
         
         self.num_battery_channels = 0
         
+        self.resources_list = None
+        
         self.dict_for_event_and_queue = {}
         self.multi_ch_device_process = None
         self.multi_ch_management_queue = None
     
         self.eq_assignment_queue = Queue()
+        self.resources_list_queue = Queue()
         self.test_configuration_queue = Queue()
         self.edit_cell_name_queue = Queue()
         
@@ -63,6 +66,7 @@ class MainTestWindow(QMainWindow):
         self.last_update_time = time.time()
         
         #Connected Equipment
+        self.update_resources_process = None
         self.assign_eq_process_list = {}
         self.res_ids_dict_list = {}
         self.configure_test_process_list = {}
@@ -106,11 +110,13 @@ class MainTestWindow(QMainWindow):
         self.connect_multi_ch_eq_action = QAction("Connect Multi-Channel Equipment", self)
         self.import_equipment_assignment_action = QAction("Import Equipment Assignment", self)
         self.export_equipment_assignment_action = QAction("Export Equipment Assignment", self)
+        self.scan_equipment_resources_action = QAction("Scan Resources", self)
     
     def connect_actions(self):
         self.connect_multi_ch_eq_action.triggered.connect(self.multi_ch_devices_process)
         self.import_equipment_assignment_action.triggered.connect(self.import_equipment_assignment)
         self.export_equipment_assignment_action.triggered.connect(self.export_equipment_assignment)
+        self.scan_equipment_resources_action.triggered.connect(self.scan_resources_process)
     
     def create_menu_bar(self):
         menu_bar = QMenuBar(self)
@@ -119,10 +125,26 @@ class MainTestWindow(QMainWindow):
         file_menu.addAction(self.connect_multi_ch_eq_action)
         file_menu.addAction(self.import_equipment_assignment_action)
         file_menu.addAction(self.export_equipment_assignment_action)
+        file_menu.addAction(self.scan_equipment_resources_action)
         
         self.setMenuBar(menu_bar)
         
-        
+    
+    #Scan new equipment in a process so that we don't block the main window
+    def scan_resources_process(self):
+        try:
+            if self.update_resources_process is not None and self.update_resources_process:
+                print("There is a process already running to update resources list")
+                return
+            self.update_resources_process = Process(target=self.update_resources_list, args = (self.resources_list_queue))
+            self.update_resources_process.start()
+        except:
+            traceback.print_exc()
+            
+    def update_resources_list(self, resources_list_queue):
+        resources_list = eq.get_resources_list()
+        resources_list_queue.put_nowait(resources_list)
+    
     
     def clear_layout(self, layout):
         #https://stackoverflow.com/questions/4528347/clear-all-widgets-in-a-layout-in-pyqt
@@ -146,7 +168,10 @@ class MainTestWindow(QMainWindow):
         self.remove_all_channels()
         
         if num_ch == None:
-            num_ch = int(eg.enterbox(msg = "How many battery channels?", title = "Battery Channels", default = "1"))
+            num_ch = eg.enterbox(msg = "How many battery channels?", title = "Battery Channels", default = "1")
+            if num_ch == None:
+                num_ch = 0
+            num_ch = int(num_ch)
         self.num_battery_channels = num_ch
         
         for ch_num in range(self.num_battery_channels):
@@ -265,6 +290,13 @@ class MainTestWindow(QMainWindow):
         except queue.Empty:
             pass #No new data was available
         
+        #Check the resources list queue
+        try:
+            self.resources_list = self.resources_list_queue.get_nowait()
+            print("Equipment Resources Updated")
+        except queue.Empty:
+            pass #No new data was available
+        
         #Check test configuration queue
         try:
             new_test_configuration = self.test_configuration_queue.get_nowait()
@@ -365,13 +397,13 @@ class MainTestWindow(QMainWindow):
             if self.assign_eq_process_list[ch_num] is not None and self.assign_eq_process_list[ch_num].is_alive():
                 print("CH{} - There is a process already running to assign equipment".format(ch_num))
                 return
-            self.assign_eq_process_list[ch_num] = Process(target=self.assign_equipment, args = (ch_num, self.eq_assignment_queue, None, self.dict_for_event_and_queue))
+            self.assign_eq_process_list[ch_num] = Process(target=self.assign_equipment, args = (ch_num, self.eq_assignment_queue, None, self.dict_for_event_and_queue, self.resources_list))
             self.assign_eq_process_list[ch_num].start()
         except:
             traceback.print_exc()
             
     @staticmethod
-    def assign_equipment(ch_num, assignment_queue, res_ids_dict = None, dict_for_event_and_queue = None):
+    def assign_equipment(ch_num, assignment_queue, res_ids_dict = None, dict_for_event_and_queue = None, resources_list = None):
         try:
             if res_ids_dict == None:
                 res_ids_dict = {'psu': None, 'eload': None, 'dmm_v': None, 'dmm_i': None}
@@ -380,24 +412,26 @@ class MainTestWindow(QMainWindow):
                 msg = "Do you want to connect a power supply for channel {}?".format(ch_num)
                 title = "CH {} Power Supply Connection".format(ch_num)
                 if eg.ynbox(msg, title):
-                    psu = eq.powerSupplies.choose_psu()
+                    psu = eq.powerSupplies.choose_psu(resources_list = resources_list)
                     res_ids_dict['psu'] = eq.get_res_id_dict_and_disconnect(psu)
+                
                 msg = "Do you want to connect an eload for channel {}?".format(ch_num)
                 title = "CH {} Eload Connection".format(ch_num)
                 if eg.ynbox(msg, title):
-                    eload = eq.eLoads.choose_eload()
+                    eload = eq.eLoads.choose_eload(resources_list = resources_list)
                     res_ids_dict['eload'] = eq.get_res_id_dict_and_disconnect(eload)
                 
                 #Separate measurement devices - total voltage and current
                 msg = "Do you want to use a separate device to measure voltage on channel {}?".format(ch_num)
                 title = "CH {} Voltage Measurement Device".format(ch_num)
                 if eg.ynbox(msg, title):
-                    dmm_v = eq.dmms.choose_dmm(multi_ch_event_and_queue_dict = dict_for_event_and_queue)
+                    dmm_v = eq.dmms.choose_dmm(multi_ch_event_and_queue_dict = dict_for_event_and_queue, resources_list = resources_list)
                     res_ids_dict['dmm_v'] = eq.get_res_id_dict_and_disconnect(dmm_v)
+                    
                 msg = "Do you want to use a separate device to measure current on channel {}?".format(ch_num)
                 title = "CH {} Current Measurement Device".format(ch_num)
                 if eg.ynbox(msg, title):
-                    dmm_i = eq.dmms.choose_dmm(multi_ch_event_and_queue_dict = dict_for_event_and_queue)
+                    dmm_i = eq.dmms.choose_dmm(multi_ch_event_and_queue_dict = dict_for_event_and_queue, resources_list = resources_list)
                     res_ids_dict['dmm_i'] = eq.get_res_id_dict_and_disconnect(dmm_i)
                 
                 #Add other devices? - temperaure sensors or mid-level voltage monitors?
@@ -422,14 +456,14 @@ class MainTestWindow(QMainWindow):
                             dev_name = 'dmm_t{}'.format(device_t_counter)
                             device_t_counter = device_t_counter + 1
                         
-                        dmm_extra = eq.dmms.choose_dmm(multi_ch_event_and_queue_dict = dict_for_event_and_queue)
+                        dmm_extra = eq.dmms.choose_dmm(multi_ch_event_and_queue_dict = dict_for_event_and_queue, resources_list = resources_list)
                         res_ids_dict[dev_name] = eq.get_res_id_dict_and_disconnect(dmm_extra)
                 
                 #Add power flow control? - such as relay board to disconnect equipment.
                 msg = "Do you want to add a relay board for channel {}?".format(ch_num)
                 title = "CH {} Power Control Device".format(ch_num)
                 if eg.ynbox(msg, title):
-                    relay_board = eq.otherEquipment.choose_equipment()
+                    relay_board = eq.otherEquipment.choose_equipment(resources_list = resources_list)
                     res_ids_dict['relay_board'] = eq.get_res_id_dict_and_disconnect(relay_board)
                 
             #if all values are None, print No equipment assigned and return.
@@ -540,7 +574,7 @@ class MainTestWindow(QMainWindow):
     
     def idle_process(self, res_ids_dict, data_out_queue = None, data_in_queue = None, ch_num = None):
         if res_ids_dict == None or (res_ids_dict['psu'] == None and res_ids_dict['eload'] == None and res_ids_dict['dmm_v'] == None):
-            #no equipment assigned or no voltage measurement equipment, don't start the test
+            #no equipment assigned or no voltage measurement equipment, don't start the idle measurements
             return
         try:
             self.mp_idle_process_list[ch_num] = Process(target=cdc.idle_control, args = (res_ids_dict, data_out_queue, data_in_queue, self.dict_for_event_and_queue))

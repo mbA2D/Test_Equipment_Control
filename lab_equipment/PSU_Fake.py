@@ -5,7 +5,7 @@ class Fake_PSU:
     has_remote_sense = False
     can_measure_v_while_off = True
     
-    def __init__(self, resource_id = None):
+    def __init__(self, resource_id = None, resources_list = None):
         self.current_a = 0
         self.voltage_v = 4.1
         pass

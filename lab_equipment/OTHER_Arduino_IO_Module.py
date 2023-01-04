@@ -8,13 +8,16 @@ from functools import partial
 
 #Data Acquisition Unit
 class Arduino_IO(PyVisaDevice):
-    baud_rate = 57600
-    read_termination = '\r\n'
-    write_termination = '\n'
-    query_delay = 0.02
-    chunk_size = 102400
-    pyvisa_backend = '@py'
-    time_wait_after_open = 2
+    connection_settings = {
+        'baud_rate':                57600,
+        'read_termination':         '\r\n',
+        'write_termination':        '\n',
+        'query_delay':              0.02,
+        'chunk_size':               102400,
+        'pyvisa_backend':           '@py',
+        'time_wait_after_open':     2,
+        'idn_available':            True
+    }
     
     def initialize(self):
         self.num_channels = 13

@@ -7,10 +7,12 @@ from .PyVisaDeviceTemplate import DMMDevice
 # DMM
 class DM3000(DMMDevice):
 	# Initialize the DM3000 DMM
-	
-	read_termination = '\n'
-	timeout = 5000 #5 second timeout
-	pyvisa_backend = '@ivi'
+	connection_settings = {
+        'read_termination':     '\n',
+        'timeout':              5000, #5 second timeout
+        'pyvisa_backend':       '@ivi',
+        'idn_available':        True
+    }
 		
 	def initialize(self):
 		self.inst.write("*RST")

@@ -5,13 +5,16 @@ from .PyVisaDeviceTemplate import PyVisaDevice
 
 #Data Acquisition Unit
 class A2D_Relay_Board(PyVisaDevice):
-    read_termination = '\r\n'
-    write_termination = '\n'
-    baud_rate = 57600
-    query_delay = 0.02
-    chunk_size = 102400
-    pyvisa_backend = '@py'
-    time_wait_after_open = 2
+    connection_settings = {
+        'read_termination':         '\r\n',
+        'write_termination':        '\n',
+        'baud_rate':                57600,
+        'query_delay':              0.02,
+        'chunk_size':               102400,
+        'pyvisa_backend':           '@py',
+        'time_wait_after_open':     2,
+        'idn_available':            True
+    }
     
     def initialize(self):
         self.equipment_type_connected = None

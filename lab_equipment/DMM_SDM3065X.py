@@ -7,11 +7,12 @@ from .PyVisaDeviceTemplate import DMMDevice
 #DMM
 class SDM3065X(DMMDevice):
 	# Initialize the SDM3065X E-Load
-	
-	read_termination = '\n'
-	timeout = 5000 #5 second timeout
-	pyvisa_backend = '@ivi'
-	
+	connection_settings = {
+        'read_termination':     '\n',
+        'timeout':              5000, #5 second timeout
+        'pyvisa_backend':       '@ivi',
+        'idn_available':        True
+	}
 	defaults = {"NPLC": 1,
 				"VOLT_DC_RANGE": 'AUTO'}
 		
@@ -35,7 +36,6 @@ class SDM3065X(DMMDevice):
 		self.setup_dcv = {"RANGE": None,
 						  "NPLC": None}
 		
-		print("Connected to {}\n".format(self.inst.query("*IDN?")))
 		self.inst.write("*RST")
 				
 		#set to remote mode (disable front panel)
