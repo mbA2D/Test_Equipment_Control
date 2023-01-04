@@ -4,7 +4,6 @@ import pyvisa
 import easygui as eg
 import serial
 import time
-from .PSU_BK9100 import BK9100 #Since this doesn't have an IDN command, need a special way of dealing with it
 
 class PyVisaDevice:
     selection_window_title = "PyVisa Device Selection"
@@ -19,8 +18,8 @@ class PyVisaDevice:
         rm = pyvisa.ResourceManager(self.connection_settings['pyvisa_backend'])
         
         if(resource_id == None):
-        
-            if resources == None:
+            resources = None
+            if resources_list == None:
                 resources = rm.list_resources()
             else:
                 #resources should be all the resources that have the same backend as this.
@@ -73,15 +72,18 @@ class PyVisaDevice:
                         instrument_idn = instrument.query("*IDN?")
                         idns_dict[resource] = instrument_idn
                     else:
-                        if isinstance(self, BK9100):
-                            try:
-                                instrument.query("GOUT") #try to get something from the instrument
-                                instrument.query("") #clear output buffer
+                        try:
+                            if self.class_name == 'BK9100':
+                                try:
+                                    instrument.query("GOUT") #try to get something from the instrument
+                                    instrument.query("") #clear output buffer
+                                    idns_dict[resource] = resource
+                                except (pyvisa.errors.VisaIOError, PermissionError, serial.serialutil.SerialException):
+                                    pass
+                            else:
                                 idns_dict[resource] = resource
-                            except (pyvisa.errors.VisaIOError, PermissionError, serial.serialutil.SerialException):
-                                pass
-                        else:
-                            idns_dict[resource] = resource
+                        except AttributeError:
+                            pass
                     
                     #Close connection
                     instrument.close()
