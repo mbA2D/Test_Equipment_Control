@@ -432,7 +432,11 @@ class MainTestWindow(QMainWindow):
                     relay_board = eq.otherEquipment.choose_equipment()
                     res_ids_dict['relay_board'] = eq.get_res_id_dict_and_disconnect(relay_board)
                 
-                
+            #if all values are None, print No equipment assigned and return.
+            if not any(res_ids_dict.values()):
+                print("CH{} - No Equipment Assigned".format(ch_num))
+                return
+            
             dict_for_queue = {'ch_num': ch_num, 'res_ids_dict': res_ids_dict}
             assignment_queue.put_nowait(dict_for_queue)
             
