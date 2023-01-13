@@ -8,6 +8,8 @@ import pyvisa
 from BATT_HIL import fet_board_management as fbm
 from lab_equipment import A2D_DAQ_management as adm
 
+import queue #For handling queue.Empty error
+
 from easygui.boxes.derived_boxes import msgbox
 import time
 
@@ -41,10 +43,47 @@ from lab_equipment import DMM_Fake
 from lab_equipment import OTHER_A2D_Relay_Board
 from lab_equipment import OTHER_Arduino_IO_Module
 
+#Virtual Equipment Management
+from lab_equipment import VirtualDeviceTemplate
 
 #def get_connection_settings_list():
     #looks through all the devices that have libraries written and creates a dictionary with the possible combinations.
+
+def virtual_device_management_process(eq_type, new_eq_res_id_dict, queue_in, queue_out):
+    # - connect to the equipment using the equipment type and the res_id_dict
+            # - Then loop:
+                # - listen for any messages in queue_in
+                    # - take action on messages in queue_in
+                # - put responses to messages in queue_out
+                
+    device = connect_to_eq(eq_type, new_eq_res_id_dict['class_name'], new_eq_res_id_dict['res_id'], new_eq_res_id_dict['setup_dict'])
+    #print("Device Connected")
     
+    queue_in_message_type = None
+    #All queue in message must be a dict with 'type' and 'data' keys.
+    #'type' should be a function name that the device has
+    #'data' should be an argument list for that function
+    while queue_in_message_type != 'disconnect':
+        try:
+            queue_in_message = queue_in.get_nowait()
+            if queue_in_message == 'stop':
+                return
+            queue_in_message_type = queue_in_message['type']
+            queue_in_message_data = queue_in_message['data']
+            
+            if queue_in_message_data is None:
+                return_data = eval('device.'+queue_in_message_type+'()')
+            else:
+                if type(queue_in_message_data) is not list:
+                    queue_in_message_data = [queue_in_message_data,]
+                args = queue_in_message_data
+                return_data = eval('device.'+queue_in_message_type+'(*args)', {}, {"args": args, "device": device})
+            
+            if return_data != None:
+                queue_out.put_nowait(return_data)
+        except queue.Empty:
+            pass
+        time.sleep(0.000001) #1us
 
 def get_resources_list():
     #looks through all pyvisa backends to see which resources we can connect to.
@@ -138,15 +177,43 @@ def connect_to_eq(key, class_name, res_id, setup_dict = None, multi_channel_even
         instrument = powerSupplies.choose_psu(class_name, res_id, setup_dict)[1]
     elif key == 'dmm' or ('dmm' in key): #for dmm_i and dmm_v and dmm_t keys
         instrument = dmms.choose_dmm(class_name, resource_id = res_id, multi_ch_event_and_queue_dict = multi_channel_event_and_queue_dict, setup_dict = setup_dict)[1]
-    elif key == 'relay_board':
+    elif key == 'relay_board' or 'other':
         instrument = otherEquipment.choose_equipment(class_name, res_id, setup_dict)[1]
     time.sleep(0.1)
+    return instrument
+
+def connect_to_virtual_eq(queue_dict):
+    instrument = VirtualDeviceTemplate.VirtualDeviceTemplate(queue_dict['queue_in'], queue_dict['queue_out'])
     return instrument
 
 def get_res_id_dict_and_disconnect(eq_list):
     #get resource id
     class_name = eq_list[0]
-    eq_res_id_dict = {'class_name': class_name, 'res_id': None, 'setup_dict': {}}
+    
+    eq_type = None
+    if class_name in otherEquipment.part_numbers.keys():
+        eq_type = 'other'
+    elif class_name in eLoads.part_numbers.keys():
+        eq_type = 'eload'
+    elif class_name in powerSupplies.part_numbers.keys():
+        eq_type = 'psu'
+    elif class_name in dmms.part_numbers.keys():
+        eq_type = 'dmm'
+    
+    eq_idn = None
+    try:
+        eq_idn = eq_list[1].inst_idn
+    except AttributeError:
+        pass
+    
+    eq_res_id_dict = {
+        'eq_idn':       eq_idn,
+        'eq_type':      eq_type,
+        'class_name':   class_name,
+        'res_id':       None,
+        'setup_dict':   {}
+    }
+    
     if class_name == 'MATICIAN_FET_BOARD_CH' or class_name == 'A2D_DAQ_CH':
         eq_res_id_dict['res_id'] = {'board_name': eq_list[1].board_name, 'ch_num': eq_list[1].ch_num}
     elif class_name == 'Parallel Eloads':

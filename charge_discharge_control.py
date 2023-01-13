@@ -67,8 +67,10 @@ def disable_equipment_single(equipment):
 def disable_equipment(eq_dict):
     if eq_dict['psu'] != None:
         disable_equipment_single(eq_dict['psu'])
+        #print("Disabled PSU")
     if eq_dict['eload'] != None:
         disable_equipment_single(eq_dict['eload'])
+        #print("Disabled Eload")
     if eq_dict.get('relay_board') != None: #TODO - figure out voltage measurement during idle. This might disconnect all our equipment.
         eq_dict['relay_board'].connect_eload(False)
         eq_dict['relay_board'].connect_psu(False)
@@ -285,6 +287,7 @@ def measure_battery(eq_dict, data_out_queue = None, step_index = 0):
         #add the new data to the output queue
         data_out_queue.put_nowait(data_dict)
     
+    #print("Measurement: {}".format(data_dict['data']))
     return data_dict['data']
 
 
@@ -324,6 +327,7 @@ def step_cell(log_filepath, step_settings, eq_dict, data_out_queue = None, data_
             data["Current"] = step_settings["drive_value_other"]
         
         end_condition = evaluate_end_condition(step_settings, data, data_in_queue)
+        #print("End Condition before while: {}".format(end_condition))
         
         #Do the measurements and check the end conditions at every logging interval
         while end_condition == 'none':
@@ -364,7 +368,7 @@ def idle_cell_cycle(eq_dict, data_out_queue = None, data_in_queue = None):
     idle_cell(local_eq_dict, data_out_queue = data_out_queue, data_in_queue = data_in_queue)
 
 def single_step_cycle(filepath, step_settings, eq_dict, data_out_queue = None, data_in_queue = None, ch_num = None, step_index = 0):
-    
+
     local_eq_dict = eq_dict.copy()
     
     #if we don't have separate voltage measurement equipment, then choose what to use:
@@ -385,7 +389,7 @@ def single_step_cycle(filepath, step_settings, eq_dict, data_out_queue = None, d
             left_comparator = step_settings["drive_value"]
         elif step_settings["drive_style"] == 'voltage_v':
             left_comparator = step_settings["drive_value_other"]
-        elif step_settings["drive_style"] == ['none'] or left_comparator == 0:
+        if step_settings["drive_style"] == ['none'] or left_comparator == 0:
             resting = True
         
         if left_comparator > 0 and eq_dict['psu'] != None:
@@ -670,7 +674,7 @@ def multi_step_cell_info():
                 step_settings_list.append(single_step_info[0][0])
             msg = "Add another step to the cycle?"
         
-        if len(step_setting_list) == 0:
+        if len(step_settings_list) == 0:
             return None
     
     step_settings_list = (step_settings_list,)
@@ -935,7 +939,11 @@ def get_equipment_dict(res_ids_dict, multi_channel_event_and_queue_dict):
     eq_dict = {}
     for key in res_ids_dict:
         if res_ids_dict[key] != None and res_ids_dict[key]['res_id'] != None:
-            eq_dict[key] = eq.connect_to_eq(key, res_ids_dict[key]['class_name'], res_ids_dict[key]['res_id'], res_ids_dict[key]['setup_dict'], multi_channel_event_and_queue_dict)
+            if res_ids_dict[key]['res_id'].get('queue_in') != None:
+                #This is a virtual equipment that is communicated with through queues.
+                eq_dict[key] = eq.connect_to_virtual_eq(res_ids_dict[key]['res_id'])
+            else:
+                eq_dict[key] = eq.connect_to_eq(key, res_ids_dict[key]['class_name'], res_ids_dict[key]['res_id'], res_ids_dict[key]['setup_dict'], multi_channel_event_and_queue_dict)
         else:
             eq_dict[key] = None
     return eq_dict
@@ -980,7 +988,7 @@ def charge_discharge_control(res_ids_dict, data_out_queue = None, data_in_queue 
         for count_1, cycle_settings_list in enumerate(input_dict['cycle_settings_list_of_lists']):
             print("CH{} - Cycle {} Starting".format(ch_num, cycle_num), flush=True)
             filepath = FileIO.start_file(input_dict['directory'], "{} {} {}".format(input_dict['cell_name'], input_dict['cycle_type'], cycle_settings_list[0]["cycle_display"]))
-            
+            #print("Cycle Settings List: {}".format(cycle_settings_list))
             try:
             
                 #TODO - If we have a relay board to disconnect equipment, ensure we are still connected to the correct equipment
@@ -990,6 +998,7 @@ def charge_discharge_control(res_ids_dict, data_out_queue = None, data_in_queue 
                     connect_proper_equipment(eq_dict, eq_req_for_cycle_dict)
             
                 for count_2, cycle_settings in enumerate(cycle_settings_list):
+                    #print("Cycle Settings: {}".format(cycle_settings))
                     end_condition = 'none'
                     
                     #Set label text for current and next status
@@ -1008,19 +1017,26 @@ def charge_discharge_control(res_ids_dict, data_out_queue = None, data_in_queue 
                     #Step Functions
                     if current_cycle_type == 'step':
                         end_condition = single_step_cycle(filepath, cycle_settings, eq_dict, data_out_queue = data_out_queue, data_in_queue = data_in_queue, ch_num = ch_num, step_index = count_2)
+                    #print("End Condition: {}".format(end_condition))
+                    
+                    
+                    #End Conditions
                     if end_condition == 'cycle_end_condition':
                         disable_equipment(eq_dict)
+                        #print("Cycle End Condition. Break.")
                         break
                     
                     if end_condition == 'safety_condition':
                         #send something back to the main queue to say a safety condition was hit.
                         data_out_queue.put_nowait({'type': 'end_condition', 'data': 'safety_condition'})
                     
-                    if end_condition == 'end_request' or 'safety_condition':
+                    if end_condition == 'end_request' or end_condition == 'safety_condition':
                         end_list_of_lists = True
+                        #print("End Request or Safety. Break.")
                         break
                 
                 if end_list_of_lists:
+                    #print("End list of lists. Break.")
                     break
                 
             except KeyboardInterrupt:

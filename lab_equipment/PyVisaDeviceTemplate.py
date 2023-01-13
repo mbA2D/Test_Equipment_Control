@@ -149,6 +149,8 @@ class PyVisaDevice:
         if self.connection_settings['idn_available']:
             self.inst_idn = self.inst.query("*IDN?")
             print("Connected to {}\n".format(self.inst_idn))
+        else:
+            self.inst_idn = resource_id
         
         self.initialize() #Specific initialization for each device
     

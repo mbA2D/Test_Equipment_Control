@@ -2,21 +2,21 @@
 
 #DMM
 class Fake_DMM:
-	
-	def __init__(self, resource_id = None, resources_list = None):
-		pass
-		
-	def measure_voltage(self, nplc = None, volt_range = None):
-		return 4.15
-	
-	def set_mode(self, mode = "DCV"):
-		pass
-	
-	def set_auto_zero_dcv(self, state):
-		pass
-	
-	def set_range_dcv(self, volt_range = None):
-		pass
-	
-	def set_nplc(self, nplc = None):
-		pass
+    
+    def __init__(self, resource_id = None, resources_list = None):
+        self.inst_idn = 'Fake_DMM'
+        
+    def measure_voltage(self, nplc = None, volt_range = None):
+        return 4.15
+    
+    def set_mode(self, mode = "DCV"):
+        pass
+    
+    def set_auto_zero_dcv(self, state):
+        pass
+    
+    def set_range_dcv(self, volt_range = None):
+        pass
+    
+    def set_nplc(self, nplc = None):
+        pass

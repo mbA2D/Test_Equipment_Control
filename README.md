@@ -2,6 +2,13 @@
 Controlling Various Lab Test Equipment
 
 TODO List
+ - DONE - Flush queues after and before idle control cycle
+	- Will cause issues with multiple channels accessing the same queues?
+ - Create an 'add channel' button
+ - Show fake equipment even when no resources are available
+ - Make GUIs better with drop-downs and checkboxes
+    - PSU, Eload, DMM selections should all happen on a single page with a dropdown for each equipment type.
+	- Step cycles should have dropdowns for all text fields instead of requiring to know what goes there (voltage_v, current_a, etc.)
  - DONE - Common equipment selection template - instead of a for loop and if statements in each device file
  - Add a way to get output state of all equipment so we can remove redundant disable and waits.
  - Make all instruments 'virtual' - e.g. controlled globally and not by the individual battery test channel processes. This opens the door to scheduled use of equipment, sharing between channels, and using all channels of multi channel devices.

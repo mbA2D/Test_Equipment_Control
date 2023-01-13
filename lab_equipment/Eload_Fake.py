@@ -12,6 +12,8 @@ class Fake_Eload:
         self.current_a = 0
         self.voltage_v = 4
         
+        self.inst_idn = "Fake Eload"
+        
     # To Set E-Load in Amps 
     def set_current(self, current_setpoint_A):
         self.current_a = current_setpoint_A
