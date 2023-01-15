@@ -192,7 +192,10 @@ def get_res_id_dict_and_disconnect(eq_list):
     
     eq_type = None
     if class_name in otherEquipment.part_numbers.keys():
-        eq_type = 'other'
+        if class_name == otherEquipment.part_numbers['A2D Relay Board']:
+            eq_type = 'relay_board'
+        else:
+            eq_type = 'other'
     elif class_name in eLoads.part_numbers.keys():
         eq_type = 'eload'
     elif class_name in powerSupplies.part_numbers.keys():

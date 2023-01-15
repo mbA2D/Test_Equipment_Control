@@ -14,6 +14,7 @@ class KEL10X(EloadDevice):
         'read_termination':     '\n',
         'query_delay':          0.05,
         'pyvisa_backend':       '@ivi',
+        'time_wait_after_open': 0,
         'idn_available':        True
     }
     

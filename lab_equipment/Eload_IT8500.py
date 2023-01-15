@@ -14,6 +14,7 @@ class IT8500(EloadDevice):
         'write_termination':    '\n',
         'read_termination':     '\n',
         'pyvisa_backend':       '@py',
+        'time_wait_after_open': 0,
         'idn_available':        True
     }
         

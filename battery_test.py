@@ -641,7 +641,7 @@ class MainTestWindow(QMainWindow):
                 if eg.ynbox(msg, title):
                     #relay_board = eq.otherEquipment.choose_equipment(resources_list = resources_list)
                     #res_ids_dict['relay_board'] = eq.get_res_id_dict_and_disconnect(relay_board)
-                    relay_board_idn = MainTestWindow.select_idn_matching_type(connected_equipment_list, 'relay_board')
+                    relay_board_idn = MainTestWindow.select_idn_matching_type(connected_equipment_list, 'other')
                     idns_dict['relay_board'] = relay_board_idn
                     
                 for key in idns_dict.keys():

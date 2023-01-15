@@ -10,6 +10,7 @@ class DM3000(DMMDevice):
 	connection_settings = {
         'read_termination':     '\n',
         'timeout':              5000, #5 second timeout
+        'time_wait_after_open': 0,
         'pyvisa_backend':       '@ivi',
         'idn_available':        True
     }

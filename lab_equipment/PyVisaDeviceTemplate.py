@@ -142,7 +142,7 @@ class PyVisaDevice:
             pass
             
         try:
-            instrument.timeout = self.connection_settings['timeout']
+            self.inst.timeout = self.connection_settings['timeout']
         except KeyError:
             pass
         

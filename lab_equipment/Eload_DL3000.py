@@ -10,6 +10,7 @@ class DL3000(EloadDevice):
     has_remote_sense = True
     connection_settings = {
         'pyvisa_backend':       '@ivi',
+        'time_wait_after_open': 0,
         'idn_available':        True
     }
     

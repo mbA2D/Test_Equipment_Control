@@ -14,10 +14,11 @@ class KAXXXXP(PowerSupplyDevice):
     can_measure_v_while_off = True #Have not checked this.
     
     connection_settings = {
-        'baud_rate':        9600,
-        'query_delay':      0.01,
-        'pyvisa_backend':   '@py',
-        'idn_available':    True
+        'baud_rate':            9600,
+        'query_delay':          0.01,
+        'time_wait_after_open': 0,
+        'pyvisa_backend':       '@py',
+        'idn_available':        True
     }
     
     def initialize(self):

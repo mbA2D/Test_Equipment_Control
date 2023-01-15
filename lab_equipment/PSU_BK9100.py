@@ -16,6 +16,7 @@ class BK9100(PowerSupplyDevice):
         'write_termination':    '\r',
         'read_termination':     '\r',
         'idn_available':        False,
+        'time_wait_after_open': 0,
         'pyvisa_backend':       '@py'
     }
         

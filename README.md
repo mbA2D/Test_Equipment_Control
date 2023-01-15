@@ -4,6 +4,7 @@ Controlling Various Lab Test Equipment
 TODO List
  - DONE - Flush queues after and before idle control cycle
 	- Will cause issues with multiple channels accessing the same queues?
+ - View equipment connections and change settings - e.g. remote sense.
  - Create an 'add channel' button
  - Show fake equipment even when no resources are available
  - Make GUIs better with drop-downs and checkboxes

@@ -11,9 +11,10 @@ class E3631A(PowerSupplyDevice):
     can_measure_v_while_off = True #Have not checked this.
     
     connection_settings = {
-        'query_delay':      0.75,
-        'pyvisa_backend':   '@ivi',
-        'idn_available':    True
+        'query_delay':           0.75,
+        'pyvisa_backend':       '@ivi',
+        'time_wait_after_open': 0,
+        'idn_available':         True
     }
     
     # Initialize the E3631A Power Supply

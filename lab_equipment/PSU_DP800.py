@@ -9,8 +9,9 @@ class DP800(PowerSupplyDevice):
     has_remote_sense = False
     can_measure_v_while_off = True #Have not checked this.
     connection_settings = {
-        'pyvisa_backend':   '@ivi',
-        'idn_available':    True
+        'pyvisa_backend':       '@ivi',
+        'time_wait_after_open': 0,
+        'idn_available':         True
     }
         
     def initialize(self):

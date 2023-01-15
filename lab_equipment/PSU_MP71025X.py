@@ -17,6 +17,7 @@ class MP71025X(PowerSupplyDevice):
         'read_termination':     '\n',
         'query_delay':          0.04,
         'pyvisa_backend':       '@py',
+        'time_wait_after_open': 0,
         'idn_available':        True
     }	
     

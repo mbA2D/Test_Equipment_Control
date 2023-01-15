@@ -11,8 +11,9 @@ class N8700(PowerSupplyDevice):
     can_measure_v_while_off = True #Have not checked this.
     
     connection_settings = {
-        'pyvisa_backend':   '@py',
-        'idn_available':    True
+        'pyvisa_backend':       '@py',
+        'time_wait_after_open': 0,
+        'idn_available':        True
     }
     
     def initialize(self):
