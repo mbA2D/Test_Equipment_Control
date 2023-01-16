@@ -107,11 +107,12 @@ def connect_proper_equipment(eq_dict, eq_req_for_cycle_dict):
 
 ###################################################### TEST CONTROL ###################################################
    
-def start_step(step_settings, eq_dict):
+def start_step(step_settings, eq_dict, log_filepath):
     #This function will set all the supplies to the settings given in the step
     
     #CURRENT DRIVEN
     if step_settings["drive_style"] == 'current_a':
+        FileIO.write_line_txt(log_filepath, "Current-Driven Step Setup")
         if step_settings["drive_value"] > 0:
             #charge - turn off eload first if connected, leave psu on.
             disable_equipment_single(eq_dict['eload'])
@@ -125,6 +126,7 @@ def start_step(step_settings, eq_dict):
                 time.sleep(0.02)
             else:
                 print("No PSU Connected. Can't Charge! Exiting.")
+                FileIO.write_line_txt(log_filepath, "ERROR - No PSU Connected. Can't Charge! Exiting.")
                 return False
         elif step_settings["drive_value"] < 0:
             #discharge - turn off power supply if connected, leave eload on.
@@ -138,6 +140,7 @@ def start_step(step_settings, eq_dict):
                 #we're in constant current mode - can't set a voltage.
             else:
                 print("No Eload Connected. Can't Discharge! Exiting.")
+                FileIO.write_line_txt(log_filepath, "ERROR - No Eload Connected. Can't Discharge! Exiting.")
                 return False
         elif step_settings["drive_value"] == 0:
             #rest
@@ -145,6 +148,7 @@ def start_step(step_settings, eq_dict):
     
     #VOLTAGE DRIVEN
     elif step_settings["drive_style"] == 'voltage_v':
+        FileIO.write_line_txt(log_filepath, "Voltage-Driven Step Setup")
         #positive current
         if step_settings["drive_value_other"] >= 0:
             disable_equipment_single(eq_dict['eload']) #turn off eload
@@ -158,16 +162,19 @@ def start_step(step_settings, eq_dict):
                 time.sleep(0.02)
             else:
                 print("No PSU Connected. Can't Charge! Exiting.")
+                FileIO.write_line_txt(log_filepath, "ERROR - No PSU Connected. Can't Charge! Exiting.")
                 return False
         #TODO - needs CV mode on eloads
         else:
             print("Voltage Driven Step Not Yet Implemented for negative current. Exiting.")
+            FileIO.write_line_txt(log_filepath, "ERROR - Voltage Driven Step Not Yet Implemented for negative current. Exiting.")
             #Ensure everything is off since not yet implemented.
             disable_equipment(eq_dict)
             return False
     
     #NOT DRIVEN
     elif step_settings["drive_style"] == 'none':
+        FileIO.write_line_txt(log_filepath, "Non-Driven (Rest) Step Setup")
         #Ensure all sources and loads are off.
         disable_equipment(eq_dict)
     
@@ -175,7 +182,7 @@ def start_step(step_settings, eq_dict):
     #print("start_step returning True")
     return True
 
-def evaluate_end_condition(step_settings, data, data_in_queue):
+def evaluate_end_condition(step_settings, data, data_in_queue, log_filepath):
     #evaluates different end conditions (voltage, current, time)
     #returns true if the end condition has been met (e.g. voltage hits lower bound, current hits lower bound, etc.)
     #also returns true if any of the safety settings have been exceeded
@@ -188,18 +195,23 @@ def evaluate_end_condition(step_settings, data, data_in_queue):
     
     #SAFETY SETTINGS
     #Voltage and current limits are always active
-    if (data["Voltage"] < step_settings["safety_min_voltage_v"] or 
-        data["Voltage"] > step_settings["safety_max_voltage_v"] or 
-        data["Current"] < step_settings["safety_min_current_a"] or
-        data["Current"] > step_settings["safety_max_current_a"]):
-    
+    if data["Voltage"] < step_settings["safety_min_voltage_v"]:
+        FileIO.write_line_txt(log_filepath, "WARNING - Min Voltage Limit Hit!")
+        return 'safety_condition'
+    if data["Voltage"] > step_settings["safety_max_voltage_v"]:
+        FileIO.write_line_txt(log_filepath, "WARNING - Max Voltage Limit Hit!")
+        return 'safety_condition'
+    if data["Current"] < step_settings["safety_min_current_a"]:
+        FileIO.write_line_txt(log_filepath, "WARNING - Min Current Limit Hit!")
+        return 'safety_condition'
+    if data["Current"] > step_settings["safety_max_current_a"]:
+        FileIO.write_line_txt(log_filepath, "WARNING - Max Current Limit Hit!")
         return 'safety_condition'
         
     if (step_settings["safety_max_time_s"] > 0 and 
         data["Data_Timestamp_From_Step_Start"] > step_settings["safety_max_time_s"]):
-        
+        FileIO.write_line_txt(log_filepath, "WARNING - Max Time Limit Hit!")
         return 'safety_condition'
-    
     
     end_reason = None
     
@@ -309,10 +321,10 @@ def idle_cell(eq_dict, data_out_queue = None, data_in_queue = None):
         measure_battery(eq_dict, data_out_queue = data_out_queue)
         time.sleep(1)
 
-def step_cell(log_filepath, step_settings, eq_dict, data_out_queue = None, data_in_queue = None, step_index = 0):
+def step_cell(filepath, log_filepath, step_settings, eq_dict, data_out_queue = None, data_in_queue = None, step_index = 0):
     
-    if start_step(step_settings, eq_dict):
-        #print("Finished Start Step")
+    if start_step(step_settings, eq_dict, log_filepath):
+        FileIO.write_line_txt(log_filepath, "Start Step Successful")
         step_start_time = time.time()
         
         data = dict()
@@ -326,22 +338,23 @@ def step_cell(log_filepath, step_settings, eq_dict, data_out_queue = None, data_
         
             data["Current"] = step_settings["drive_value_other"]
         
-        end_condition = evaluate_end_condition(step_settings, data, data_in_queue)
-        #print("End Condition before while: {}".format(end_condition))
+        end_condition = evaluate_end_condition(step_settings, data, data_in_queue, log_filepath)
+        FileIO.write_line_txt(log_filepath, "End Condition Before Loop: {}".format(end_condition))
         
         #Do the measurements and check the end conditions at every logging interval
         while end_condition == 'none':
             time.sleep(step_settings["meas_log_int_s"] - ((time.time() - step_start_time) % step_settings["meas_log_int_s"]))
             data.update(measure_battery(eq_dict, data_out_queue = data_out_queue, step_index = step_index))
             data["Data_Timestamp_From_Step_Start"] = (data["Data_Timestamp"] - step_start_time)
-            end_condition = evaluate_end_condition(step_settings, data, data_in_queue)
-            FileIO.write_data(log_filepath, data)
+            end_condition = evaluate_end_condition(step_settings, data, data_in_queue, log_filepath)
+            FileIO.write_data(filepath, data)
         
         #if the end condition is due to safety settings, then we want to end all future steps as well so return the exit reason
         return end_condition
     
     else:
         print("Step Setup Failed")
+        FileIO.write_line_txt(log_filepath, "ERROR - Step Setup Failed!")
         return 'settings'
 
 ################################## SETTING CYCLE, CHARGE, DISCHARGE ############################
@@ -367,7 +380,7 @@ def idle_cell_cycle(eq_dict, data_out_queue = None, data_in_queue = None):
             
     idle_cell(local_eq_dict, data_out_queue = data_out_queue, data_in_queue = data_in_queue)
 
-def single_step_cycle(filepath, step_settings, eq_dict, data_out_queue = None, data_in_queue = None, ch_num = None, step_index = 0):
+def single_step_cycle(filepath, log_filepath, step_settings, eq_dict, data_out_queue = None, data_in_queue = None, ch_num = None, step_index = 0):
 
     local_eq_dict = eq_dict.copy()
     
@@ -380,6 +393,8 @@ def single_step_cycle(filepath, step_settings, eq_dict, data_out_queue = None, d
         else:
             print("No Voltage Measurement Equipment Connected! Exiting")
             return 'settings'
+    
+    FileIO.write_line_txt(log_filepath, "Voltage Measurement Equipment Chosen")
     
     #if we don't have separate current measurement equipment, then choose what to use:
     if eq_dict['dmm_i'] == None:
@@ -400,8 +415,10 @@ def single_step_cycle(filepath, step_settings, eq_dict, data_out_queue = None, d
             print("No Current Measurement Equipment Connected and not Resting! Exiting")
             return 'settings'
     
+    FileIO.write_line_txt(log_filepath, "Current Measurement Equipment Chosen")
+    
     end_reason = 'none'
-    end_reason = step_cell(filepath, step_settings, local_eq_dict, data_out_queue = data_out_queue, data_in_queue = data_in_queue, step_index = step_index)
+    end_reason = step_cell(filepath, log_filepath, step_settings, local_eq_dict, data_out_queue = data_out_queue, data_in_queue = data_in_queue, step_index = step_index)
 
     return end_reason
 
@@ -981,14 +998,18 @@ def charge_discharge_control(res_ids_dict, data_out_queue = None, data_in_queue 
         #TODO - current step profiles to/from csv
         
         #cycle x times
-        cycle_num = 0
         end_list_of_lists = False
         end_condition = 'none'
         
-        for count_1, cycle_settings_list in enumerate(input_dict['cycle_settings_list_of_lists']):
+        for cycle_num, cycle_settings_list in enumerate(input_dict['cycle_settings_list_of_lists']):
+            
+            csv_filepath = FileIO.start_file(input_dict['directory'], "{} {} {}".format(input_dict['cell_name'], input_dict['cycle_type'], cycle_settings_list[0]["cycle_display"]), extension = '.csv')
+            log_filepath = FileIO.start_file(input_dict['directory'], "{} {} {}".format(input_dict['cell_name'], input_dict['cycle_type'], cycle_settings_list[0]["cycle_display"]), extension = '.txt')
+            
             print("CH{} - Cycle {} Starting".format(ch_num, cycle_num), flush=True)
-            filepath = FileIO.start_file(input_dict['directory'], "{} {} {}".format(input_dict['cell_name'], input_dict['cycle_type'], cycle_settings_list[0]["cycle_display"]))
-            #print("Cycle Settings List: {}".format(cycle_settings_list))
+            FileIO.write_line_txt(log_filepath, "Cycle {} Starting".format(cycle_num))
+            FileIO.write_line_txt(log_filepath, "Cycle Settings List: {}".format(cycle_settings_list))
+            
             try:
             
                 #TODO - If we have a relay board to disconnect equipment, ensure we are still connected to the correct equipment
@@ -997,7 +1018,10 @@ def charge_discharge_control(res_ids_dict, data_out_queue = None, data_in_queue 
                     eq_req_for_cycle_dict = get_eq_req_for_cycle(cycle_settings_list)
                     connect_proper_equipment(eq_dict, eq_req_for_cycle_dict)
             
-                for count_2, cycle_settings in enumerate(cycle_settings_list):
+                for step_num, cycle_settings in enumerate(cycle_settings_list):
+                    FileIO.write_line_txt(log_filepath, "Cycle {} Step {} Starting".format(cycle_num, step_num))
+                    FileIO.write_line_txt(log_filepath, "Step Settings: {}".format(cycle_settings))
+                    
                     #print("Cycle Settings: {}".format(cycle_settings))
                     end_condition = 'none'
                     
@@ -1005,10 +1029,10 @@ def charge_discharge_control(res_ids_dict, data_out_queue = None, data_in_queue 
                     current_cycle_type = cycle_settings["cycle_type"]
                     current_display_status = cycle_settings["cycle_display"]
                     try:
-                        next_display_status = cycle_settings_list[count_2 + 1]["cycle_display"]
+                        next_display_status = cycle_settings_list[step_num + 1]["cycle_display"]
                     except (IndexError, TypeError):
                         try:
-                            next_display_status = input_dict['cycle_settings_list_of_lists'][count_1 + 1][0]["cycle_display"]
+                            next_display_status = input_dict['cycle_settings_list_of_lists'][cycle_num + 1][0]["cycle_display"]
                         except (IndexError, TypeError):
                             next_display_status = "Idle"
                     
@@ -1016,9 +1040,9 @@ def charge_discharge_control(res_ids_dict, data_out_queue = None, data_in_queue 
                     
                     #Step Functions
                     if current_cycle_type == 'step':
-                        end_condition = single_step_cycle(filepath, cycle_settings, eq_dict, data_out_queue = data_out_queue, data_in_queue = data_in_queue, ch_num = ch_num, step_index = count_2)
-                    #print("End Condition: {}".format(end_condition))
+                        end_condition = single_step_cycle(csv_filepath, log_filepath, cycle_settings, eq_dict, data_out_queue = data_out_queue, data_in_queue = data_in_queue, ch_num = ch_num, step_index = step_num)
                     
+                    FileIO.write_line_txt(log_filepath, "Cycle {} Step {} Ending. Reason: {}".format(cycle_num, step_num, end_condition))
                     
                     #End Conditions
                     if end_condition == 'cycle_end_condition':
@@ -1036,22 +1060,29 @@ def charge_discharge_control(res_ids_dict, data_out_queue = None, data_in_queue 
                         break
                 
                 if end_list_of_lists:
-                    #print("End list of lists. Break.")
+                    FileIO.write_line_txt(log_filepath, "Ending all cycles")
                     break
                 
+                FileIO.write_line_txt(log_filepath, "Cycle {} Ending".format(cycle_num))    
+            
             except KeyboardInterrupt:
                 disable_equipment(eq_dict)
+                FileIO.write_line_txt(log_filepath, "Keyboard Interrupt")
                 exit()
-            cycle_num += 1
-        
+                
         disable_equipment(eq_dict)
+        
         
         if end_condition == 'safety_condition':
             print("CH{} - SAFETY LIMIT HIT: {}".format(ch_num, time.ctime()), flush=True)
+            FileIO.write_line_txt(log_filepath, "SAFETY LIMIT HIT!") 
         else:
             print("CH{} - All Cycles Completed: {}".format(ch_num, time.ctime()), flush=True)
+            FileIO.write_line_txt(log_filepath, "All Cycles Completed!")
     except Exception:
-        traceback.print_exc()
+        exception = traceback.format_exc()
+        print(exception)
+        FileIO.write_line_txt(log_filepath, exception)
 
 ####################################### MAIN PROGRAM ######################################
 
