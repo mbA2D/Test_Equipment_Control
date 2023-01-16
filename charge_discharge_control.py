@@ -196,21 +196,21 @@ def evaluate_end_condition(step_settings, data, data_in_queue, log_filepath):
     #SAFETY SETTINGS
     #Voltage and current limits are always active
     if data["Voltage"] < step_settings["safety_min_voltage_v"]:
-        FileIO.write_line_txt(log_filepath, "WARNING - Min Voltage Limit Hit!")
+        FileIO.write_line_txt(log_filepath, f'WARNING - Min Voltage Limit Hit! Data: {data["Voltage"]}V Limit: {step_settings["safety_min_voltage_v"]}V')
         return 'safety_condition'
     if data["Voltage"] > step_settings["safety_max_voltage_v"]:
-        FileIO.write_line_txt(log_filepath, "WARNING - Max Voltage Limit Hit!")
+        FileIO.write_line_txt(log_filepath, f'WARNING - Max Voltage Limit Hit! Data: {data["Voltage"]}V Limit: {step_settings["safety_max_voltage_v"]}V')
         return 'safety_condition'
     if data["Current"] < step_settings["safety_min_current_a"]:
-        FileIO.write_line_txt(log_filepath, "WARNING - Min Current Limit Hit!")
+        FileIO.write_line_txt(log_filepath, f'WARNING - Min Current Limit Hit! Data: {data["Current"]}A Limit: {step_settings["safety_min_current_a"]}A')
         return 'safety_condition'
     if data["Current"] > step_settings["safety_max_current_a"]:
-        FileIO.write_line_txt(log_filepath, "WARNING - Max Current Limit Hit!")
+        FileIO.write_line_txt(log_filepath, f'WARNING - Max Current Limit Hit! Data: {data["Current"]}A Limit: {step_settings["safety_max_current_a"]}A')
         return 'safety_condition'
         
     if (step_settings["safety_max_time_s"] > 0 and 
         data["Data_Timestamp_From_Step_Start"] > step_settings["safety_max_time_s"]):
-        FileIO.write_line_txt(log_filepath, "WARNING - Max Time Limit Hit!")
+        FileIO.write_line_txt(log_filepath, f'WARNING - Max Time Limit Hit! Data: {data["Data_Timestamp_From_Step_Start"]}s Limit: {step_settings["safety_max_time_s"]}A')
         return 'safety_condition'
     
     end_reason = None
