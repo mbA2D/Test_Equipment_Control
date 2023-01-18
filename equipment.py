@@ -128,29 +128,33 @@ def setup_instrument(instrument, setup_dict):
     if isinstance(instrument, OTHER_A2D_Relay_Board.A2D_Relay_Board):
         #special setup for this instrument
         #Need to determine if channel has an eload or a psu.
-        #Assume only 2 channels for now.
         #Cannot have multiple of the same device yet.
         if 'num_channels' not in setup_dict.keys():
-            title = "Relay Board Setup"
-            num_channels = eg.integerbox(msg = "How Many Channels?",
-                                        title = title, default = 2,
-                                        lowerbound = 1, upperbound = 999)
-            setup_dict['num_channels'] = num_channels
-            
-        instrument.num_channels = setup_dict['num_channels']
+            setup_dict['num_channels'] = instrument.get_num_channels()
         
         if 'equipment_type_connected' not in setup_dict.keys():
-            title = "Relay Board Setup"
-            choices = ['eload', 'psu']
+            title = "Relay Board Setup - Connected Equipment"
+            choices = ['eload', 'psu', 'none']
             equipment_type_connected = list()
             for i in range(num_channels):
                 msg = "What is connected to channel {}?".format(i)
                 response = eg.choicebox(msg, title, choices)
+                if response == None:
+                    return None
                 equipment_type_connected.append(response)
             
             setup_dict['equipment_type_connected'] = equipment_type_connected
         
+        if 'i2c_expander_addr' not in setup_dict.keys():
+            title = "Relay Board Setup - I2C Expander"
+            message = "Enter I2C Expander Address\n Use 7-bit right-justified hexadecimal\n(e.g. '0x77')"
+            response = eg.enterbox(msg, title, default = '0x74')
+            if response == None:
+                return None
+            setup_dict['i2c_expander_addr'] = int(response, 16)
+            
         instrument.equipment_type_connected = setup_dict['equipment_type_connected']
+        instrument.i2c_expander_addr = setup_dict['i2c_expander_addr']
         
     return setup_dict
 
@@ -271,7 +275,7 @@ class otherEquipment:
             class_name = eg.choicebox(msg, title, otherEquipment.part_numbers.keys())
 
         if class_name == None:
-            msgbox("Failed to select the equipment.")
+            print("Failed to select the equipment.")
             return			
         
         if class_name == 'A2D Relay Board':
@@ -280,6 +284,9 @@ class otherEquipment:
             instrument = OTHER_Arduino_IO_Module.Arduino_IO(resource_id = resource_id, resources_list = resources_list)
             
         setup_dict = setup_instrument(instrument, setup_dict)
+        if setup_dict == None:
+            print("Equipment Setup Failed")
+            return
         return class_name, instrument, setup_dict
 
 
@@ -301,7 +308,7 @@ class eLoads:
             class_name = eg.choicebox(msg, title, eLoads.part_numbers.keys())
 
         if class_name == None:
-            msgbox("Failed to select the equipment.")
+            print("Failed to select the equipment.")
             return			
         
         if class_name == 'BK8600':
@@ -318,6 +325,9 @@ class eLoads:
             eload = Eload_Fake.Fake_Eload(resource_id = resource_id, resources_list = resources_list)
             
         setup_dict = setup_instrument(eload, setup_dict)
+        if setup_dict == None:
+            print("Equipment Setup Failed")
+            return
         return class_name, eload, setup_dict
 
 
@@ -341,7 +351,7 @@ class powerSupplies:
             class_name = eg.choicebox(msg, title, powerSupplies.part_numbers.keys())
 
         if class_name == None:
-            msgbox("Failed to select the equipment.")
+            print("Failed to select the equipment.")
             return
         
         if class_name == 'SPD1000':
@@ -362,6 +372,9 @@ class powerSupplies:
             psu = PSU_Fake.Fake_PSU(resource_id = resource_id, resources_list = resources_list)
             
         setup_dict = setup_instrument(psu, setup_dict)
+        if setup_dict == None:
+            print("Equipment Setup Failed")
+            return
         return class_name, psu, setup_dict
 
 
@@ -382,7 +395,7 @@ class dmms:
             class_name = eg.choicebox(msg, title, dmms.part_numbers.keys())
 
         if class_name == None:
-            msgbox("Failed to select the equipment.")
+            print("Failed to select the equipment.")
             return			
         
         if(class_name == 'DM3000'):
@@ -447,4 +460,6 @@ class dmms:
             event_and_queue_dict = multi_ch_event_and_queue_dict[resource_id['board_name']][resource_id['ch_num']]
             
             dmm = DMM_FET_BOARD_EQ.FET_BOARD_EQ(resource_id, event_and_queue_dict)
+            
+            
         return class_name, dmm, False #False since we will do no remote sense for dmms for now

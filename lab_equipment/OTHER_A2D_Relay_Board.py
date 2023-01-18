@@ -18,9 +18,10 @@ class A2D_Relay_Board(PyVisaDevice):
     
     def initialize(self):
         self.equipment_type_connected = None
+        self.i2c_expander_addr = None
         self._eload_connected = False
         self._psu_connected = False
-        self._num_channels = 2#self._get_num_channels()
+        self._num_channels = self._get_num_channels()
         
     def __del__(self):
         try:
@@ -76,6 +77,10 @@ class A2D_Relay_Board(PyVisaDevice):
         
     def get_num_channels(self):
         return self._num_channels
+        
+    def set_expander_i2c_addr(self, addr):
+        self.i2c_expander_addr = addr
+        self.inst.write('INSTR:DAQ:SET:ADDR x {address}'.format(address = self.i2c_expander_addr))
     
 if __name__ == "__main__":
     #connect to the daq

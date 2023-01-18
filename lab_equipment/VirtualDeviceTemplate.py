@@ -95,3 +95,8 @@ class VirtualDeviceTemplate:
         write_dict = {'type': 'get_num_channels', 'data': None}
         self._queue_in.put_nowait(write_dict)
         return int(self._queue_out.get(timeout = 10))
+    
+    def set_expander_i2c_addr(self, addr):
+        write_dict = {'type': 'set_expander_i2c_addr', 'data': addr}
+        self._queue_in.put_nowait(write_dict)
+        
