@@ -210,7 +210,7 @@ def evaluate_end_condition(step_settings, data, data_in_queue, log_filepath):
         
     if (step_settings["safety_max_time_s"] > 0 and 
         data["Data_Timestamp_From_Step_Start"] > step_settings["safety_max_time_s"]):
-        FileIO.write_line_txt(log_filepath, f'WARNING - Max Time Limit Hit! Data: {data["Data_Timestamp_From_Step_Start"]}s Limit: {step_settings["safety_max_time_s"]}A')
+        FileIO.write_line_txt(log_filepath, f'WARNING - Max Time Limit Hit! Data: {data["Data_Timestamp_From_Step_Start"]}s Limit: {step_settings["safety_max_time_s"]}s')
         return 'safety_condition'
     
     end_reason = None
@@ -468,6 +468,11 @@ def single_cc_cycle_info():
     
     rest_1_settings.settings["meas_log_int_s"] = cycle_test_settings.settings["meas_log_int_s"]
     rest_1_settings.settings["rest_time_min"] = cycle_test_settings.settings["rest_after_charge_min"]
+    rest_1_settings.settings["safety_max_current_a"] = cycle_test_settings.settings["safety_max_current_a"]
+    rest_1_settings.settings["safety_min_current_a"] = cycle_test_settings.settings["safety_min_current_a"]
+    rest_1_settings.settings["safety_max_voltage_v"] = cycle_test_settings.settings["safety_max_voltage_v"]
+    rest_1_settings.settings["safety_min_voltage_v"] = cycle_test_settings.settings["safety_min_voltage_v"]
+    rest_1_settings.settings["safety_max_time_s"] = cycle_test_settings.settings["safety_max_time_s"]
     
     #Discharge
     discharge_settings = Templates.DischargeSettings()
@@ -486,6 +491,11 @@ def single_cc_cycle_info():
     
     rest_2_settings.settings["meas_log_int_s"] = cycle_test_settings.settings["meas_log_int_s"]
     rest_2_settings.settings["rest_time_min"] = cycle_test_settings.settings["rest_after_charge_min"]
+    rest_2_settings.settings["safety_max_current_a"] = cycle_test_settings.settings["safety_max_current_a"]
+    rest_2_settings.settings["safety_min_current_a"] = cycle_test_settings.settings["safety_min_current_a"]
+    rest_2_settings.settings["safety_max_voltage_v"] = cycle_test_settings.settings["safety_max_voltage_v"]
+    rest_2_settings.settings["safety_min_voltage_v"] = cycle_test_settings.settings["safety_min_voltage_v"]
+    rest_2_settings.settings["safety_max_time_s"] = cycle_test_settings.settings["safety_max_time_s"]
     
     #Convert everything to steps
     charge_step_settings = convert_charge_settings_to_steps(charge_settings.settings)
