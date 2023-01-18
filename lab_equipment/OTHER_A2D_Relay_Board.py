@@ -20,6 +20,7 @@ class A2D_Relay_Board(PyVisaDevice):
         self.equipment_type_connected = None
         self._eload_connected = False
         self._psu_connected = False
+        self._num_channels = 2#self._get_num_channels()
         
     def __del__(self):
         try:
@@ -69,6 +70,12 @@ class A2D_Relay_Board(PyVisaDevice):
             value = 1
         #x is a character that we parse but do nothing with (channel must be first)
         self.inst.write('INSTR:DAQ:SET:LED x {val}'.format(val = value))
+        
+    def _get_num_channels(self):
+        self._num_channels = self.inst.query('INSTR:DAQ:GET:NCHS')
+        
+    def get_num_channels(self):
+        return self._num_channels
     
 if __name__ == "__main__":
     #connect to the daq

@@ -91,3 +91,7 @@ class VirtualDeviceTemplate:
         write_dict = {'type': 'set_led', 'data': value}
         self._queue_in.put_nowait(write_dict)
         
+    def get_num_channels(self):
+        write_dict = {'type': 'get_num_channels', 'data': None}
+        self._queue_in.put_nowait(write_dict)
+        return int(self._queue_out.get(timeout = 10))
