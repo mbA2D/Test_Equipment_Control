@@ -129,14 +129,16 @@ def setup_instrument(instrument, setup_dict):
         #special setup for this instrument
         #Need to determine if channel has an eload or a psu.
         #Cannot have multiple of the same device yet.
+
         if 'num_channels' not in setup_dict.keys():
             setup_dict['num_channels'] = instrument.get_num_channels()
-        
+
         if 'equipment_type_connected' not in setup_dict.keys():
             title = "Relay Board Setup - Connected Equipment"
             choices = ['eload', 'psu', 'none']
             equipment_type_connected = list()
-            for i in range(num_channels):
+            
+            for i in range(setup_dict['num_channels']):
                 msg = "What is connected to channel {}?".format(i)
                 response = eg.choicebox(msg, title, choices)
                 if response == None:
@@ -147,7 +149,7 @@ def setup_instrument(instrument, setup_dict):
         
         if 'i2c_expander_addr' not in setup_dict.keys():
             title = "Relay Board Setup - I2C Expander"
-            message = "Enter I2C Expander Address\n Use 7-bit right-justified hexadecimal\n(e.g. '0x77')"
+            msg = "Enter I2C Expander Address\n Use 7-bit right-justified hexadecimal\n(e.g. '0x77')"
             response = eg.enterbox(msg, title, default = '0x74')
             if response == None:
                 return None

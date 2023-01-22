@@ -73,7 +73,7 @@ class A2D_Relay_Board(PyVisaDevice):
         self.inst.write('INSTR:DAQ:SET:LED x {val}'.format(val = value))
         
     def _get_num_channels(self):
-        self._num_channels = self.inst.query('INSTR:DAQ:GET:NCHS')
+        return int(self.inst.query('INSTR:DAQ:GET:NCHS'))
         
     def get_num_channels(self):
         return self._num_channels
