@@ -4,7 +4,8 @@ class VirtualDeviceTemplate:
     def __init__(self, queue_in, queue_out):
         self._queue_in = queue_in
         self._queue_out = queue_out
-        
+    
+    ################ MEASURE FUNCTIONS #######################
     def measure_voltage(self):
         query_dict = {'type': 'measure_voltage', 'data': None}
         self._queue_in.put_nowait(query_dict)
@@ -25,6 +26,7 @@ class VirtualDeviceTemplate:
         self._queue_in.put_nowait(query_dict)
         return float(self._queue_out.get(timeout = 10))
     
+    ################ SET FUNCTIONS ##############################
     def set_current(self, current_setpoint_A):
         write_dict = {'type': 'set_current', 'data': current_setpoint_A}
         self._queue_in.put_nowait(write_dict)
@@ -32,7 +34,21 @@ class VirtualDeviceTemplate:
     def set_voltage(self, voltage_setpoint_V):
         write_dict = {'type': 'set_voltage', 'data': voltage_setpoint_V}
         self._queue_in.put_nowait(write_dict)
+    
+    def set_mode_current(self):
+        write_dict = {'type': 'set_mode_current', 'data': None}
+        self._queue_in.put_nowait(write_dict)
         
+    def set_mode_voltage(self):
+        write_dict = {'type': 'set_mode_voltage', 'data': None}
+        self._queue_in.put_nowait(write_dict)
+        
+    def set_cv_voltage(self, voltage_setpoint_V):
+        write_dict = {'type': 'set_cv_voltage', 'data': voltage_setpoint_V}
+        self._queue_in.put_nowait(write_dict)
+    
+    
+    
     def toggle_output(self, state):
         write_dict = {'type': 'toggle_output', 'data': state}
         self._queue_in.put_nowait(write_dict)
@@ -48,19 +64,7 @@ class VirtualDeviceTemplate:
     def lock_commands(self, state):
         write_dict = {'type': 'lock_commands', 'data': state}
         self._queue_in.put_nowait(write_dict)
-        
-    def set_mode_current(self):
-        write_dict = {'type': 'set_mode_current', 'data': None}
-        self._queue_in.put_nowait(write_dict)
-        
-    def set_mode_voltage(self):
-        write_dict = {'type': 'set_mode_voltage', 'data': None}
-        self._queue_in.put_nowait(write_dict)
-        
-    def set_cv_voltage(self, voltage_setpoint_V):
-        write_dict = {'type': 'set_cv_voltage', 'data': voltage_setpoint_V}
-        self._queue_in.put_nowait(write_dict)
-        
+          
     def select_channel(self, channel):
         write_dict = {'type': 'select_channel', 'data': channel}
         self._queue_in.put_nowait(write_dict)
@@ -100,3 +104,6 @@ class VirtualDeviceTemplate:
         write_dict = {'type': 'set_expander_i2c_addr', 'data': addr}
         self._queue_in.put_nowait(write_dict)
         
+    def set_i2c_adc_addr(self, addr):
+        write_dict = {'type': 'set_i2c_adc_addr', 'data': addr}
+        self._queue_in.put_nowait(write_dict)

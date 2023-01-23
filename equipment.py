@@ -37,6 +37,7 @@ from lab_equipment import DMM_SDM3065X
 from lab_equipment import DMM_FET_BOARD_EQ
 from lab_equipment import A2D_DAQ_control #Just for num_channels at the moment
 from lab_equipment import DMM_A2D_DAQ_CH
+from lab_equipment import DMM_A2D_SENSE_BOARD
 from lab_equipment import DMM_Fake
 
 #Other Equipment
@@ -124,7 +125,7 @@ def setup_instrument(instrument, setup_dict):
         
         instrument.remote_sense(setup_dict['remote_sense'])
     
-    #A2D Relay Board Channel Allocation
+    #A2D Relay Board Special Setup
     if isinstance(instrument, OTHER_A2D_Relay_Board.A2D_Relay_Board):
         #special setup for this instrument
         #Need to determine if channel has an eload or a psu.
@@ -134,7 +135,7 @@ def setup_instrument(instrument, setup_dict):
             setup_dict['num_channels'] = instrument.get_num_channels()
 
         if 'equipment_type_connected' not in setup_dict.keys():
-            title = "Relay Board Setup - Connected Equipment"
+            title = "A2D Relay Board Setup - Connected Equipment"
             choices = ['eload', 'psu', 'none']
             equipment_type_connected = list()
             
@@ -148,7 +149,7 @@ def setup_instrument(instrument, setup_dict):
             setup_dict['equipment_type_connected'] = equipment_type_connected
         
         if 'i2c_expander_addr' not in setup_dict.keys():
-            title = "Relay Board Setup - I2C Expander"
+            title = "A2D Relay Board Setup - I2C Expander"
             msg = "Enter I2C Expander Address\n Use 7-bit right-justified hexadecimal\n(e.g. '0x77')"
             response = eg.enterbox(msg, title, default = '0x74')
             if response == None:
@@ -156,8 +157,21 @@ def setup_instrument(instrument, setup_dict):
             setup_dict['i2c_expander_addr'] = int(response, 16)
             
         instrument.equipment_type_connected = setup_dict['equipment_type_connected']
-        instrument.i2c_expander_addr = setup_dict['i2c_expander_addr']
-        
+        instrument.set_i2c_expander_addr(setup_dict['i2c_expander_addr'])
+    
+    #A2D Sense Board Special Setup
+    if isinstance(instrument, DMM_A2D_SENSE_BOARD.A2D_SENSE_BOARD):
+
+        if 'i2c_adc_addr' not in setup_dict.keys():
+            title = "A2D Sense Board Setup - I2C ADC"
+            msg = "Enter ADC I2C Address\n Use 7-bit right-justified hexadecimal\n(e.g. '0x77')"
+            response = eg.enterbox(msg, title, default = '0x74')
+            if response == None:
+                return None
+            setup_dict['i2c_adc_addr'] = int(response, 16)
+            
+        instrument.set_i2c_adc_addr(setup_dict['i2c_adc_addr'])
+    
     return setup_dict
 
 def get_equipment_dict(res_ids_dict, multi_channel_event_and_queue_dict = None):
@@ -386,6 +400,7 @@ class dmms:
         'SDM3065X': 				'DMM_SDM3065X',
         'MATICIAN_FET_BOARD_CH':	'DMM_FET_BOARD',
         'A2D_DAQ_CH':				'A2D_DAQ',
+        'A2D_SENSE_BOARD':          'A2D_SENSE_BOARD',
         'Fake Test DMM': 			'DMM_Fake'
     }
     
@@ -406,6 +421,8 @@ class dmms:
             dmm = DMM_SDM3065X.SDM3065X(resource_id = resource_id, resources_list = resources_list)
         elif class_name == 'Fake Test DMM':
             dmm = DMM_Fake.Fake_DMM(resource_id = resource_id, resources_list = resources_list)
+        elif class_name == 'A2D_SENSE_BOARD':
+            dmm = DMM_A2D_SENSE_BOARD.A2D_SENSE_BOARD(resource_id = resource_id, resources_list = resources_list)
         elif class_name == 'A2D_DAQ_CH':
             #if running from this process then create the extra process from here.
             if multi_ch_event_and_queue_dict == None:
@@ -463,5 +480,9 @@ class dmms:
             
             dmm = DMM_FET_BOARD_EQ.FET_BOARD_EQ(resource_id, event_and_queue_dict)
             
-            
-        return class_name, dmm, False #False since we will do no remote sense for dmms for now
+        setup_dict = setup_instrument(dmm, setup_dict)
+        if setup_dict == None:
+            print("Equipment Setup Failed")
+            return
+        
+        return class_name, dmm, setup_dict
