@@ -493,7 +493,6 @@ class MainTestWindow(QMainWindow):
             'res_id':               eq_res_id,
             'eq_type':              eq_type,
             'eq_idn':               eq_idn,
-            #'process':              process,
             'queue_in':             queue_in,
             'queue_out':            queue_out,
             'already_assigned':     False
@@ -665,17 +664,61 @@ class MainTestWindow(QMainWindow):
             return
     
     def export_equipment_assignment(self):
+        #res_ids_dict now has queue ids in it instead of resources ids.
+        #so we can't export a queue id or process id.
+        
+        #we need a list of connected equipment
+        #self.connected_equipment_list #is a list of dicts with the following info:
+        '''
+        equipment_dict = {
+            'local_id':             eq_local_id,
+            'res_id':               eq_res_id,
+            'eq_type':              eq_type,
+            'eq_idn':               eq_idn,
+            'queue_in':             queue_in,
+            'queue_out':            queue_out,
+            'already_assigned':     False
+        }
+        '''
+        #So we need to export the first 4 values of that (local id, res id, eq_type, and eq_idn)
+        #set the queue values to None or just remove them?
+        
+        #And a matching from equipment to channel number
+        #self.res_ids_dict_list has res_ids_dict for each channel with the following info:
+        '''
+        {
+            'dmm': {'res_id': {'queue_in': XX, 'queue_out': XX, 'local_id': XX}}
+            'psu':
+            etc.
+        }
+        '''
+        #for each channel, get the res_ids_dict, and remove the values from the queue entries (set to None) or remove them?
+        
+        #Then export these 2 lists to the same file - append
+        
+        
         jsonIO.export_cycle_settings(self.res_ids_dict_list)
         
     def import_equipment_assignment(self):		
+        
+        #read the 2 sets of dicts from the single file
+        #scan equipment to build the list of possible connections
+        #create the equipment (rebuilding the queues)
+        
+        
+        
         temp_dict_list = jsonIO.import_cycle_settings()
         temp_dict_list = jsonIO.convert_keys_to_int(temp_dict_list)
         
+        #set the same number of channels as there are in the file.
+        #TODO - prevent this when a test is running.
         self.setup_channels(len(list(temp_dict_list.keys())))
         
         for ch_num in range(self.num_battery_channels):
             if temp_dict_list[ch_num] != None:
                 self.assign_equipment(ch_num, self.eq_assignment_queue, res_ids_dict = temp_dict_list[ch_num], dict_for_event_and_queue = self.dict_for_event_and_queue)
+        
+        #What if the required equipment could not be found?? - connect everything else or not?
         
     def export_test_configuration_process(self, ch_num):	
         if self.export_test_process_list[ch_num] is not None and self.export_test_process_list[ch_num].is_alive():
