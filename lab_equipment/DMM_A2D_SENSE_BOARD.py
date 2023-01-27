@@ -5,7 +5,7 @@ from .PyVisaDeviceTemplate import DMMDevice
 
 # DMM
 class A2D_SENSE_BOARD(DMMDevice):
-	connection_settings = {
+    connection_settings = {
         'read_termination':         '\r\n',
         'write_termination':        '\n',
         'baud_rate':                57600,
@@ -15,25 +15,25 @@ class A2D_SENSE_BOARD(DMMDevice):
         'time_wait_after_open':     2,
         'idn_available':            True
     }
-		
-	def initialize(self):
-		self.i2c_adc_addr = None
-		
-	def measure_voltage(self):
-		return float(self.inst.query(":MEAS:VOLT:DC?"))
+        
+    def initialize(self):
+        self.i2c_adc_addr = None
+        
+    def measure_voltage(self):
+        return float(self.inst.query(":MEAS:VOLT:DC?"))
 
-	def measure_current(self):
-		return float(self.inst.query(":MEAS:CURR:DC?"))
+    def measure_current(self):
+        return float(self.inst.query(":MEAS:CURR:DC?"))
         
     def measure_temperature(self):
-		return float(self.inst.query(":MEAS:TEMP_C?"))
-	
+        return float(self.inst.query(":MEAS:TEMP_C?"))
+    
     def set_i2c_adc_addr(self, addr):
         self.i2c_adc_addr = addr
         self.inst.write('INSTR:SET:ADDR x {address}'.format(address = self.i2c_adc_addr))
     
-	def __del__(self):
-		try:
-			self.inst.close()
-		except (AttributeError, pyvisa.errors.InvalidSession):
-			pass
+    def __del__(self):
+        try:
+            self.inst.close()
+        except (AttributeError, pyvisa.errors.InvalidSession):
+            pass

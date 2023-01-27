@@ -68,24 +68,29 @@ def update_settings(settings, new_value_list):
     
     return settings
 
-def export_cycle_settings(settings, cycle_name = ""):
+def export_cycle_settings(settings, cycle_name = "", file_name = None):
     #add extra space to get formatting correct
     if (cycle_name != ""):
         cycle_name += " "
     
-    #get the file to export to
-    file_name = eg.filesavebox(msg = "Choose a File to export {}settings to".format(cycle_name),
-                                title = "Settings", filetypes = ['*.json', 'JSON files'])
-    
+    write_mode = "a"
     if file_name == None:
-        return
+        write_mode = "w"
+        #get the file to export to
+        file_name = eg.filesavebox(msg = "Choose a File to export {}settings to".format(cycle_name),
+                                title = "Settings", filetypes = ['*.json', 'JSON files'])
+                                
+    if file_name == None:
+        return None
     
     #force file name extension
     file_name = force_extension(file_name, '.json')
     
     #export the file
-    with open(file_name, "w") as write_file:
+    with open(file_name, write_mode) as write_file:
         json.dump(settings, write_file, indent = 4)
+        
+    return file_name
 
 def import_multi_step_from_csv():
     file_name = eg.fileopenbox(msg = "Choose a File to import step settings from",
