@@ -26,11 +26,11 @@ class A2D_SENSE_BOARD(DMMDevice):
 		return float(self.inst.query(":MEAS:CURR:DC?"))
         
     def measure_temperature(self):
-		return float(self.inst.query(":MEAS:TEMP?"))
+		return float(self.inst.query(":MEAS:TEMP_C?"))
 	
     def set_i2c_adc_addr(self, addr):
         self.i2c_adc_addr = addr
-        self.inst.write('INSTR:SET:ADDR x {address}'.format(address = self.i2c_expander_addr))
+        self.inst.write('INSTR:SET:ADDR x {address}'.format(address = self.i2c_adc_addr))
     
 	def __del__(self):
 		try:
