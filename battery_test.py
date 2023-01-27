@@ -333,7 +333,7 @@ class MainTestWindow(QMainWindow):
         
         
     def update_loop(self):
-        update_interval_s = 0.5
+        update_interval_s = 0.25
         
         #Check the equipment assignment queue
         try:
@@ -460,7 +460,10 @@ class MainTestWindow(QMainWindow):
             self.last_update_time = time.time()
     
     def create_new_equipment(self, eq_res_id_dict):
-        eq_local_id = len(self.connected_equipment_list)
+        if eq_res_id_dict.get('local_id') is not None:
+            eq_local_id = eq_res_id_dict.get('local_id')
+        else:
+            eq_local_id = len(self.connected_equipment_list)
         eq_idn = eq_res_id_dict['eq_idn']
         eq_type = eq_res_id_dict['eq_type']
         eq_res_id = eq_res_id_dict['res_id']
@@ -666,46 +669,17 @@ class MainTestWindow(QMainWindow):
             return
     
     def export_equipment_assignment(self):
-        #res_ids_dict now has queue ids in it instead of resources ids.
-        #so we can't export a queue id or process id.
-        
-        #we need a list of connected equipment
-        #self.connected_equipment_list is a list of dicts with the following info:
-        '''
-        equipment_dict = {
-            'local_id':             eq_local_id,
-            'res_id':               eq_res_id,
-            'eq_type':              eq_type,
-            'eq_idn':               eq_idn,
-            'queue_in':             queue_in,
-            'queue_out':            queue_out,
-            'already_assigned':     False
-        }
-        '''
-        #So we need to export the first 4 values of that (local id, res id, eq_type, and eq_idn)
-        #Remove the queue_in and _out values from the dicts
+        pass #TODO - run the process
+    
+    def export_equipment_assignment_process(self):
+        #Remove the queue_in and _out values from the dicts since they can't exist in json format
         connected_equipment_dict_for_export = {}
         for equipment_dict in self.connected_equipment_list:
             equipment_dict_for_export = {key: val for key, val in equipment_dict.items() if 'queue' not in key}
             connected_equipment_dict_for_export[equipment_dict_for_export['local_id']] = equipment_dict_for_export
         
-        #And a matching from equipment to channel number
-        #self.res_ids_dict_list has res_ids_dict for each channel with the following info:
-        '''
-        {
-            'dmm': {'res_id': {'queue_in': XX, 'queue_out': XX, 'local_id': XX}},
-            'psu':
-            etc.
-        }
-        '''
-        #for each channel, get the res_ids_dict, and remove the values from the queue entries (set to None) or remove them?
-        #res_ids_dict_list_for_export = list()
-        
-        #print(json.dumps(self.res_ids_dict_list, indent = 4))
-        print(self.res_ids_dict_list)
-        
+        #for each channel, get the res_ids_dict, and remove the values from the queue entries
         res_ids_dict_for_export = {}
-        
         for ch_num in self.res_ids_dict_list:
             res_ids_dict_for_export[ch_num] = {}
             for eq_type in self.res_ids_dict_list[ch_num]:
@@ -713,29 +687,46 @@ class MainTestWindow(QMainWindow):
                 if self.res_ids_dict_list[ch_num][eq_type] is not None:
                     res_ids_dict_for_export[ch_num][eq_type] = {}
                     res_ids_dict_for_export[ch_num][eq_type]['res_id'] = {key: val for key, val in self.res_ids_dict_list[ch_num][eq_type]['res_id'].items() if 'queue' not in key}
-            #res_ids_dict_list_for_export.append(res_ids_dict)
-        
-        print(json.dumps(res_ids_dict_for_export, indent = 4))
         
         #Then export these 2 lists to the same file - append
         dict_for_export = {'connected_equipment_dict': connected_equipment_dict_for_export, 'res_ids_dict': res_ids_dict_for_export}
         jsonIO.export_cycle_settings(dict_for_export)
         
-        #jsonIO.export_cycle_settings(self.res_ids_dict_list)
         
-    def import_equipment_assignment(self):		
+    #TODO - this should be another process. - export as well.
+    def import_equipment_assignment(self):
+        pass #TODO - run the process
+    
+    def import_equipment_assignment_process(self):		
+        
+        #TODO - make sure we stop all tests before importing equipment and destroying current connections.
         
         ########## NEW #############
         #read the dicts from the single file
         import_json = jsonIO.import_cycle_settings()
-        equipment_to_connect = import_json['connected_equipment_dict']
-        res_ids_dict_list = import_json['res_ids_dict']
+        equipment_to_connect_dict = jsonIO.convert_keys_to_int(import_json['connected_equipment_dict'])
+        res_ids_dict_list = jsonIO.convert_keys_to_int(import_json['res_ids_dict'])
         
+        self.resources_list = None
         #scan equipment to build the list of possible connections
+        self.scan_resources()
         
+        #TODO - add a timeout here.
+        while self.resources_list == None:
+            #Wait for resources list to be populated
+            time.sleep(0.25)
+        
+        #remove and disconnect from all currently connected equipment
+        self.disconnect_all_equipment()
+        
+        #TODO - add a timeout here.
+        while len(self.connected_equipment_process_list) > 0:
+            #Wait for all equipment to be disconnected and processes stopped
+            time.sleep(0.25)
         
         #create the equipment (rebuilding the queues) - in the correct order for local ids
-        
+        for local_id in equipment_to_connect_dict:
+            self.new_equipment_queue.put_nowait(equipment_to_connect_dict[local_id])
         
         
         #add queues to res ids dicts
@@ -749,7 +740,10 @@ class MainTestWindow(QMainWindow):
         ############# KEEP THIS #########
         #set the same number of channels as there are in the file.
         #TODO - prevent this when a test is running.
-        self.setup_channels(len(list(temp_dict_list.keys())))
+        self.setup_channels(len(list(res_ids_dict_list.keys())))
+        
+        
+        
         
         for ch_num in range(self.num_battery_channels):
             if temp_dict_list[ch_num] != None:
@@ -757,6 +751,29 @@ class MainTestWindow(QMainWindow):
         
         #What if the required equipment could not be found?? - connect everything else
         
+    def disconnect_all_equipment(self):
+        pass #TODO - run process
+        
+    def disconnect_all_equipment_process(self, connected_equipment_list, connected_equipment_process_list):
+        #These are the 2 lists that we need to empty.
+        #self.connected_equipment_list = list()
+        #self.connected_equipment_process_list = list()
+        
+        for index in range(len(self.connected_equipment_process_list)):
+            #get the queue in from connected_equipment_list
+            queue_in = self.connected_equipment_list[index]['queue_in']
+            #get the process from the connected_equipment_process_list
+            process_id = self.connected_equipment_process_list[index]['process']
+            #stop the process with self.stop_process(self, process_id, queue_id = None):
+            
+            self.stop_process(process_id, queue_in)
+            #TODO - add the stop message to that process
+        
+        self.connected_equipment_list = list()
+        self.connected_equipment_process_list = list()
+        
+        
+    
     def export_test_configuration_process(self, ch_num):	
         if self.export_test_process_list[ch_num] is not None and self.export_test_process_list[ch_num].is_alive():
             print("CH{} - There is an export already running".format(ch_num))
