@@ -40,6 +40,7 @@ class MainTestWindow(QMainWindow):
         
         self.resources_list = None
         self.connect_equipment_process = None
+        self.disconnect_equipment_process = None
         self.connected_equipment_list = list()
         self.connected_equipment_process_list = list()
         
@@ -52,6 +53,7 @@ class MainTestWindow(QMainWindow):
         self.new_equipment_queue = Queue()
         self.test_configuration_queue = Queue()
         self.edit_cell_name_queue = Queue()
+        self.stop_process_queue = Queue()
         
         self.setWindowTitle("Battery Tester App")
         self.central_layout = QVBoxLayout()
@@ -73,12 +75,15 @@ class MainTestWindow(QMainWindow):
         
         #Connected Equipment
         self.update_resources_process = None
+        self.import_eq_assignment_process = None
+        self.export_eq_assignment_process = None
         self.assign_eq_process_list = {}
         self.res_ids_dict_list = {}
         self.configure_test_process_list = {}
         self.edit_cell_name_process_list = {}
         self.import_test_process_list = {}
         self.export_test_process_list = {}
+        
         self.cdc_input_dict_list = {}
         self.mp_process_list = {}
         self.mp_idle_process_list = {}
@@ -370,6 +375,7 @@ class MainTestWindow(QMainWindow):
             print("New Equipment Connected")
         except queue.Empty:
             pass #No new data was available
+            
         
         #Check test configuration queue
         try:
@@ -396,6 +402,13 @@ class MainTestWindow(QMainWindow):
             if self.cdc_input_dict_list[ch_num] != None:
                 self.cdc_input_dict_list[ch_num]['cell_name'] = new_cell_name_dict['cell_name']
             print("CH{} - Updated Cell Name".format(new_cell_name_dict['ch_num']))
+        except queue.Empty:
+            pass #No new data was available
+        
+        #Check the stop processes queue
+        try:
+            stop_process_dict = self.stop_process_queue.get_nowait()
+            self.stop_process(stop_process_dict['process_id'], stop_process_dict['queue_in'])
         except queue.Empty:
             pass #No new data was available
         
@@ -472,8 +485,8 @@ class MainTestWindow(QMainWindow):
         queue_in = Queue()
         queue_out = Queue()
         #Create a process for this new piece of equipment and connect to it in that process
-        process = Process(target = eq.virtual_device_management_process, args = (eq_type, eq_res_id_dict, queue_in, queue_out))
-        process.start()
+        eq_process = Process(target = eq.virtual_device_management_process, args = (eq_type, eq_res_id_dict, queue_in, queue_out))
+        eq_process.start()
         
         #virtual_device_management does the following:
             # - connect to the equipment using the equipment type and the res_id_dict
@@ -504,7 +517,7 @@ class MainTestWindow(QMainWindow):
         }
         equipment_process_dict = {
             'local_id':             eq_local_id,
-            'process':              process
+            'process':              eq_process
         }
         
         
@@ -669,24 +682,32 @@ class MainTestWindow(QMainWindow):
             return
     
     def export_equipment_assignment(self):
-        pass #TODO - run the process
+        if self.export_eq_assignment_process is not None and self.export_eq_assignment_process.is_alive():
+            print("There is an export equipment process already running")
+            return
+        try:
+            self.export_eq_assignment_process = Process(target=self.export_equipment_assignment_process, args = (self.connected_equipment_list, self.res_ids_dict_list))
+            self.export_eq_assignment_process.start()
+        except:
+            traceback.print_exc()
     
-    def export_equipment_assignment_process(self):
+    @staticmethod
+    def export_equipment_assignment_process(connected_equipment_list, res_ids_dict_list):
         #Remove the queue_in and _out values from the dicts since they can't exist in json format
         connected_equipment_dict_for_export = {}
-        for equipment_dict in self.connected_equipment_list:
+        for equipment_dict in connected_equipment_list:
             equipment_dict_for_export = {key: val for key, val in equipment_dict.items() if 'queue' not in key}
             connected_equipment_dict_for_export[equipment_dict_for_export['local_id']] = equipment_dict_for_export
         
         #for each channel, get the res_ids_dict, and remove the values from the queue entries
         res_ids_dict_for_export = {}
-        for ch_num in self.res_ids_dict_list:
+        for ch_num in res_ids_dict_list:
             res_ids_dict_for_export[ch_num] = {}
-            for eq_type in self.res_ids_dict_list[ch_num]:
+            for eq_type in res_ids_dict_list[ch_num]:
                 res_ids_dict_for_export[ch_num][eq_type] = None
-                if self.res_ids_dict_list[ch_num][eq_type] is not None:
+                if res_ids_dict_list[ch_num][eq_type] is not None:
                     res_ids_dict_for_export[ch_num][eq_type] = {}
-                    res_ids_dict_for_export[ch_num][eq_type]['res_id'] = {key: val for key, val in self.res_ids_dict_list[ch_num][eq_type]['res_id'].items() if 'queue' not in key}
+                    res_ids_dict_for_export[ch_num][eq_type]['res_id'] = {key: val for key, val in res_ids_dict_list[ch_num][eq_type]['res_id'].items() if 'queue' not in key}
         
         #Then export these 2 lists to the same file - append
         dict_for_export = {'connected_equipment_dict': connected_equipment_dict_for_export, 'res_ids_dict': res_ids_dict_for_export}
@@ -695,11 +716,30 @@ class MainTestWindow(QMainWindow):
         
     #TODO - this should be another process. - export as well.
     def import_equipment_assignment(self):
-        pass #TODO - run the process
+        if self.import_eq_assignment_process is not None and self.import_eq_assignment_process.is_alive():
+            print("There is an import equipment process already running")
+            return
+        try:
+            self.import_eq_assignment_process = Process(target=self.import_equipment_assignment_process,
+                    args = (self.num_battery_channels, self.status_label_list,
+                            self.resources_list_queue, self.connected_equipment_list, self.connected_equipment_process_list,
+                            self.stop_process_queue, self.new_equipment_queue))
+            self.import_eq_assignment_process.start()
+        except:
+            traceback.print_exc()
     
-    def import_equipment_assignment_process(self):		
+    @staticmethod
+    def import_equipment_assignment_process(num_chs, status_label_list, 
+                                            resources_list_queue, connected_equipment_list, connected_equipment_process_list,
+                                            stop_process_queue, new_equipment_queue):		
         
-        #TODO - make sure we stop all tests before importing equipment and destroying current connections.
+        #Don't let the user import equipment assignment while a test is running.
+        for ch_num in range(num_chs):
+            status_label_text = self.status_label_list[ch_num].text()
+            current_status = status_label_text.split()[2] #not a great way to do this - should have variables storing current and next status.
+            if current_status != "Idle":
+                print("Stop tests on all channels before importing equipment assignment.")
+                return
         
         ########## NEW #############
         #read the dicts from the single file
@@ -707,31 +747,26 @@ class MainTestWindow(QMainWindow):
         equipment_to_connect_dict = jsonIO.convert_keys_to_int(import_json['connected_equipment_dict'])
         res_ids_dict_list = jsonIO.convert_keys_to_int(import_json['res_ids_dict'])
         
-        self.resources_list = None
         #scan equipment to build the list of possible connections
-        self.scan_resources()
+        MainTestWindow.update_resources_list_process(resources_list_queue)
         
-        #TODO - add a timeout here.
-        while self.resources_list == None:
-            #Wait for resources list to be populated
-            time.sleep(0.25)
-        
+        #wait to ensure that the resources list is updated in the main process (happens in update_loop)
+        time.sleep(0.1)
+
         #remove and disconnect from all currently connected equipment
-        self.disconnect_all_equipment()
+        MainTestWindow.disconnect_all_equipment_process(connected_equipment_list, connected_equipment_process_list, stop_process_queue)
         
-        #TODO - add a timeout here.
-        while len(self.connected_equipment_process_list) > 0:
-            #Wait for all equipment to be disconnected and processes stopped
-            time.sleep(0.25)
+        #wait to ensure all equipment processes are stopped (happens in update_loop)
+        time.sleep(0.1)
         
         #create the equipment (rebuilding the queues) - in the correct order for local ids
         for local_id in equipment_to_connect_dict:
-            self.new_equipment_queue.put_nowait(equipment_to_connect_dict[local_id])
+            new_equipment_queue.put_nowait(equipment_to_connect_dict[local_id])
         
         
-        #add queues to res ids dicts
-        
-        
+        #wait for all the equipment to be added (happens in update_loop)
+        time.sleep(0.1)
+
         ############## OLD ########
         #temp_dict_list = jsonIO.import_cycle_settings()
         #temp_dict_list = jsonIO.convert_keys_to_int(temp_dict_list) #keys are channels for the res_ids_dict_list
@@ -742,36 +777,25 @@ class MainTestWindow(QMainWindow):
         #TODO - prevent this when a test is running.
         self.setup_channels(len(list(res_ids_dict_list.keys())))
         
-        
-        
-        
         for ch_num in range(self.num_battery_channels):
-            if temp_dict_list[ch_num] != None:
-                self.assign_equipment(ch_num, self.eq_assignment_queue, res_ids_dict = temp_dict_list[ch_num], dict_for_event_and_queue = self.dict_for_event_and_queue)
+            if res_ids_dict[ch_num] != None:
+                self.assign_equipment(ch_num, self.eq_assignment_queue, res_ids_dict = res_ids_dict[ch_num], dict_for_event_and_queue = self.dict_for_event_and_queue)
         
-        #What if the required equipment could not be found?? - connect everything else
-        
-    def disconnect_all_equipment(self):
-        pass #TODO - run process
-        
-    def disconnect_all_equipment_process(self, connected_equipment_list, connected_equipment_process_list):
-        #These are the 2 lists that we need to empty.
+        #What if the required equipment could not be found?? - connect everything else? (TODO)
+            
+    @staticmethod
+    def disconnect_all_equipment_process(connected_equipment_list, connected_equipment_process_list, stop_process_queue):
+        #These are the 2 lists that we need to empty and reset to default
         #self.connected_equipment_list = list()
         #self.connected_equipment_process_list = list()
         
-        for index in range(len(self.connected_equipment_process_list)):
+        for index in range(len(connected_equipment_process_list)):
             #get the queue in from connected_equipment_list
-            queue_in = self.connected_equipment_list[index]['queue_in']
+            queue_in = connected_equipment_list[index]['queue_in']
             #get the process from the connected_equipment_process_list
-            process_id = self.connected_equipment_process_list[index]['process']
-            #stop the process with self.stop_process(self, process_id, queue_id = None):
+            process_id = connected_equipment_process_list[index]['process']
             
-            self.stop_process(process_id, queue_in)
-            #TODO - add the stop message to that process
-        
-        self.connected_equipment_list = list()
-        self.connected_equipment_process_list = list()
-        
+            stop_process_queue.put_nowait({'process_id': process_id, 'queue_in': queue_in})
         
     
     def export_test_configuration_process(self, ch_num):	
@@ -883,7 +907,7 @@ class MainTestWindow(QMainWindow):
                 if process_id.is_alive():
                     if queue_id != None:
                         queue_id.put_nowait('stop')
-                    process_id.join()
+                    process_id.join() #join should only be called by the process that created the process object.
                     process_id.close()
             except ValueError:
                 pass

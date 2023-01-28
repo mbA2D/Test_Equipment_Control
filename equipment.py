@@ -84,7 +84,7 @@ def virtual_device_management_process(eq_type, new_eq_res_id_dict, queue_in, que
                 queue_out.put_nowait(return_data)
         except queue.Empty:
             pass
-        time.sleep(0.000001) #1us
+        time.sleep(0.000010) #10us
 
 def get_resources_list():
     #looks through all pyvisa backends to see which resources we can connect to.
