@@ -56,7 +56,7 @@ def virtual_device_management_process(eq_type, new_eq_res_id_dict, queue_in, que
                 # - listen for any messages in queue_in
                     # - take action on messages in queue_in
                 # - put responses to messages in queue_out
-                
+    
     device = connect_to_eq(eq_type, new_eq_res_id_dict['class_name'], new_eq_res_id_dict['res_id'], new_eq_res_id_dict['setup_dict'])
     #print("Device Connected")
     

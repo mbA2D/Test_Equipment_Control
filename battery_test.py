@@ -37,6 +37,7 @@ class MainTestWindow(QMainWindow):
         super().__init__()
         
         self.num_battery_channels = 0
+        self.restart_idle_processes = True
         
         self.resources_list = None
         self.connect_equipment_process = None
@@ -53,7 +54,6 @@ class MainTestWindow(QMainWindow):
         self.new_equipment_queue = Queue()
         self.test_configuration_queue = Queue()
         self.edit_cell_name_queue = Queue()
-        self.stop_process_queue = Queue()
         
         self.setWindowTitle("Battery Tester App")
         self.central_layout = QVBoxLayout()
@@ -156,9 +156,12 @@ class MainTestWindow(QMainWindow):
             traceback.print_exc()
     
     @staticmethod
-    def update_resources_list_process(resources_list_queue):
+    def update_resources_list_process(resources_list_queue = None, return_list = False):
         resources_list = eq.get_resources_list()
-        resources_list_queue.put_nowait(resources_list)
+        if resources_list_queue != None:
+            resources_list_queue.put_nowait(resources_list)
+        if return_list:
+            return resources_list
     
     def connect_new_equipment(self):
         try:
@@ -405,32 +408,28 @@ class MainTestWindow(QMainWindow):
         except queue.Empty:
             pass #No new data was available
         
-        #Check the stop processes queue
-        try:
-            stop_process_dict = self.stop_process_queue.get_nowait()
-            self.stop_process(stop_process_dict['process_id'], stop_process_dict['queue_in'])
-        except queue.Empty:
-            pass #No new data was available
-        
         #Read from all the data queues
         for ch_num in range(self.num_battery_channels):
             try:
                 #if main process does not exist, or exists and is dead
                 #and if idle process does not exist or exists and is dead
-                if  (self.mp_process_list[ch_num] == None or 
-                    (self.mp_process_list[ch_num] != None and not self.mp_process_list[ch_num].is_alive())) and \
-                    (self.mp_idle_process_list[ch_num] == None or
-                    (self.mp_idle_process_list[ch_num] != None and not self.mp_idle_process_list[ch_num].is_alive())):
-                        #Set the current status to idle and next status to 'N/A' or the next cycle
-                        current_status = "Idle"
-                        try:
-                            next_status = self.cdc_input_dict_list[ch_num]['cycle_settings_list_of_lists'][0][0]['cycle_display']
-                        except (KeyError, TypeError):
-                            next_status = "N/A"
-                        self.status_label_list[ch_num].setText('Current Status: {}\nNext Status: {}'.format(current_status, next_status))
-                        
-                        #start an idle process since nothing else is running
-                        self.start_idle_process(ch_num)
+                if self.restart_idle_processes:    
+                    if self.res_ids_dict_list[ch_num] != None:
+                        if  (self.mp_process_list[ch_num] == None or 
+                            (self.mp_process_list[ch_num] != None and not self.mp_process_list[ch_num].is_alive())) and \
+                            (self.mp_idle_process_list[ch_num] == None or
+                            (self.mp_idle_process_list[ch_num] != None and not self.mp_idle_process_list[ch_num].is_alive())):
+                                #Set the current status to idle and next status to 'N/A' or the next cycle
+                                current_status = "Idle"
+                                try:
+                                    next_status = self.cdc_input_dict_list[ch_num]['cycle_settings_list_of_lists'][0][0]['cycle_display']
+                                except (KeyError, TypeError):
+                                    next_status = "N/A"
+                                self.status_label_list[ch_num].setText('Current Status: {}\nNext Status: {}'.format(current_status, next_status))
+                                
+                                #start an idle process since nothing else is running
+                                #print("CH{} - Starting Idle Process".format(ch_num))
+                                self.start_idle_process(ch_num)
                 
                 #Read from all queues if available
                 data_from_ch = self.data_from_ch_queue_list[ch_num].get_nowait()
@@ -442,7 +441,6 @@ class MainTestWindow(QMainWindow):
                     if data_from_ch['data'] == 'safety_condition':
                         self.safety_label_list[ch_num].setText('Safety: ERROR')
                         
-                
             except queue.Empty:
                 pass #No new data was available
         
@@ -511,6 +509,8 @@ class MainTestWindow(QMainWindow):
             'res_id':               eq_res_id,
             'eq_type':              eq_type,
             'eq_idn':               eq_idn,
+            'class_name':           eq_res_id_dict['class_name'],
+            'setup_dict':           eq_res_id_dict['setup_dict'],
             'queue_in':             queue_in,
             'queue_out':            queue_out,
             'already_assigned':     False
@@ -543,13 +543,8 @@ class MainTestWindow(QMainWindow):
             if self.assign_eq_process_list[ch_num] is not None and self.assign_eq_process_list[ch_num].is_alive():
                 print("CH{} - There is a process already running to assign equipment".format(ch_num))
                 return
-            
-            #OLD:
-            #self.assign_eq_process_list[ch_num] = Process(target=self.assign_equipment, args = (ch_num, self.eq_assignment_queue, None, self.dict_for_event_and_queue, self.resources_list))
-            
-            #NEW:
+                
             self.assign_eq_process_list[ch_num] = Process(target=self.assign_equipment, args = (ch_num, self.eq_assignment_queue, None, self.connected_equipment_list))
-            
             self.assign_eq_process_list[ch_num].start()
         except:
             traceback.print_exc()
@@ -713,33 +708,22 @@ class MainTestWindow(QMainWindow):
         dict_for_export = {'connected_equipment_dict': connected_equipment_dict_for_export, 'res_ids_dict': res_ids_dict_for_export}
         jsonIO.export_cycle_settings(dict_for_export)
         
-        
-    #TODO - this should be another process. - export as well.
-    def import_equipment_assignment(self):
-        if self.import_eq_assignment_process is not None and self.import_eq_assignment_process.is_alive():
-            print("There is an import equipment process already running")
-            return
-        try:
-            self.import_eq_assignment_process = Process(target=self.import_equipment_assignment_process,
-                    args = (self.num_battery_channels, self.status_label_list,
-                            self.resources_list_queue, self.connected_equipment_list, self.connected_equipment_process_list,
-                            self.stop_process_queue, self.new_equipment_queue))
-            self.import_eq_assignment_process.start()
-        except:
-            traceback.print_exc()
     
-    @staticmethod
-    def import_equipment_assignment_process(num_chs, status_label_list, 
-                                            resources_list_queue, connected_equipment_list, connected_equipment_process_list,
-                                            stop_process_queue, new_equipment_queue):		
+    #Doesn't have to be a separate process since we shouldn't be running tests while importing equipment anyways
+    #So we don't care if MainTestWindow hangs during this process.
+    def import_equipment_assignment(self):		
         
         #Don't let the user import equipment assignment while a test is running.
-        for ch_num in range(num_chs):
+        for ch_num in range(self.num_battery_channels):
             status_label_text = self.status_label_list[ch_num].text()
             current_status = status_label_text.split()[2] #not a great way to do this - should have variables storing current and next status.
             if current_status != "Idle":
                 print("Stop tests on all channels before importing equipment assignment.")
                 return
+        
+        self.restart_idle_processes = False
+        for ch_num in range(self.num_battery_channels):
+            self.stop_idle_process(ch_num)
         
         ########## NEW #############
         #read the dicts from the single file
@@ -748,54 +732,40 @@ class MainTestWindow(QMainWindow):
         res_ids_dict_list = jsonIO.convert_keys_to_int(import_json['res_ids_dict'])
         
         #scan equipment to build the list of possible connections
-        MainTestWindow.update_resources_list_process(resources_list_queue)
-        
-        #wait to ensure that the resources list is updated in the main process (happens in update_loop)
-        time.sleep(0.1)
+        self.resources_list = self.update_resources_list_process(return_list = True)
 
         #remove and disconnect from all currently connected equipment
-        MainTestWindow.disconnect_all_equipment_process(connected_equipment_list, connected_equipment_process_list, stop_process_queue)
-        
-        #wait to ensure all equipment processes are stopped (happens in update_loop)
-        time.sleep(0.1)
+        self.disconnect_all_equipment()
         
         #create the equipment (rebuilding the queues) - in the correct order for local ids
         for local_id in equipment_to_connect_dict:
-            new_equipment_queue.put_nowait(equipment_to_connect_dict[local_id])
-        
-        
-        #wait for all the equipment to be added (happens in update_loop)
-        time.sleep(0.1)
-
-        ############## OLD ########
-        #temp_dict_list = jsonIO.import_cycle_settings()
-        #temp_dict_list = jsonIO.convert_keys_to_int(temp_dict_list) #keys are channels for the res_ids_dict_list
-        
-        
-        ############# KEEP THIS #########
+            self.create_new_equipment(equipment_to_connect_dict[local_id])
+ 
         #set the same number of channels as there are in the file.
-        #TODO - prevent this when a test is running.
         self.setup_channels(len(list(res_ids_dict_list.keys())))
         
         for ch_num in range(self.num_battery_channels):
-            if res_ids_dict[ch_num] != None:
-                self.assign_equipment(ch_num, self.eq_assignment_queue, res_ids_dict = res_ids_dict[ch_num], dict_for_event_and_queue = self.dict_for_event_and_queue)
+            if res_ids_dict_list[ch_num] != None:
+                MainTestWindow.assign_equipment(ch_num, self.eq_assignment_queue, res_ids_dict = res_ids_dict_list[ch_num], connected_equipment_list = self.connected_equipment_list)
+        
+        self.restart_idle_processes = True
         
         #What if the required equipment could not be found?? - connect everything else? (TODO)
             
-    @staticmethod
-    def disconnect_all_equipment_process(connected_equipment_list, connected_equipment_process_list, stop_process_queue):
+    def disconnect_all_equipment(self):
         #These are the 2 lists that we need to empty and reset to default
         #self.connected_equipment_list = list()
         #self.connected_equipment_process_list = list()
         
-        for index in range(len(connected_equipment_process_list)):
+        for index in range(len(self.connected_equipment_process_list)):
             #get the queue in from connected_equipment_list
-            queue_in = connected_equipment_list[index]['queue_in']
+            queue_in = self.connected_equipment_list[index]['queue_in']
             #get the process from the connected_equipment_process_list
-            process_id = connected_equipment_process_list[index]['process']
+            process_id = self.connected_equipment_process_list[index]['process']
             
-            stop_process_queue.put_nowait({'process_id': process_id, 'queue_in': queue_in})
+            self.stop_process(process_id, queue_in)
+        self.connected_equipment_list =list()
+        self.connected_equipment_process_list = list()
         
     
     def export_test_configuration_process(self, ch_num):	
@@ -869,6 +839,7 @@ class MainTestWindow(QMainWindow):
             
             self._clear_queue(data_out_queue)
             self._clear_queue(data_in_queue)
+            print("Done Clearing Queues")
             self.mp_process_list[ch_num] = Process(target=cdc.charge_discharge_control, 
                                                     args = (res_ids_dict, data_out_queue, data_in_queue, cdc_input_dict, 
                                                     self.dict_for_event_and_queue, ch_num))
@@ -887,12 +858,14 @@ class MainTestWindow(QMainWindow):
         try:
             self._clear_queue(data_out_queue)
             self._clear_queue(data_in_queue)
+            #print("CH{} - Idle Process res_ids_dict: {}".format(ch_num, res_ids_dict))
             self.mp_idle_process_list[ch_num] = Process(target=cdc.idle_control, args = (res_ids_dict, data_out_queue, data_in_queue, self.dict_for_event_and_queue))
             self.mp_idle_process_list[ch_num].start()
         except:
             traceback.print_exc()
     
     def stop_idle_process(self, ch_num):
+        #print("CH{} - Stopping Idle Process".format(ch_num))
         self.stop_process(self.mp_idle_process_list[ch_num], self.data_to_idle_ch_queue_list[ch_num])
         self.mp_idle_process_list[ch_num] = None
         
