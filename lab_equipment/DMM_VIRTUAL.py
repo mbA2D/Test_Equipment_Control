@@ -18,3 +18,4 @@ class VirtualDMM:
 	def measure_temperature(self):
 		self.event_and_queue_dict['t_event'].set()
 		return float(self.event_and_queue_dict['t_queue'].get(timeout = 10))
+        

@@ -5,17 +5,20 @@ class Fake_PSU:
     has_remote_sense = False
     can_measure_v_while_off = True
     
-    def __init__(self, resource_id = None):
+    def __init__(self, resource_id = None, resources_list = None):
         self.current_a = 0
         self.voltage_v = 4.1
-        pass
+        
+        self.inst_idn = "Fake PSU"
         
     # To set power supply limit in Amps 
     def set_current(self, current_setpoint_A):		
         pass
 
     def set_voltage(self, voltage_setpoint_V):
-        self.voltage_v = voltage_setpoint_V
+        #print("Setting voltage to: {}".format(voltage_setpoint_V))
+        if voltage_setpoint_V != 0:
+            self.voltage_v = voltage_setpoint_V
 
     def toggle_output(self, state, ch = 1):
         pass
