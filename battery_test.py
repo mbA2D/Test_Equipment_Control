@@ -12,10 +12,10 @@ from multiprocessing import Process, Queue, Event
 from functools import partial
 import queue #queue module required for exception handling of multiprocessing.Queue
 import traceback
-from random import randint
+#from random import randint
 
-from BATT_HIL import fet_board_management as fbm
-from lab_equipment import A2D_DAQ_management as adm
+#from BATT_HIL import fet_board_management as fbm
+#from lab_equipment import A2D_DAQ_management as adm
 import charge_discharge_control as cdc
 import equipment as eq
 import easygui as eg
