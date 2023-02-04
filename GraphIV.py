@@ -444,7 +444,7 @@ if __name__ == '__main__':
             cycle_type == "CC_Charge_Only" or \
             cycle_type == "CC_Discharge_Only":
             
-            process_standard_charge_discharge_cycle(filedir, filename, subdirs, df, separate_temps, temp_log_dir, show_ica_graphs, show_discharge_graphs)
+            process_standard_charge_discharge_cycle(filedir, filename, sub_dirs, df, separate_temps, temp_log_dir, show_ica_graphs, show_discharge_graphs)
         
         elif cycle_type == "Single_IR_Test": #Prints out an IR value
             process_single_ir_test(df, printout = True)
