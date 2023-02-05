@@ -119,8 +119,10 @@ def calc_capacity(log_data, stats, charge = True, temp_log_dir = None, show_ica_
     if temp_log_dir is not None:
         separate_temps = True
     
-    log_data.loc[mask]
-    dsc_data = log_data
+    dsc_data = log_data.loc[mask]
+    
+    #print(dsc_data.head())
+    #print(dsc_data.tail())
     
     if(dsc_data.size == 0):
         print(f"Data for {prefix} does not exist in log")
@@ -180,10 +182,11 @@ def calc_capacity(log_data, stats, charge = True, temp_log_dir = None, show_ica_
     if True in ['dmm_t' in col_name for col_name in dsc_data]:
         #There are temperatures in the same log as the voltages and currents.
         t_col_list = [col_name for col_name in dsc_data if 'dmm_t' in col_name]
-        t_col_list.append('Data_Timestamp')
         temp_data = dsc_data[t_col_list]
         max_temp = temp_data[t_col_list].max().max()
         stats.stats[f'{prefix}_max_temp_c'] = max_temp
+        t_col_list.append('Data_Timestamp')
+        temp_data = dsc_data[t_col_list]
         return temp_data
         
     return None
