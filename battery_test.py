@@ -123,6 +123,7 @@ class MainTestWindow(QMainWindow):
         self.export_equipment_assignment_action = QAction("Export Equipment Assignment", self)
         self.scan_equipment_resources_action = QAction("Scan Resources", self)
         self.connect_new_equipment_action = QAction("Connect New Equipment", self)
+        self.add_channel_action = QAction("Add Channel", self)
     
     def connect_actions(self):
         #self.connect_multi_ch_eq_action.triggered.connect(self.multi_ch_devices_process)
@@ -130,6 +131,7 @@ class MainTestWindow(QMainWindow):
         self.export_equipment_assignment_action.triggered.connect(self.export_equipment_assignment)
         self.scan_equipment_resources_action.triggered.connect(self.scan_resources)
         self.connect_new_equipment_action.triggered.connect(self.connect_new_equipment)
+        self.add_channel_action.triggered.connect(self.add_channel)
     
     def create_menu_bar(self):
         menu_bar = QMenuBar(self)
@@ -140,6 +142,7 @@ class MainTestWindow(QMainWindow):
         file_menu.addAction(self.export_equipment_assignment_action)
         file_menu.addAction(self.scan_equipment_resources_action)
         file_menu.addAction(self.connect_new_equipment_action)
+        file_menu.addAction(self.add_channel_action)
         
         self.setMenuBar(menu_bar)
         
@@ -169,8 +172,7 @@ class MainTestWindow(QMainWindow):
                 print("There is a process already running to connect new equipment")
                 return
             if self.resources_list == None or len(self.resources_list) == 0:
-                print("There are no resources to connect to. Scan resources first.")
-                return
+                print("There are no resources to connect to. Only Fake Test equipment will be available.")
             self.connect_equipment_process = Process(target=self.connect_new_equipment_process, args = (self.resources_list, self.new_equipment_queue))
             self.connect_equipment_process.start()
         except:
@@ -227,6 +229,7 @@ class MainTestWindow(QMainWindow):
             self.stop_process(self.mp_process_list[ch_num])
             self.stop_process(self.mp_idle_process_list[ch_num])
     
+    
     def setup_channels(self, num_ch = None):
         self.remove_all_channels()
         
@@ -238,106 +241,114 @@ class MainTestWindow(QMainWindow):
         self.num_battery_channels = num_ch
         
         for ch_num in range(self.num_battery_channels):
-            
-            #Connected Equipment
-            self.assign_eq_process_list[ch_num] = None
-            self.res_ids_dict_list[ch_num] = None
-            self.configure_test_process_list[ch_num] = None
-            self.edit_cell_name_process_list[ch_num] = None
-            self.import_test_process_list[ch_num] = None
-            self.export_test_process_list[ch_num] = None
-            self.cdc_input_dict_list[ch_num] = None
-            self.mp_process_list[ch_num] = None
-            self.mp_idle_process_list[ch_num] = None
-            self.plot_list[ch_num] = None
-            
-            #Create a widget and some labels - voltage and current for each channel
-            #Update the widgets from the queues in each channel
-            self.cell_name_label_list[ch_num] = QLabel("N/A")
-            self.button_edit_cell_name_list[ch_num] = QPushButton("Edit Cell Name")
-            self.data_label_list[ch_num] = QLabel("CH: {}\nV: \nI:".format(ch_num))
-            self.status_label_list[ch_num] = QLabel("Current Status: Idle\nNext Status: N/A")
-            self.safety_label_list[ch_num] = QLabel("Safety: OK")
-            self.button_clear_safety_list[ch_num] = QPushButton("Clear Safety Error")
-            
-            self.button_assign_eq_list[ch_num] = QPushButton("Assign Equipment")
-            self.button_configure_test_list[ch_num] = QPushButton("Configure Test")
-            self.button_import_test_list[ch_num] = QPushButton("Import Test")
-            self.button_export_test_list[ch_num] = QPushButton("Export Test")
-            self.button_start_test_list[ch_num] = QPushButton("Start Test")
-            self.button_stop_test_list[ch_num] = QPushButton("Stop Test")
-            
-            self.data_from_ch_queue_list[ch_num] = Queue()
-            self.data_to_ch_queue_list[ch_num] = Queue()
-            self.data_to_idle_ch_queue_list[ch_num] = Queue()
-            self.data_dict_list[ch_num] = {}
-            self.ch_graph_widget[ch_num] = pg.PlotWidget(background='w')
-            self.ch_graph_widget[ch_num].setMouseEnabled(False, False)
-            
-            #setting up buttons
-            self.button_edit_cell_name_list[ch_num].setCheckable(False)
-            self.button_edit_cell_name_list[ch_num].clicked.connect(partial(self.edit_cell_name, ch_num))
-            
-            self.button_clear_safety_list[ch_num].setCheckable(False)
-            self.button_clear_safety_list[ch_num].clicked.connect(partial(self.clear_safety_error, ch_num))
-            
-            self.button_assign_eq_list[ch_num].setCheckable(False)
-            self.button_assign_eq_list[ch_num].clicked.connect(partial(self.assign_equipment_process, ch_num))
-            self.button_configure_test_list[ch_num].setCheckable(False)
-            self.button_configure_test_list[ch_num].clicked.connect(partial(self.configure_test, ch_num))
-            
-            self.button_import_test_list[ch_num].setCheckable(False)
-            self.button_import_test_list[ch_num].clicked.connect(partial(self.import_test_configuration_process, ch_num))
-            self.button_export_test_list[ch_num].setCheckable(False)
-            self.button_export_test_list[ch_num].clicked.connect(partial(self.export_test_configuration_process, ch_num))
-            
-            self.button_stop_test_list[ch_num].setCheckable(False)
-            self.button_stop_test_list[ch_num].clicked.connect(partial(self.stop_test, ch_num))
-            self.button_start_test_list[ch_num].setCheckable(False)
-            self.button_start_test_list[ch_num].clicked.connect(partial(self.start_test, ch_num))
-            
-            #setting up a widget and layout for each channel
-            ch_layout = QHBoxLayout() #Each channel has horizontal layout
-            
-            #Data label on the left
-            left_col_layout = QVBoxLayout()
-            left_col_layout.addWidget(self.cell_name_label_list[ch_num])
-            left_col_layout.addWidget(self.button_edit_cell_name_list[ch_num])
-            left_col_layout.addWidget(self.data_label_list[ch_num])
-            left_col_layout.addWidget(self.status_label_list[ch_num])
-            left_col_layout.addWidget(self.safety_label_list[ch_num])
-            left_col_layout.addWidget(self.button_clear_safety_list[ch_num])
-            
-            left_col_widget = QWidget()
-            left_col_widget.setLayout(left_col_layout)
-            
-            ch_layout.addWidget(left_col_widget)
-            
-            
-            #Graph in the middle
-            ch_layout.addWidget(self.ch_graph_widget[ch_num])
-            self.plot_list[ch_num] = LivePlot(self.ch_graph_widget[ch_num])
-            
-            #Buttons on the right
-            btn_grid_layout = QGridLayout()
-            btn_grid_layout.addWidget(self.button_assign_eq_list[ch_num], 0, 0)
-            btn_grid_layout.addWidget(self.button_configure_test_list[ch_num], 0, 1)
-            
-            btn_grid_layout.addWidget(self.button_import_test_list[ch_num], 1, 0)
-            btn_grid_layout.addWidget(self.button_export_test_list[ch_num], 1, 1)
-            
-            btn_grid_layout.addWidget(self.button_start_test_list[ch_num], 2, 0)
-            btn_grid_layout.addWidget(self.button_stop_test_list[ch_num], 2, 1)
-            
-            btn_grid_widget = QWidget()
-            btn_grid_widget.setLayout(btn_grid_layout)
-            
-            ch_layout.addWidget(btn_grid_widget)
-            
-            ch_widget = QWidget()
-            ch_widget.setLayout(ch_layout)
-            
-            self.channels_layout.addWidget(ch_widget, (ch_num % 8 + 1), (int(ch_num/8)))
+            self.setup_single_channel(ch_num)
+    
+    
+    def setup_single_channel(self, ch_num):
+        #Connected Equipment
+        self.assign_eq_process_list[ch_num] = None
+        self.res_ids_dict_list[ch_num] = None
+        self.configure_test_process_list[ch_num] = None
+        self.edit_cell_name_process_list[ch_num] = None
+        self.import_test_process_list[ch_num] = None
+        self.export_test_process_list[ch_num] = None
+        self.cdc_input_dict_list[ch_num] = None
+        self.mp_process_list[ch_num] = None
+        self.mp_idle_process_list[ch_num] = None
+        self.plot_list[ch_num] = None
+        
+        #Create a widget and some labels - voltage and current for each channel
+        #Update the widgets from the queues in each channel
+        self.cell_name_label_list[ch_num] = QLabel("N/A")
+        self.button_edit_cell_name_list[ch_num] = QPushButton("Edit Cell Name")
+        self.data_label_list[ch_num] = QLabel("CH: {}\nV: \nI:".format(ch_num))
+        self.status_label_list[ch_num] = QLabel("Current Status: Idle\nNext Status: N/A")
+        self.safety_label_list[ch_num] = QLabel("Safety: OK")
+        self.button_clear_safety_list[ch_num] = QPushButton("Clear Safety Error")
+        
+        self.button_assign_eq_list[ch_num] = QPushButton("Assign Equipment")
+        self.button_configure_test_list[ch_num] = QPushButton("Configure Test")
+        self.button_import_test_list[ch_num] = QPushButton("Import Test")
+        self.button_export_test_list[ch_num] = QPushButton("Export Test")
+        self.button_start_test_list[ch_num] = QPushButton("Start Test")
+        self.button_stop_test_list[ch_num] = QPushButton("Stop Test")
+        
+        self.data_from_ch_queue_list[ch_num] = Queue()
+        self.data_to_ch_queue_list[ch_num] = Queue()
+        self.data_to_idle_ch_queue_list[ch_num] = Queue()
+        self.data_dict_list[ch_num] = {}
+        self.ch_graph_widget[ch_num] = pg.PlotWidget(background='w')
+        self.ch_graph_widget[ch_num].setMouseEnabled(False, False)
+        
+        #setting up buttons
+        self.button_edit_cell_name_list[ch_num].setCheckable(False)
+        self.button_edit_cell_name_list[ch_num].clicked.connect(partial(self.edit_cell_name, ch_num))
+        
+        self.button_clear_safety_list[ch_num].setCheckable(False)
+        self.button_clear_safety_list[ch_num].clicked.connect(partial(self.clear_safety_error, ch_num))
+        
+        self.button_assign_eq_list[ch_num].setCheckable(False)
+        self.button_assign_eq_list[ch_num].clicked.connect(partial(self.assign_equipment_process, ch_num))
+        self.button_configure_test_list[ch_num].setCheckable(False)
+        self.button_configure_test_list[ch_num].clicked.connect(partial(self.configure_test, ch_num))
+        
+        self.button_import_test_list[ch_num].setCheckable(False)
+        self.button_import_test_list[ch_num].clicked.connect(partial(self.import_test_configuration_process, ch_num))
+        self.button_export_test_list[ch_num].setCheckable(False)
+        self.button_export_test_list[ch_num].clicked.connect(partial(self.export_test_configuration_process, ch_num))
+        
+        self.button_stop_test_list[ch_num].setCheckable(False)
+        self.button_stop_test_list[ch_num].clicked.connect(partial(self.stop_test, ch_num))
+        self.button_start_test_list[ch_num].setCheckable(False)
+        self.button_start_test_list[ch_num].clicked.connect(partial(self.start_test, ch_num))
+        
+        #setting up a widget and layout for each channel
+        ch_layout = QHBoxLayout() #Each channel has horizontal layout
+        
+        #Data label on the left
+        left_col_layout = QVBoxLayout()
+        left_col_layout.addWidget(self.cell_name_label_list[ch_num])
+        left_col_layout.addWidget(self.button_edit_cell_name_list[ch_num])
+        left_col_layout.addWidget(self.data_label_list[ch_num])
+        left_col_layout.addWidget(self.status_label_list[ch_num])
+        left_col_layout.addWidget(self.safety_label_list[ch_num])
+        left_col_layout.addWidget(self.button_clear_safety_list[ch_num])
+        
+        left_col_widget = QWidget()
+        left_col_widget.setLayout(left_col_layout)
+        
+        ch_layout.addWidget(left_col_widget)
+        
+        
+        #Graph in the middle
+        ch_layout.addWidget(self.ch_graph_widget[ch_num])
+        self.plot_list[ch_num] = LivePlot(self.ch_graph_widget[ch_num])
+        
+        #Buttons on the right
+        btn_grid_layout = QGridLayout()
+        btn_grid_layout.addWidget(self.button_assign_eq_list[ch_num], 0, 0)
+        btn_grid_layout.addWidget(self.button_configure_test_list[ch_num], 0, 1)
+        
+        btn_grid_layout.addWidget(self.button_import_test_list[ch_num], 1, 0)
+        btn_grid_layout.addWidget(self.button_export_test_list[ch_num], 1, 1)
+        
+        btn_grid_layout.addWidget(self.button_start_test_list[ch_num], 2, 0)
+        btn_grid_layout.addWidget(self.button_stop_test_list[ch_num], 2, 1)
+        
+        btn_grid_widget = QWidget()
+        btn_grid_widget.setLayout(btn_grid_layout)
+        
+        ch_layout.addWidget(btn_grid_widget)
+        
+        ch_widget = QWidget()
+        ch_widget.setLayout(ch_layout)
+        
+        self.channels_layout.addWidget(ch_widget, (ch_num % 8 + 1), (int(ch_num/8)))
+    
+    
+    def add_channel(self):
+        self.setup_single_channel(self.num_battery_channels)
+        self.num_battery_channels = self.num_battery_channels + 1
         
         
     def update_loop(self):
