@@ -78,7 +78,7 @@ class A2D_Relay_Board(PyVisaDevice):
     def get_num_channels(self):
         return self._num_channels
         
-    def set_expander_i2c_addr(self, addr):
+    def set_i2c_expander_addr(self, addr):
         self.i2c_expander_addr = addr
         self.inst.write('INSTR:DAQ:SET:ADDR x {address}'.format(address = self.i2c_expander_addr))
     
