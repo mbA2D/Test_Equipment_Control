@@ -5,7 +5,8 @@ TODO List
  - DONE - Flush queues after and before idle control cycle
 	- Will cause issues with multiple channels accessing the same queues?
  - There are way too many queues and processes in the MainWindow. Consolidate them and make a better messaging system.
- - View equipment connections and change settings - e.g. remote sense.
+ - Double-check commands where possible. e.g. send output on command, then check status of output.
+ - View equipment connections and change settings per instrument instead of having to setup everything again - e.g. remote sense.
  - Create an 'add channel' button
  - Show fake equipment even when no resources are available
  - Make GUIs better with drop-downs and checkboxes
