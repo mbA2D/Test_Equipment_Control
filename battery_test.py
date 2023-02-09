@@ -839,7 +839,7 @@ class MainTestWindow(QMainWindow):
             
             self._clear_queue(data_out_queue)
             self._clear_queue(data_in_queue)
-            print("Done Clearing Queues")
+            #print("Done Clearing Queues")
             self.mp_process_list[ch_num] = Process(target=cdc.charge_discharge_control, 
                                                     args = (res_ids_dict, data_out_queue, data_in_queue, cdc_input_dict, 
                                                     self.dict_for_event_and_queue, ch_num))

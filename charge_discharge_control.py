@@ -1000,6 +1000,10 @@ def charge_discharge_control(res_ids_dict, data_out_queue = None, data_in_queue 
             print("Power Supply required for cycle type but none connected! Exiting")
             return
         
+        #Ensure that the proper directories exist for logging
+        csv_dir = FileIO.ensure_subdir_exists_dir(input_dict['directory'], input_dict['cell_name'])
+        log_dir = FileIO.ensure_subdir_exists_dir(csv_dir, 'logs')
+        
         initialize_connected_equipment(eq_dict)
         #Now initialize all the equipment that is connected
         
@@ -1013,8 +1017,8 @@ def charge_discharge_control(res_ids_dict, data_out_queue = None, data_in_queue 
         
         for cycle_num, cycle_settings_list in enumerate(input_dict['cycle_settings_list_of_lists']):
             
-            csv_filepath = FileIO.start_file(input_dict['directory'], "{} {} {}".format(input_dict['cell_name'], input_dict['cycle_type'], cycle_settings_list[0]["cycle_display"]), extension = '.csv')
-            log_filepath = FileIO.start_file(input_dict['directory'], "{} {} {}".format(input_dict['cell_name'], input_dict['cycle_type'], cycle_settings_list[0]["cycle_display"]), extension = '.txt')
+            csv_filepath = FileIO.start_file(csv_dir, "{} {} {}".format(input_dict['cell_name'], input_dict['cycle_type'], cycle_settings_list[0]["cycle_display"]), extension = '.csv')
+            log_filepath = FileIO.start_file(log_dir, "{} {} {}".format(input_dict['cell_name'], input_dict['cycle_type'], cycle_settings_list[0]["cycle_display"]), extension = '.txt')
             
             print("CH{} - Cycle {} Starting".format(ch_num, cycle_num), flush=True)
             FileIO.write_line_txt(log_filepath, "Cycle {} Starting".format(cycle_num))
