@@ -5,10 +5,12 @@ TODO List
  - DONE - Flush queues after and before idle control cycle
 	- Will cause issues with multiple channels accessing the same queues?
  - There are way too many queues and processes in the MainWindow. Consolidate them and make a better messaging system.
- - Double-check commands where possible. e.g. send output on command, then check status of output.
+ - Make 'charge_discharge_control' file into a class
+ - Double-check commands where possible? e.g. send output on command, then check status of output.
  - View equipment connections and change settings per instrument instead of having to setup everything again - e.g. remote sense.
  - Create an 'add channel' button
- - Show fake equipment even when no resources are available
+ - Create a 'remove channel' button
+ - DONE - Show fake equipment even when no resources are available
  - Make GUIs better with drop-downs and checkboxes
     - PSU, Eload, DMM selections should all happen on a single page with a dropdown for each equipment type.
 	- Step cycles should have dropdowns for all text fields instead of requiring to know what goes there (voltage_v, current_a, etc.)
@@ -17,13 +19,14 @@ TODO List
  - DONE - Make all instruments 'virtual' - e.g. controlled globally and not by the individual battery test channel processes. This opens the door to scheduled use of equipment, sharing between channels, and using all channels of multi channel devices.
  - Create safety limits for extra measurement devices - e.g. cell monitors on multi-cell battery packs, temperature sensors.
  - Make a way to add temperature control of the ambient temp through heaters - heaters will have external controller, just need to pass setpoint.
+ - DONE - cell logs go in a folder with the cell name
  - DONE - Separate safety conditions for each channel from end cycle conditions
  - Create a way to 'simulate a cell', connect multiple pieces of 'fake' equipment to a 'battery equivalent circuit'
  - DONE - Add safety conditions to all types of cycles (just make them all use step at the core)
  - DONE - Add a way to show a 'charge' or 'discharge' or 'ir test' instead of just showing 'step'
  - DONE - Change log file name to show which cycle_display name instead of just date, time, and cell name, overall cycle type
  - DONE - Add WARNING on the GUI if a safety setting was hit
- - Show which safety error was hit on GUI instead of needing to search through the logs
+ - Show which safety error was hit on GUI instead of needing to search through the logs?
  - Add a button on the GUI to advance to the next cycle or step
  - Add support for range switching of eloads between different cycles (e.g. use 4A range for a 1A discharge and 40A range for 5A discharge).
  - Allow 1 device to have multiple uses (e.g. a relay board and voltage/current/temperature monitor all in one) - will be easier when all equipment is virtual
