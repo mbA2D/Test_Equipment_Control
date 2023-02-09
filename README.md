@@ -75,6 +75,13 @@ If Keysight Connection Expert can see it, then the drivers are installed and you
 ## Running Tests:
  - Testing Batteries  
     - battery_test.py  
+       - Steps to run a test:
+          - 1 Scan resources
+          - 2 Connect to equipment
+          - 3 Assign Equipment to channel
+              - Ensure voltage shown matches the battery voltage expected
+          - 4 Configure Test
+          - 5 Start Test  
     - See the results with GraphIV.py   
  - Testing DC-DC Converters  
     - dc_dc_test.py  
@@ -82,3 +89,5 @@ If Keysight Connection Expert can see it, then the drivers are installed and you
  - Testing solar panels by sweeping an e-load in CV mode  
     - Eload_cv_sweep.py  
     - See results (solar panel IV curve with MPP marked) with Eload_cv_sweep.py  
+ - Quick measurements with a DMM
+    - Measurement_Script.py
