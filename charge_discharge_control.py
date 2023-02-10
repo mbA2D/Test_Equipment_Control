@@ -778,19 +778,30 @@ def repeated_ir_test_info():
     charge_settings.settings["charge_a"] = ir_test_settings.settings["charge_a"]
     charge_settings.settings["charge_end_a"] = ir_test_settings.settings["charge_end_a"]
     charge_settings.settings["meas_log_int_s"] = ir_test_settings.settings["meas_log_int_s"]
+    charge_settings.settings["safety_min_current_a"] = ir_test_settings.settings["safety_min_current_a"]
+    charge_settings.settings["safety_max_current_a"] = ir_test_settings.settings["safety_max_current_a"]
+    charge_settings.settings["safety_min_voltage_v"] = ir_test_settings.settings["safety_min_voltage_v"]
+    charge_settings.settings["safety_max_voltage_v"] = ir_test_settings.settings["safety_max_voltage_v"]
+    charge_settings.settings["safety_max_time_s"] = (ir_test_settings.settings["estimated_capacity_ah"] / ir_test_settings.settings["charge_a"])*3600*5
     charge_step_settings = convert_charge_settings_to_steps(charge_settings.settings)
     
-    rest_settings = Templates.RestSettings()
-    rest_settings.settings["meas_log_int_s"] = ir_test_settings.settings["meas_log_int_s"]
-    rest_settings.settings["rest_time_min"] = ir_test_settings.settings["rest_after_charge_min"]
-    rest_step_settings = convert_rest_settings_to_steps(rest_settings.settings)
+    rest1_settings = Templates.RestSettings()
+    rest1_settings.settings["meas_log_int_s"] = ir_test_settings.settings["meas_log_int_s"]
+    rest1_settings.settings["rest_time_min"] = ir_test_settings.settings["rest_after_charge_min"]
+    rest1_step_settings = convert_rest_settings_to_steps(rest_settings.settings)
     
     step_settings_list = convert_repeated_ir_settings_to_steps(ir_test_settings.settings)
     
+    rest2_settings = Templates.RestSettings()
+    rest2_settings.settings["meas_log_int_s"] = ir_test_settings.settings["meas_log_int_s"]
+    rest2_settings.settings["rest_time_min"] = ir_test_settings.settings["rest_after_discharge_min"]
+    rest2_step_settings = convert_rest_settings_to_steps(rest_settings.settings)
+    
     settings_list = list()
     settings_list.append(charge_step_settings)
-    settings_list.append(rest_step_settings)
+    settings_list.append(rest1_step_settings)
     settings_list.append(step_settings_list)
+    settings_list.append(rest2_step_settings)
     
     return settings_list
     
@@ -803,7 +814,7 @@ def convert_repeated_ir_settings_to_steps(test_settings):
     model_step_settings.settings["drive_value_other"] = test_settings["psu_voltage_if_pos_i"]
     model_step_settings.settings["safety_min_current_a"] = test_settings["safety_min_current_a"]
     model_step_settings.settings["safety_max_current_a"] = test_settings["safety_max_current_a"]
-    model_step_settings.settings["safety_max_time_s"] = max_time*1.5
+    model_step_settings.settings["safety_max_time_s"] = max_time*1.75
     model_step_settings.settings["end_style"] = 'time_s'
     model_step_settings.settings["end_condition"] = 'greater'
     model_step_settings.settings["safety_min_voltage_v"] = test_settings["safety_min_voltage_v"]

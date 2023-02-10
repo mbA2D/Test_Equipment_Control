@@ -222,6 +222,7 @@ class RepeatedIRSettings(CycleSettings):
             "psu_voltage_if_pos_i":		0,
             "meas_log_int_s":			1,
             "cycle_end_voltage_v":      2.5, #if less than cycle_end_voltage_v, then end the cycle. Can also have cycle_end_time_s
+            "rest_after_discharge_min":	20,
             "safety_min_voltage_v":		2.45,
             "safety_max_voltage_v":		4.25,
             "safety_min_current_a":		-10,
