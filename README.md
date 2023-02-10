@@ -9,6 +9,7 @@ TODO List
  - Double-check commands where possible? e.g. send output on command, then check status of output.
  - View equipment connections and change settings per instrument instead of having to setup everything again - e.g. remote sense.
  - DONE - Create an 'add channel' button
+ - Repeated IR Discharge Test: Fix charge safety time, add rest after discharge
  - Create a 'remove channel' button
  - DONE - Show fake equipment even when no resources are available
  - Make GUIs better with drop-downs and checkboxes
