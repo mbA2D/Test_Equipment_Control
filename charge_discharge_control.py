@@ -38,6 +38,11 @@ def init_dmm_i(dmm):
     test_i = dmm.measure_current()
     #test measurement to ensure everything is set up correctly
     #and the fisrt measurement which often takes longer is out of the way
+    
+def init_dmm_t(dmm):
+    test_t = dmm.measure_temperature()
+    #test measurement to ensure everything is set up correctly
+    #and the fisrt measurement which often takes longer is out of the way
 
 def init_relay_board(relay_board):
     #turn off all channels
@@ -55,6 +60,24 @@ def initialize_connected_equipment(eq_dict):
         init_dmm_i(eq_dict['dmm_i'])
     if eq_dict.get('relay_board') != None:
         init_relay_board(eq_dict['relay_board'])
+    
+    #all the extra dmms:
+    dmm_postfixes = ['v', 'i', 't']
+    for postfix in dmm_postfixes:
+        valid_device = True
+        count = 0
+        while valid_device:
+            dev_name = 'dmm_{}{}'.format(postfix, count)
+            dev = eq_dict.get(dev_name)
+            if dev != None:
+                if postfix == 'v':
+                    init_dmm_v(dev)
+                elif postfix == 'i':
+                    init_dmm_i(dev)
+                elif postfix == 't':
+                    init_dmm_t(dev)
+            else:
+                valid_device = False
 
 def disable_equipment_single(equipment):
     if equipment != None:
@@ -1031,7 +1054,7 @@ def charge_discharge_control(res_ids_dict, data_out_queue = None, data_in_queue 
             csv_filepath = FileIO.start_file(csv_dir, "{} {} {}".format(input_dict['cell_name'], input_dict['cycle_type'], cycle_settings_list[0]["cycle_display"]), extension = '.csv')
             log_filepath = FileIO.start_file(log_dir, "{} {} {}".format(input_dict['cell_name'], input_dict['cycle_type'], cycle_settings_list[0]["cycle_display"]), extension = '.txt')
             
-            print("CH{} - Cycle {} Starting".format(ch_num, cycle_num), flush=True)
+            print("CH{} - Cycle {} Starting {}".format(ch_num, cycle_num, time.ctime()), flush=True)
             FileIO.write_line_txt(log_filepath, "Cycle {} Starting".format(cycle_num))
             FileIO.write_line_txt(log_filepath, "Cycle Settings List: {}".format(cycle_settings_list))
             
