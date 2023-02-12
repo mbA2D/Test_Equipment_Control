@@ -329,7 +329,7 @@ def process_single_ir_test(df, printout = False):
     return ir
     
 def process_repeated_ir_test(df, return_type = 'array'):
-    #find index of last extry in first step
+    #find index of last entry in first step
     
     #Data_Timestamp_From_Step_Start goes from high back to low - diff is negative.
     df['step_time_diff'] = df['Data_Timestamp_From_Step_Start'].diff().fillna(-1)
@@ -353,7 +353,7 @@ def process_repeated_ir_test(df, return_type = 'array'):
     elif return_type == 'array':
         return df['internal_resistance_ohms'].dropna().values
     
-def process_repeated_ir_discharge_test(df, filename, filedir, sub_dirs):
+def process_repeated_ir_discharge_test(df, filename, filedir, sub_dirs, cell_name):
     #get index and ir value for each IR test
     df = add_soc_by_coulomb_counting(df)
     df = process_repeated_ir_test(df, return_type = 'df')
@@ -363,14 +363,28 @@ def process_repeated_ir_discharge_test(df, filename, filedir, sub_dirs):
     #remove everything except soc and ir values
     df_soc_ir = df[['soc', 'internal_resistance_ohms']]
     
+    #Plot IR vs SoC
+    fig, ax = plt.subplots()
+    fig.set_size_inches(12, 10)
+    ax.plot('soc', 'internal_resistance_ohms', data = df_soc_ir)
+    fig.suptitle('{} IR vs SoC'.format(cell_name))
+    ax.set_xlim(1, 0) #high SoC at left, low SoC at right
+    ax.set_ylabel('Internal Resistance (Ohms)')
+    ax.set_xlabel('State of Charge')
+
+    ax.xaxis.grid(which='both')
+    ax.yaxis.grid(which='both')
+    
     #Modify file names for saving graphs and other files
     filename_SoC_IR = 'SoC-IR ' + filename
     
     #Create directory names to store graphs etc.
     filepath_SoC_IR = os.path.join(filedir, sub_dirs[1], filename_SoC_IR)	
+    filepath_SoC_IR_graph = os.path.join(filedir, sub_dirs[0], filename_SoC_IR)
     
-    #export csv
+    #export csv and png for graph
     df_soc_ir.to_csv(filepath_SoC_IR, index=False)
+    plt.savefig(os.path.splitext(filepath_SoC_IR_graph)[0])
 
 def add_soc_by_coulomb_counting(df):
     #We know for a full cycle, we start with a full charge and end with a full discharge
@@ -464,5 +478,5 @@ if __name__ == '__main__':
             process_repeated_ir_test(df)
         
         elif cycle_type == "Repeated_IR_Discharge_Test": #Creates a csv with SoC and IR
-            process_repeated_ir_discharge_test(df, filename, filedir, sub_dirs)
+            process_repeated_ir_discharge_test(df, filename, filedir, sub_dirs, cell_name)
         
