@@ -216,6 +216,7 @@ def evaluate_end_condition(step_settings, data, data_in_queue, log_filepath):
     if end_signal(data_in_queue):
         return 'end_request'
     
+    
     #SAFETY SETTINGS
     #Voltage and current limits are always active
     if data["Voltage"] < step_settings["safety_min_voltage_v"]:
@@ -236,6 +237,21 @@ def evaluate_end_condition(step_settings, data, data_in_queue, log_filepath):
         FileIO.write_line_txt(log_filepath, f'WARNING - Max Time Limit Hit! Data: {data["Data_Timestamp_From_Step_Start"]}s Limit: {step_settings["safety_max_time_s"]}s')
         return 'safety_condition'
     
+    
+    #CYCLE END SETTINGS
+    #Ending the cycle:
+    cycle_end_voltage = step_settings.get("cycle_end_voltage_v")
+    if cycle_end_voltage is not None:
+        if data["Voltage"] <= cycle_end_voltage:
+            return 'cycle_end_condition'
+            
+    cycle_end_time = step_settings.get("cycle_end_time_s")
+    if cycle_end_time is not None:
+        if data["Data_Timestamp_From_Step_Start"] <= cycle_end_time:
+            return 'cycle_end_condition'
+    
+    
+    #STEP END CONDITIONS
     end_reason = None
     
     #Ending the Step
@@ -263,19 +279,6 @@ def evaluate_end_condition(step_settings, data, data_in_queue, log_filepath):
             return 'end_condition'
         else:
             end_reason = 'none'
-    
-    
-    #Ending the cycle:
-    cycle_end_voltage = step_settings.get("cycle_end_voltage_v")
-    if cycle_end_voltage is not None:
-        if data["Voltage"] <= cycle_end_voltage:
-            return 'cycle_end_condition'
-            
-    cycle_end_time = step_settings.get("cycle_end_time_s")
-    if cycle_end_time is not None:
-        if data["Data_Timestamp_From_Step_Start"] <= cycle_end_time:
-            return 'cycle_end_condition'
-    
     
     if end_reason == 'none':
         return end_reason
@@ -835,13 +838,14 @@ def convert_repeated_ir_settings_to_steps(test_settings):
     model_step_settings.settings["cycle_display"] = test_settings["cycle_display"]
     model_step_settings.settings["drive_style"] = 'current_a'
     model_step_settings.settings["drive_value_other"] = test_settings["psu_voltage_if_pos_i"]
+    model_step_settings.settings["end_style"] = 'time_s'
+    model_step_settings.settings["end_condition"] = 'greater'
+    model_step_settings.settings["cycle_end_voltage_v"] = test_settings["cycle_end_voltage_v"]
+    model_step_settings.settings["safety_min_voltage_v"] = test_settings["safety_min_voltage_v"]
+    model_step_settings.settings["safety_max_voltage_v"] = test_settings["safety_max_voltage_v"]
     model_step_settings.settings["safety_min_current_a"] = test_settings["safety_min_current_a"]
     model_step_settings.settings["safety_max_current_a"] = test_settings["safety_max_current_a"]
     model_step_settings.settings["safety_max_time_s"] = max_time*1.75
-    model_step_settings.settings["end_style"] = 'time_s'
-    model_step_settings.settings["end_condition"] = 'greater'
-    model_step_settings.settings["safety_min_voltage_v"] = test_settings["safety_min_voltage_v"]
-    model_step_settings.settings["safety_max_voltage_v"] = test_settings["safety_max_voltage_v"]
     
     step_1_settings = model_step_settings.settings.copy()
     step_2_settings = model_step_settings.settings.copy()
