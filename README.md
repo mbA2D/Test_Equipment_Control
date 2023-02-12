@@ -61,6 +61,7 @@ TODO List
  - You might also need to download NI VISA (https://www.ni.com/en-ca/support/downloads/drivers/download.ni-visa.html#460225)
  - To install all the required python packages
     - Open a command line in the Test_Equipment_Control folder and run "pip install -r requirements.txt"
+ - You may need to install libusb (backend for pyusb): https://github.com/pyusb/pyusb/issues/120#issuecomment-322058585
 
 We also need to comment out a few lines in the included libraries from adafruit.  
 1. Find where the python packages get installed ("Users->UserName->AppData->Local->Programs->Python->Python39->Lib->site-packages" for me, not using a virtual environment) and find the folder adafruit_blinka->microcontroller->mcp2221  
@@ -74,21 +75,38 @@ You can open the Interactive IO and send the query "\*IDN?" to get the device's 
 If Keysight Connection Expert can see it, then the drivers are installed and you should be able to connect from the python script.  
 	
 ## Running Tests:
- - Testing Batteries  
-    - battery_test.py  
-       - Steps to run a test:
-          - 1 Scan resources
-          - 2 Connect to equipment
-          - 3 Assign Equipment to channel
-              - Ensure voltage shown matches the battery voltage expected
-          - 4 Configure Test
-          - 5 Start Test  
-    - See the results with GraphIV.py   
- - Testing DC-DC Converters  
-    - dc_dc_test.py  
-    - See results (efficiency graph) with DC_DC_Graph.py  
- - Testing solar panels by sweeping an e-load in CV mode  
-    - Eload_cv_sweep.py  
-    - See results (solar panel IV curve with MPP marked) with Eload_cv_sweep.py  
- - Quick measurements with a DMM
-    - Measurement_Script.py
+### Testing Batteries:
+Run '__battery_test.py__' from command line.  
+1. File->Scan resources
+    - This checks all the backends for available equipment. Some equipment previously connected to but not available now may be recognized.
+2. File->Connect to equipment
+    - Choose the type and model of equipment that you want to connect to. Fake equipment is available for playing around with the software.
+3. Assign Equipment to channel
+    - Equipment that you have previously connected to will be available to assign to the channel.
+    - An 'idle_test' will be started that will measure voltage and current using the connected equipment.
+    - Ensure voltage shown matches the battery voltage expected (if one is connected).
+4. Configure Test
+    - If any of the safety settings are exceeded, then the test will stop.
+5. Start Test  
+    - The 'idle_test' that was running will be stopped and the configured test will start.
+    - The test can be manually stopped at any time with the 'Stop Test' button.
+
+The setups and tests can be exported and imported (.json format) for easy reconfiguration when restarting the software.  
+
+See the results with GraphIV.py. Graphs and stats (capacity_ah, capacity _wh, max temperature, etc.) for each cycle can be generated.  
+
+### Testing DC-DC Converters  
+Run '__dc_dc_test.py__' from command line  
+- Allows setting up a test with psu on input, eload on output.  
+- Sweeps a range of output currents and a range of input voltages.  
+
+An efficiency graph can be generated from the data with DC_DC_Graph.py    
+
+### Testing solar panels by sweeping an e-load in CV mode  
+Run '__Eload_cv_sweep.py__' from command line  
+See results (solar panel IV curve with MPP marked) with Eload_cv_sweep.py  
+
+### Quick measurements with a DMM
+Run '__Measurement_Script.py__' from command line.  
+Choose to measure voltage, current, or temperature, the number of measurements to take, and the delay before starting the measurements.  
+Measurements will be printed out in the console.  
