@@ -3,32 +3,6 @@ Controlling Various Lab Test Equipment
  - Battery Testing (Capacity, Internal Resistance, SoC-OCV, SoC-IR) 
  - DC-DC Converter Testing (Efficiency across input voltage and output loads)
 
-## TODO List
- - GraphIV.py - Single IR Processing - if we have enough data points for each step, apply some statistical processing (drop outliers, try and account for capacity)
- - There are way too many queues and processes in the MainWindow. Consolidate them and make a better messaging system
- - Allow adding another cycle to test configuration GUI - e.g. Rest then Single IR Test
- - Make 'charge_discharge_control' file into a class
- - Double-check commands where possible? e.g. send output on command, then check status of output.
- - View equipment connections and change settings per instrument instead of having to setup everything again - e.g. remote sense.
- - Create a 'remove channel' button
- - Make GUIs better with drop-downs and checkboxes
-    - PSU, Eload, DMM selections should all happen on a single page with a dropdown for each equipment type.
-	- Step cycles should have dropdowns for all text fields instead of requiring to know what goes there (voltage_v, current_a, etc.)
- - Add a way to get output state of all equipment so we can remove redundant disable and waits.
- - Create safety limits for extra measurement devices - e.g. cell monitors on multi-cell battery packs, temperature sensors.
- - Make a way to add temperature control of the ambient temp through heaters - heaters will have external controller, just need to pass setpoint.
- - Create a way to 'simulate a cell', connect multiple pieces of 'fake' equipment to a 'battery equivalent circuit'
- - Show which safety error was hit on GUI instead of needing to search through the logs?
- - Add a button on the GUI to advance to the next cycle or step
- - Add support for range switching of eloads between different cycles (e.g. use 4A range for a 1A discharge and 40A range for 5A discharge).
- - Allow 1 device to have multiple uses (e.g. a relay board and voltage/current/temperature monitor all in one) - will be easier when all equipment is virtual
- - Add features to relay board to define which inputs could connect to which outputs (e.g. share 2 power supplies and 2 eloads between 4 cells). (Board definition file for different relay boards?)
- - Add support for 'scheduling' different cycles when we have relay boards connected - e.g. share an eload and wait for other cell to be done with it.
- - Properly synchronize voltage and current measurements (only available on certain equipment). - Low Priority
- - finish adding ICA: smooth data before analysis
- - HPPC test profile creation gui
-
-
 ## Setup
 ### Prerequisites:
  - Tested with Python 3.9.10 (https://www.python.org/downloads/release/python-3910/)
@@ -96,6 +70,33 @@ Run '__Measurement_Script.py__' from command line.
 Choose to measure voltage, current, or temperature, the number of measurements to take, and the delay before starting the measurements.  
 Measurements will be printed out in the console.  
 
+
+## TODO List
+ - GraphIV.py - Single IR Processing - if we have enough data points for each step, apply some statistical processing (drop outliers, try and account for capacity)
+ - GraphIV.py - Allow processing of a bunch of different cell folders at a time. (e.g. ran the same test on 100 different cells and process the data all at once instead of clicking through all the folders).
+ - There are way too many queues and processes in the MainWindow. Consolidate them and make a better messaging system
+ - Allow adding another cycle to test configuration GUI - e.g. Rest then Single IR Test
+ - Make 'charge_discharge_control' file into a class
+ - Double-check commands where possible? e.g. send output on command, then check status of output.
+ - View equipment connections and change settings per instrument instead of having to setup everything again - e.g. remote sense.
+ - Create a 'remove channel' button
+ - Make GUIs better with drop-downs and checkboxes
+    - PSU, Eload, DMM selections should all happen on a single page with a dropdown for each equipment type.
+	- Step cycles should have dropdowns for all text fields instead of requiring to know what goes there (voltage_v, current_a, etc.)
+ - Add a way to get output state of all equipment so we can remove redundant disable and waits.
+ - Create safety limits for extra measurement devices - e.g. cell monitors on multi-cell battery packs, temperature sensors.
+ - Make a way to add temperature control of the ambient temp through heaters - heaters will have external controller, just need to pass setpoint.
+ - Create a way to 'simulate a cell', connect multiple pieces of 'fake' equipment to a 'battery equivalent circuit'
+ - Show which safety error was hit on GUI instead of needing to search through the logs?
+ - Add a button on the GUI to advance to the next cycle or step
+ - Add support for range switching of eloads between different cycles (e.g. use 4A range for a 1A discharge and 40A range for 5A discharge).
+ - Allow 1 device to have multiple uses (e.g. a relay board and voltage/current/temperature monitor all in one) - will be easier when all equipment is virtual
+ - Add features to relay board to define which inputs could connect to which outputs (e.g. share 2 power supplies and 2 eloads between 4 cells). (Board definition file for different relay boards?)
+ - Add support for 'scheduling' different cycles when we have relay boards connected - e.g. share an eload and wait for other cell to be done with it.
+ - Properly synchronize voltage and current measurements (only available on certain equipment). - Low Priority
+ - finish adding ICA: smooth data before analysis
+ - HPPC test profile creation gui
+ 
 
 ## TODO List Graveyard
  - DONE - Create an 'add channel' button
