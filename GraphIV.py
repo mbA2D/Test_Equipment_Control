@@ -324,6 +324,9 @@ def clean_single_step_data_ir_test(df):
         # - calculate a line equation for the voltage data (voltage vs time_from_start_of_step)
         # - extrapolate that line back to the start of the step (time t=0)
         # - drop all values except that extrapolated value (since all the values left get averaged later)
+        
+        # - If this is the 2nd step, we could theoretically extrapolate a line back to the start of the first step.
+        # - We might need a bit more data for that though (e.g. cell capacity, SoC?)
         pass
     elif df['Voltage'].size >= 5:
         #If we only have 5 measurements, then drop the highest and lowest values before averaging.
