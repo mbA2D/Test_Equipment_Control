@@ -4,6 +4,7 @@ Controlling Various Lab Test Equipment
 TODO List
  - DONE - Flush queues after and before idle control cycle
 	- Will cause issues with multiple channels accessing the same queues?
+ - GraphIV.py - Single IR Processing - if we have enough data points for each step, apply some statistical processing (drop outliers, try and account for capacity)
  - There are way too many queues and processes in the MainWindow. Consolidate them and make a better messaging system.
  - Make 'charge_discharge_control' file into a class
  - Double-check commands where possible? e.g. send output on command, then check status of output.
