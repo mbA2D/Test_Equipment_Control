@@ -1,7 +1,9 @@
 # Test_Equipment_Control
 Controlling Various Lab Test Equipment
+ - Battery Testing (Capacity, Internal Resistance, SoC-OCV, SoC-IR) 
+ - DC-DC Converter Testing (Efficiency across input voltage and output loads)
 
-##TODO List
+## TODO List
  - GraphIV.py - Single IR Processing - if we have enough data points for each step, apply some statistical processing (drop outliers, try and account for capacity)
  - There are way too many queues and processes in the MainWindow. Consolidate them and make a better messaging system
  - Allow adding another cycle to test configuration GUI - e.g. Rest then Single IR Test
@@ -27,7 +29,7 @@ Controlling Various Lab Test Equipment
  - HPPC test profile creation gui
 
 
-## Setup:
+## Setup
 ### Prerequisites:
  - Tested with Python 3.9.10 (https://www.python.org/downloads/release/python-3910/)
  - Keysight Instrument Control Bundle (https://www.keysight.com/ca/en/lib/software-detail/computer-software/keysight-instrument-control-bundle-download-1184883.html)
@@ -47,7 +49,7 @@ To make sure that your computer can see the devices you connect, run Keysight Co
 You can open the Interactive IO and send the query "\*IDN?" to get the device's identification.  
 If Keysight Connection Expert can see it, then the drivers are installed and you should be able to connect from the python script.  
 	
-## Running Tests:
+## Running Tests
 ### Testing Batteries:
 Run '__battery_test.py__' from command line.  
 1. File->Scan resources
@@ -78,18 +80,18 @@ The setups and tests can be exported and imported (.json format) for easy reconf
 
 See the results with GraphIV.py. Graphs and stats (capacity_ah, capacity_wh, max temperature, etc.) for each cycle can be generated.  
 
-### Testing DC-DC Converters  
+### Testing DC-DC Converters:  
 Run '__dc_dc_test.py__' from command line  
 - Allows setting up a test with psu on input, eload on output.  
 - Sweeps a range of output currents and a range of input voltages.  
 
 An efficiency graph can be generated from the data with DC_DC_Graph.py    
 
-### Testing solar panels by sweeping an e-load in CV mode  
+### Testing solar panels by sweeping an e-load in CV mode:  
 Run '__Eload_cv_sweep.py__' from command line  
 See results (solar panel IV curve with MPP marked) with Eload_cv_sweep.py  
 
-### Quick measurements with a DMM
+### Quick measurements with a DMM:
 Run '__Measurement_Script.py__' from command line.  
 Choose to measure voltage, current, or temperature, the number of measurements to take, and the delay before starting the measurements.  
 Measurements will be printed out in the console.  
@@ -125,4 +127,3 @@ Measurements will be printed out in the console.
  - DONE - Add support for a current profile - or a number of steps
  - DONE - Add 'safety limits' for voltage, time, current
  - DONE - Ensure Step functions use minimal equipment - e.g. only power supply when charging or only eload when discharging.
-
