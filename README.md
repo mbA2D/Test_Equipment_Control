@@ -5,12 +5,11 @@ TODO List
  - DONE - Flush queues after and before idle control cycle
 	- Will cause issues with multiple channels accessing the same queues?
  - GraphIV.py - Single IR Processing - if we have enough data points for each step, apply some statistical processing (drop outliers, try and account for capacity)
- - There are way too many queues and processes in the MainWindow. Consolidate them and make a better messaging system.
+ - There are way too many queues and processes in the MainWindow. Consolidate them and make a better messaging system
+ - Allow adding another cycle to test configuration GUI - e.g. Rest then Single IR Test
  - Make 'charge_discharge_control' file into a class
  - Double-check commands where possible? e.g. send output on command, then check status of output.
  - View equipment connections and change settings per instrument instead of having to setup everything again - e.g. remote sense.
- - DONE - Create an 'add channel' button
- - DONE - Repeated IR Discharge Test: Fix charge safety time, add rest after discharge
  - Create a 'remove channel' button
  - DONE - Show fake equipment even when no resources are available
  - Make GUIs better with drop-downs and checkboxes
@@ -111,3 +110,8 @@ See results (solar panel IV curve with MPP marked) with Eload_cv_sweep.py
 Run '__Measurement_Script.py__' from command line.  
 Choose to measure voltage, current, or temperature, the number of measurements to take, and the delay before starting the measurements.  
 Measurements will be printed out in the console.  
+
+
+TODO List Graveyard
+ - DONE - Create an 'add channel' button
+ - DONE - Repeated IR Discharge Test: Fix charge safety time, add rest after discharge
