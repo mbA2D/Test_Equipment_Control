@@ -12,6 +12,35 @@ Controlling Various Lab Test Equipment
     - Open a command line in the Test_Equipment_Control folder and run "pip install -r requirements.txt"
  - You may need to install libusb (backend for pyusb): https://github.com/pyusb/pyusb/issues/120#issuecomment-322058585 (You'll need 7-zip to unzip it: https://www.7-zip.org/)
 
+ - The command 'python -m visa info' should give this at the end of the response:
+```
+PyVISA Version: 1.11.3
+
+Backends:
+   ivi:
+      Version: 1.11.3 (bundled with PyVISA)
+      #1: C:\Windows\system32\visa32.dll:
+         found by: auto
+         bitness: 64
+         Vendor: National Instruments
+         Impl. Version: National Instruments
+         Spec. Version: National Instruments
+      #2: C:\Windows\system32\visa64.dll:
+         found by: auto
+         bitness: 64
+         Vendor: National Instruments
+         Impl. Version: National Instruments
+         Spec. Version: National Instruments
+   py:
+      Version: 0.5.2
+      ASRL INSTR: Available via PySerial (3.5)
+      USB INSTR: Available via PyUSB (1.1.0). Backend: libusb1
+      USB RAW: Available via PyUSB (1.1.0). Backend: libusb1
+      TCPIP INSTR: Available
+      TCPIP SOCKET: Available
+```
+
+
 We also need to comment out a few lines in the included libraries from adafruit.  
 1. Find where the python packages get installed ("Users->UserName->AppData->Local->Programs->Python->Python39->Lib->site-packages" for me, not using a virtual environment) and find the folder adafruit_blinka->microcontroller->mcp2221  
 2. Adafruit packages are amazing, but this one tries to create an object and creates an error when it can't find an mcp2221 device.  
