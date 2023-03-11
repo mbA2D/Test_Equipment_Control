@@ -6,7 +6,7 @@ Controlling Various Lab Test Equipment
 ## Setup
 ### Prerequisites:
  - Tested with Python 3.9.10 (https://www.python.org/downloads/release/python-3910/)
- - Keysight Instrument Control Bundle (https://www.keysight.com/ca/en/lib/software-detail/computer-software/keysight-instrument-control-bundle-download-1184883.html) We need IO Libraries Suite and Command Expert.
+ - Keysight Instrument Control Bundle (https://www.keysight.com/ca/en/lib/software-detail/computer-software/keysight-instrument-control-bundle-download-1184883.html) We need IO Libraries Suite and Command Expert (.NET 3.5 may be required for Command Expert: https://dotnet.microsoft.com/en-us/download/dotnet-framework/net35-sp1)
  - You might also need to download NI VISA (https://www.ni.com/en-ca/support/downloads/drivers/download.ni-visa.html#460225)
  - To install all the required python packages
     - Open a command line in the Test_Equipment_Control folder and run "pip install -r requirements.txt"
