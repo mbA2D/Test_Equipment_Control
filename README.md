@@ -101,11 +101,14 @@ Measurements will be printed out in the console.
 
 
 ## TODO List
+ - For tests with more than 1 channel, draw  lines between the blocks to separate them better.
+ - Make the CH0, CH1 headings larger
  - GraphIV.py - Single IR Processing - if we have enough data points for each step, apply some statistical processing (drop outliers, try and account for capacity)
  - GraphIV.py - Allow processing of a bunch of different cell folders at a time. (e.g. ran the same test on 100 different cells and process the data all at once instead of clicking through all the folders).
  - There are way too many queues and processes in the MainWindow. Consolidate them and make a better messaging system
- - Allow adding another cycle to test configuration GUI - e.g. Rest then Single IR Test
+ - Allow adding another cycle types to test configuration GUI - e.g. Rest then Single IR Test
  - Make 'charge_discharge_control' file into a class
+ - Change naming of cycle_settings_list_of_lists in charge_discharge_control to reflect the cycle and step structure.
  - Double-check commands where possible? e.g. send output on command, then check status of output.
  - View equipment connections and change settings per instrument instead of having to setup everything again - e.g. remote sense.
  - Create a 'remove channel' button
