@@ -305,6 +305,33 @@ def process_standard_charge_discharge_cycle(filedir, filename, subdirs, df, sepa
     plot_iv(df, save_filepath=filepath_graph, show_graph=show_discharge_graphs)
 
 
+def df_drop_low_and_high_value_by_column(df, column_label):
+    min_index = df[column_label].idxmin()
+    max_index = df[column_label].idxmax()
+    df.drop(index=[min_index, max_index], inplace=True)
+
+def clean_single_step_data_ir_test(df):
+    #Clean up the data
+    if df['Voltage'].size > 1:
+        #If more than 1 measurement, discard the first since the current may still be rising.
+        df.drop(index=0, inplace=True)
+    
+    if df['Voltage'].size >= 10:
+        #TODO
+        #If we still have at least 10 measurements, we can consider only the 2nd half and extrapolate
+        #voltage back to the start of the step to account for capacity loss.
+        # - drop the first half of the data (will be less linear)
+        # - calculate a line equation for the voltage data (voltage vs time_from_start_of_step)
+        # - extrapolate that line back to the start of the step (time t=0)
+        # - drop all values except that extrapolated value (since all the values left get averaged later)
+        
+        # - If this is the 2nd step, we could theoretically extrapolate a line back to the start of the first step.
+        # - We might need a bit more data for that though (e.g. cell capacity, SoC?)
+        pass
+    elif df['Voltage'].size >= 5:
+        #If we only have 5 measurements, then drop the highest and lowest values before averaging.
+        df_drop_low_and_high_value_by_column(df, 'Voltage')
+
 def process_single_ir_test(df, printout = False):
     #find index of last extry in first step
     #Data_Timestamp_From_Step_Start goes from high back to low - diff is negative.
@@ -315,6 +342,9 @@ def process_single_ir_test(df, printout = False):
     #split data into 1st step and 2nd step
     df_1 = df.iloc[:row_index_2nd_step]
     df_2 = df.iloc[row_index_2nd_step:]
+    
+    clean_single_step_data_ir_test(df_1)
+    clean_single_step_data_ir_test(df_2)
     
     s1_v = df_1['Voltage'].mean()
     s1_i = df_1['Current'].mean()
