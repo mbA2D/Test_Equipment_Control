@@ -105,6 +105,8 @@ Measurements will be printed out in the console.
  - Make the CH0, CH1 headings larger
  - GraphIV.py - Single IR Processing - if we have enough data points for each step, apply some statistical processing (drop outliers, try and account for capacity)
  - GraphIV.py - Allow processing of a bunch of different cell folders at a time. (e.g. ran the same test on 100 different cells and process the data all at once instead of clicking through all the folders).
+     - Need to distinguish between real log csvs and other csvs.
+ - Make the cycles a dictionary instead of just a list of steps so we can store other information in them (e.g. Cycle Type, eq required, etc.)
  - There are way too many queues and processes in the MainWindow. Consolidate them and make a better messaging system
  - Allow adding another cycle types to test configuration GUI - e.g. Rest then Single IR Test
  - Make 'charge_discharge_control' file into a class
