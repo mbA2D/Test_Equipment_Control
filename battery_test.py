@@ -401,7 +401,7 @@ class MainTestWindow(QMainWindow):
             #Set the next status label
             status_label_text = self.status_label_list[ch_num].text()
             split_status_label_text = status_label_text.split(' ')
-            split_status_label_text[-1] = new_test_configuration['cdc_input_dict']['cycle_settings_list_of_lists'][0][0]['cycle_display']
+            split_status_label_text[-1] = new_test_configuration['cdc_input_dict']['settings_cycle_list_step_list'][0][0]['cycle_display']
             status_label_text = ' '.join(split_status_label_text)
             self.status_label_list[ch_num].setText(status_label_text)
             print("CH{} - Configured Test".format(new_test_configuration['ch_num']))
@@ -433,7 +433,7 @@ class MainTestWindow(QMainWindow):
                                 #Set the current status to idle and next status to 'N/A' or the next cycle
                                 current_status = "Idle"
                                 try:
-                                    next_status = self.cdc_input_dict_list[ch_num]['cycle_settings_list_of_lists'][0][0]['cycle_display']
+                                    next_status = self.cdc_input_dict_list[ch_num]['settings_cycle_list_step_list'][0][0]['cycle_display']
                                 except (KeyError, TypeError):
                                     next_status = "N/A"
                                 self.status_label_list[ch_num].setText('Current Status: {}\nNext Status: {}'.format(current_status, next_status))

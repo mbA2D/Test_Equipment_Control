@@ -312,6 +312,7 @@ def df_drop_low_and_high_value_by_column(df, column_label):
 
 def clean_single_step_data_ir_test(df):
     #Clean up the data
+    df.reset_index(inplace=True)
     if df['Voltage'].size > 1:
         #If more than 1 measurement, discard the first since the current may still be rising.
         df.drop(index=0, inplace=True)
@@ -358,7 +359,7 @@ def process_single_ir_test(df, printout = False):
     
     return ir
     
-def process_repeated_ir_test(df, return_type = 'array'):
+def process_repeated_ir_test(df, return_type = 'array', printout = False):
     #find index of last entry in first step
     
     #Data_Timestamp_From_Step_Start goes from high back to low - diff is negative.
@@ -377,6 +378,9 @@ def process_repeated_ir_test(df, return_type = 'array'):
         
         #put it in the right spot in the df
         df['internal_resistance_ohms'].iloc[indexes_at_current_change[i]] = ir_step
+    
+    if printout:
+        print(df['internal_resistance_ohms'].dropna().values)
     
     if return_type == 'df':
         return df
@@ -416,6 +420,20 @@ def process_repeated_ir_discharge_test(df, filename, filedir, sub_dirs, cell_nam
     df_soc_ir.to_csv(filepath_SoC_IR, index=False)
     plt.savefig(os.path.splitext(filepath_SoC_IR_graph)[0])
 
+def process_rest(df, printout = True):
+    #Rest start voltage, end voltage, and average voltage.
+    #A rest cycle should have only a single step.
+    
+    first_voltage = df['Voltage'].iloc[0]
+    average_voltage = df['Voltage'].mean()
+    last_voltage = df['Voltage'].iloc[-1]
+    time_s = df['Data_Timestamp_From_Step_Start'].max()
+    
+    if printout:
+        print("Rest Voltages: First: {} V  Average: {} V  Last: {} V  Time: {} s".format(first_voltage, average_voltage, last_voltage, time_s))
+    
+    return (first_voltage, average_voltage, last_voltage, time_s)
+
 def add_soc_by_coulomb_counting(df):
     #We know for a full cycle, we start with a full charge and end with a full discharge
     df['SecsFromLastTimestamp'] = df['Data_Timestamp'].diff().fillna(0)
@@ -426,7 +444,21 @@ def add_soc_by_coulomb_counting(df):
     return df
 
 if __name__ == '__main__':
-    filepaths = FileIO.get_multiple_filepaths()
+    
+    message = "Do you want to process all files in a directory or select files yourself?"
+    title = "File Location"
+    choices = ["Directory", "Files"]
+    choice = eg.buttonbox(message, title, choices)
+    if choice == None:
+        quit()
+    elif choice == "Files":
+        filepaths = FileIO.get_multiple_filepaths()
+    elif choice == "Directory":
+        filepaths = list()
+        for root, dirs, files in os.walk(FileIO.get_directory()):
+            for name in files:
+                if os.path.splitext(name)[1] == ".csv":
+                    filepaths.append(os.path.join(root, name))
     
     #Are there temperature logs associated?
     temp_log_dir = None
@@ -451,19 +483,19 @@ if __name__ == '__main__':
     
     #Determining the cycle type
     cycle_type = None
-    supported_cycle_types = [
-                            "Standard_Charge-Discharge_Cycle",
-                            "Single_IR_Test",
-                            "Repeated_IR_Test",
-                            "Repeated_IR_Discharge Test",
-                            ]
+    #supported_cycle_types = [
+    #                        "Standard_Charge-Discharge_Cycle",
+    #                        "Single_IR_Test",
+    #                        "Repeated_IR_Test",
+    #                        "Repeated_IR_Discharge Test",
+    #                        ]
     #cycle_type = eg.choicebox(title = "Cycle Type",
     #                          msg = "Choose the cycle type of the files selected",
     #                          choices = supported_cycle_types)
     
     #go through each voltage log and check it
     for filepath in filepaths:
-        print(f"Voltage Log File: {os.path.split(filepath)[-1]}")
+        print(f"Log File: {os.path.split(filepath)[-1]}")
         filedir = os.path.dirname(filepath)
         filename = os.path.split(filepath)[-1]  
         
@@ -490,8 +522,7 @@ if __name__ == '__main__':
             log_time = filename_parts[4]
 
 
-        ################ THIS ALL HAPPENS FOR A STANDARD CHARGE-DISCHARGE CYCLE ########################
-        
+        #THIS ALL HAPPENS FOR A STANDARD CHARGE-DISCHARGE CYCLE
         if  cycle_type == "Standard_Charge-Discharge_Cycle" or \
             cycle_type == "Single_CC_Cycle" or \
             cycle_type == "One_Setting_Continuous_CC_Cycles_With_Rest" or \
@@ -501,12 +532,15 @@ if __name__ == '__main__':
             
             process_standard_charge_discharge_cycle(filedir, filename, sub_dirs, df, separate_temps, temp_log_dir, show_ica_graphs, show_discharge_graphs)
         
-        elif cycle_type == "Single_IR_Test": #Prints out an IR value
+        elif cycle_display == "Single_IR_Test": #Prints out an IR value
             process_single_ir_test(df, printout = True)
         
-        elif cycle_type == "Repeated_IR_Test": #Prints out array with IR values
-            process_repeated_ir_test(df)
+        elif cycle_display == "Repeated_IR_Test": #Prints out array with IR values
+            process_repeated_ir_test(df, printout = True)
         
-        elif cycle_type == "Repeated_IR_Discharge_Test": #Creates a csv with SoC and IR
+        elif cycle_display == "Repeated_IR_Discharge_Test": #Creates a csv with SoC and IR
             process_repeated_ir_discharge_test(df, filename, filedir, sub_dirs, cell_name)
+            
+        elif cycle_display == "Rest": #Prints out first, last and average voltages of the rest period
+            process_rest(df, printout = True)
         

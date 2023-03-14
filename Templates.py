@@ -42,7 +42,8 @@ class CycleTypes:
         "Step_Cycle":									{'func_call': '', 'str_chg_opt': False},
         "Continuous_Step_Cycles":						{'func_call': '', 'str_chg_opt': True},
         "Single_IR_Test":	        					{'func_call': '', 'str_chg_opt': False},
-        "Repeated_IR_Discharge_Test":      	            {'func_call': '', 'str_chg_opt': True}
+        "Repeated_IR_Discharge_Test":      	            {'func_call': '', 'str_chg_opt': True},
+        "Rest":                                         {'func_call': '', 'str_chg_opt': False}
     }
     
     cycle_requirements = {
@@ -206,11 +207,11 @@ class SingleIRSettings(CycleSettings):
             "cycle_display":            ('Single_IR_Test',)
         }
 
-class RepeatedIRSettings(CycleSettings):
+class RepeatedIRDischargeSettings(CycleSettings):
     def __init__(self):
         self.settings = {
-            "cycle_type":               'repeated_ir_test',
-            "cycle_display":            'Repeated_IR_Test',
+            "cycle_type":               'repeated_ir_discharge_test',
+            "cycle_display":            'Repeated_IR_Discharge_Test',
             "charge_end_v": 			4.2,
             "charge_a": 				1,
             "charge_end_a": 			0.1,
@@ -230,8 +231,8 @@ class RepeatedIRSettings(CycleSettings):
             "estimated_capacity_ah":    2.5
         }
         self.valid_strings = {
-            "cycle_type":				('repeated_ir_test',),
-            "cycle_display":            ('Repeated_IR_Test',)
+            "cycle_type":				('repeated_ir_discharge_test',),
+            "cycle_display":            ('Repeated_IR_Discharge_Test',)
         }
 
 ####################  DC DC TESTING  ############

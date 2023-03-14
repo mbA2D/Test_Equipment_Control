@@ -748,7 +748,20 @@ def continuous_step_cycles_info():
         return None
     
     return cycle_settings_list
+
+def rest_info():
+    rest_settings = Templates.RestSettings()
+    rest_settings.get_cycle_settings("Rest")
     
+    if rest_settings == None:
+        return None
+        
+    rest_settings = rest_settings.settings
+    rest_settings_list = list()
+    rest_settings_list.append(convert_rest_settings_to_steps(rest_settings))
+    
+    return rest_settings_list
+
 def single_ir_test_info():
     #Create a cycle with 2 steps.
     ir_test_settings = Templates.SingleIRSettings()
@@ -792,9 +805,9 @@ def convert_single_ir_settings_to_steps(ir_settings, model_step_settings = None)
     return return_list
     
     
-def repeated_ir_test_info():
-    ir_test_settings = Templates.RepeatedIRSettings()
-    ir_test_settings.get_cycle_settings("Repeated IR Test")
+def repeated_ir_discharge_test_info():
+    ir_test_settings = Templates.RepeatedIRDischargeSettings()
+    ir_test_settings.get_cycle_settings("Repeated IR Discharge Test")
     
     if ir_test_settings.settings == None:
         return None
@@ -909,7 +922,7 @@ def get_cycle_type():
     cycle_type = eg.choicebox(msg, title, list(cycle_types.keys()))
     return cycle_type
 
-def get_cycle_settings_list_of_lists(cycle_type):
+def get_settings_cycle_list_step_list(cycle_type):
     cycle_types = Templates.CycleTypes.cycle_types
     
     #different cycle types that are available
@@ -921,13 +934,14 @@ def get_cycle_settings_list_of_lists(cycle_type):
     cycle_types["Step_Cycle"]['func_call'] = multi_step_cell_info
     cycle_types["Continuous_Step_Cycles"]['func_call'] = continuous_step_cycles_info
     cycle_types["Single_IR_Test"]['func_call'] = single_ir_test_info
-    cycle_types["Repeated_IR_Discharge_Test"]['func_call'] = repeated_ir_test_info
+    cycle_types["Repeated_IR_Discharge_Test"]['func_call'] = repeated_ir_discharge_test_info
+    cycle_types["Rest"]['func_call'] = rest_info
     
     #gather the list settings based on the cycle type
-    cycle_settings_list_of_lists = list()
-    cycle_settings_list_of_lists = cycle_types[cycle_type]['func_call']()
+    settings_cycle_list_step_list = list()
+    settings_cycle_list_step_list = cycle_types[cycle_type]['func_call']()
     
-    if cycle_settings_list_of_lists == None:
+    if settings_cycle_list_step_list == None:
         return None
     
     #STORAGE CHARGE
@@ -937,9 +951,9 @@ def get_cycle_settings_list_of_lists(cycle_type):
     
     #extend adds two lists, append adds a single element to a list. We want extend here since charge_only_cycle_info() returns a list.
     if do_a_storage_charge:
-        cycle_settings_list_of_lists.extend(charge_only_cycle_info())
+        settings_cycle_list_step_list.extend(charge_only_cycle_info())
         
-    return cycle_settings_list_of_lists
+    return settings_cycle_list_step_list
 
 def get_eq_req_for_cycle(settings_list):
     eq_req_dict = {'psu': False, 'eload': False}
@@ -956,17 +970,21 @@ def get_eq_req_for_cycle(settings_list):
             
     return eq_req_dict
 
-def get_eq_req_dict(cycle_settings_list_of_lists):
+def get_eq_req_dict(settings_cycle_list_step_list):
     #REQUIRED EQUIPMENT
     eq_req_dict = {'psu': False, 'eload': False}
     cycle_requirements = Templates.CycleTypes.cycle_requirements
     
-    for settings_list in cycle_settings_list_of_lists:
+    for settings_list in settings_cycle_list_step_list:
         eq_req_for_cycle_dict = get_eq_req_for_cycle(settings_list)
         eq_req_dict['psu'] = eq_req_dict['psu'] or eq_req_for_cycle_dict['psu']
         eq_req_dict['eload'] = eq_req_dict['eload'] or eq_req_for_cycle_dict['eload']
     
     return eq_req_dict
+
+def ask_another_cycle():
+    message = "Do you want to add another cycle?"
+    return eg.ynbox(title = "Add Cycle", msg = message)
 
 def get_input_dict(ch_num = None, queue = None, current_cell_name = None):
     input_dict = {}
@@ -981,17 +999,37 @@ def get_input_dict(ch_num = None, queue = None, current_cell_name = None):
         return None
     input_dict['directory'] = directory
     
-    cycle_type = get_cycle_type()
-    if cycle_type == None:
-        return None
-    input_dict['cycle_type'] = cycle_type
+    add_more_cycles = True
+    cycle_counter = 0
+    settings_cycle_list_step_list = list()
     
-    cycle_settings_list_of_lists = get_cycle_settings_list_of_lists(input_dict['cycle_type'])
-    if cycle_settings_list_of_lists == None:
-        return None
-    input_dict['cycle_settings_list_of_lists'] = cycle_settings_list_of_lists
+    while add_more_cycles:
+        #Cycle Type
+        cycle_type = get_cycle_type()
+        if cycle_type == None:
+            return None
+        
+        if cycle_counter == 0:
+            input_dict['cycle_type'] = cycle_type
+        
+        #Cycle Settings
+        new_settings_cycle_list_step_list = get_settings_cycle_list_step_list(cycle_type)
+        if new_settings_cycle_list_step_list == None:
+            return None
+        else:
+            settings_cycle_list_step_list.extend(new_settings_cycle_list_step_list)
+        
+        cycle_counter += 1
+        
+        #Add another cycle?
+        ask_cycle = ask_another_cycle()
+        if ask_cycle == None or ask_cycle == False:
+            add_more_cycles = False
+            
+    input_dict['settings_cycle_list_step_list'] = settings_cycle_list_step_list
     
-    input_dict['eq_req_dict'] = get_eq_req_dict(input_dict['cycle_settings_list_of_lists']) #This does not have a GUI associated.
+    #Equipment Required
+    input_dict['eq_req_dict'] = get_eq_req_dict(input_dict['settings_cycle_list_step_list']) #This does not have a GUI associated.
     
     if queue != None:
         dict_to_put = {'ch_num': ch_num, 'cdc_input_dict': input_dict}
@@ -1053,38 +1091,38 @@ def charge_discharge_control(res_ids_dict, data_out_queue = None, data_in_queue 
         end_list_of_lists = False
         end_condition = 'none'
         
-        for cycle_num, cycle_settings_list in enumerate(input_dict['cycle_settings_list_of_lists']):
+        for cycle_num, settings_cycle_list in enumerate(input_dict['settings_cycle_list_step_list']):
             
-            csv_filepath = FileIO.start_file(csv_dir, "{} {} {}".format(input_dict['cell_name'], input_dict['cycle_type'], cycle_settings_list[0]["cycle_display"]), extension = '.csv')
-            log_filepath = FileIO.start_file(log_dir, "{} {} {}".format(input_dict['cell_name'], input_dict['cycle_type'], cycle_settings_list[0]["cycle_display"]), extension = '.txt')
+            csv_filepath = FileIO.start_file(csv_dir, "{} {} {}".format(input_dict['cell_name'], input_dict['cycle_type'], settings_cycle_list[0]["cycle_display"]), extension = '.csv')
+            log_filepath = FileIO.start_file(log_dir, "{} {} {}".format(input_dict['cell_name'], input_dict['cycle_type'], settings_cycle_list[0]["cycle_display"]), extension = '.txt')
             
             print("CH{} - Cycle {} Starting {}".format(ch_num, cycle_num, time.ctime()), flush=True)
             FileIO.write_line_txt(log_filepath, "Cycle {} Starting".format(cycle_num))
-            FileIO.write_line_txt(log_filepath, "Cycle Settings List: {}".format(cycle_settings_list))
+            FileIO.write_line_txt(log_filepath, "Cycle Settings List: {}".format(settings_cycle_list))
             
             try:
             
                 #TODO - If we have a relay board to disconnect equipment, ensure we are still connected to the correct equipment
                 if eq_dict.get('relay_board') != None:
                     #determine the equipment that we need for this cycle
-                    eq_req_for_cycle_dict = get_eq_req_for_cycle(cycle_settings_list)
+                    eq_req_for_cycle_dict = get_eq_req_for_cycle(settings_cycle_list)
                     connect_proper_equipment(eq_dict, eq_req_for_cycle_dict)
             
-                for step_num, cycle_settings in enumerate(cycle_settings_list):
+                for step_num, step_settings in enumerate(settings_cycle_list):
                     FileIO.write_line_txt(log_filepath, "Cycle {} Step {} Starting".format(cycle_num, step_num))
-                    FileIO.write_line_txt(log_filepath, "Step Settings: {}".format(cycle_settings))
+                    FileIO.write_line_txt(log_filepath, "Step Settings: {}".format(step_settings))
                     
-                    #print("Cycle Settings: {}".format(cycle_settings))
+                    #print("Cycle Settings: {}".format(step_settings))
                     end_condition = 'none'
                     
                     #Set label text for current and next status
-                    current_cycle_type = cycle_settings["cycle_type"]
-                    current_display_status = cycle_settings["cycle_display"]
+                    current_cycle_type = step_settings["cycle_type"]
+                    current_display_status = step_settings["cycle_display"]
                     try:
-                        next_display_status = cycle_settings_list[step_num + 1]["cycle_display"]
+                        next_display_status = settings_cycle_list[step_num + 1]["cycle_display"]
                     except (IndexError, TypeError):
                         try:
-                            next_display_status = input_dict['cycle_settings_list_of_lists'][cycle_num + 1][0]["cycle_display"]
+                            next_display_status = input_dict['settings_cycle_list_step_list'][cycle_num + 1][0]["cycle_display"]
                         except (IndexError, TypeError):
                             next_display_status = "Idle"
                     
@@ -1092,7 +1130,7 @@ def charge_discharge_control(res_ids_dict, data_out_queue = None, data_in_queue 
                     
                     #Step Functions
                     if current_cycle_type == 'step':
-                        end_condition = single_step_cycle(csv_filepath, log_filepath, cycle_settings, eq_dict, data_out_queue = data_out_queue, data_in_queue = data_in_queue, ch_num = ch_num, step_index = step_num)
+                        end_condition = single_step_cycle(csv_filepath, log_filepath, step_settings, eq_dict, data_out_queue = data_out_queue, data_in_queue = data_in_queue, ch_num = ch_num, step_index = step_num)
                     
                     FileIO.write_line_txt(log_filepath, "Cycle {} Step {} Ending. Reason: {}".format(cycle_num, step_num, end_condition))
                     
