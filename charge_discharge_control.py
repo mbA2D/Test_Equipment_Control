@@ -827,14 +827,14 @@ def repeated_ir_discharge_test_info():
     rest1_settings = Templates.RestSettings()
     rest1_settings.settings["meas_log_int_s"] = ir_test_settings.settings["meas_log_int_s"]
     rest1_settings.settings["rest_time_min"] = ir_test_settings.settings["rest_after_charge_min"]
-    rest1_step_settings = convert_rest_settings_to_steps(rest_settings.settings)
+    rest1_step_settings = convert_rest_settings_to_steps(rest1_settings.settings)
     
     step_settings_list = convert_repeated_ir_settings_to_steps(ir_test_settings.settings)
     
     rest2_settings = Templates.RestSettings()
     rest2_settings.settings["meas_log_int_s"] = ir_test_settings.settings["meas_log_int_s"]
     rest2_settings.settings["rest_time_min"] = ir_test_settings.settings["rest_after_discharge_min"]
-    rest2_step_settings = convert_rest_settings_to_steps(rest_settings.settings)
+    rest2_step_settings = convert_rest_settings_to_steps(rest2_settings.settings)
     
     settings_list = list()
     settings_list.append(charge_step_settings)
