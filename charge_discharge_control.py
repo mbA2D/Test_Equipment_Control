@@ -827,6 +827,11 @@ def repeated_ir_discharge_test_info():
     rest1_settings = Templates.RestSettings()
     rest1_settings.settings["meas_log_int_s"] = ir_test_settings.settings["meas_log_int_s"]
     rest1_settings.settings["rest_time_min"] = ir_test_settings.settings["rest_after_charge_min"]
+    rest1_settings.settings["safety_min_current_a"] = ir_test_settings.settings["safety_min_current_a"]
+    rest1_settings.settings["safety_max_current_a"] = ir_test_settings.settings["safety_max_current_a"]
+    rest1_settings.settings["safety_min_voltage_v"] = ir_test_settings.settings["safety_min_voltage_v"]
+    rest1_settings.settings["safety_max_voltage_v"] = ir_test_settings.settings["safety_max_voltage_v"]
+    rest1_settings.settings["safety_max_time_s"] = int(rest1_settings.settings["rest_time_min"]*60*1.25)
     rest1_step_settings = convert_rest_settings_to_steps(rest1_settings.settings)
     
     step_settings_list = convert_repeated_ir_settings_to_steps(ir_test_settings.settings)
@@ -834,6 +839,11 @@ def repeated_ir_discharge_test_info():
     rest2_settings = Templates.RestSettings()
     rest2_settings.settings["meas_log_int_s"] = ir_test_settings.settings["meas_log_int_s"]
     rest2_settings.settings["rest_time_min"] = ir_test_settings.settings["rest_after_discharge_min"]
+    rest2_settings.settings["safety_min_current_a"] = ir_test_settings.settings["safety_min_current_a"]
+    rest2_settings.settings["safety_max_current_a"] = ir_test_settings.settings["safety_max_current_a"]
+    rest2_settings.settings["safety_min_voltage_v"] = ir_test_settings.settings["safety_min_voltage_v"]
+    rest2_settings.settings["safety_max_voltage_v"] = ir_test_settings.settings["safety_max_voltage_v"]
+    rest2_settings.settings["safety_max_time_s"] = int(rest2_settings.settings["rest_time_min"]*60*1.25)
     rest2_step_settings = convert_rest_settings_to_steps(rest2_settings.settings)
     
     settings_list = list()
