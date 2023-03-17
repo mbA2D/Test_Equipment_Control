@@ -12,7 +12,7 @@ Controlling Various Lab Test Equipment
     - Open a command line in the Test_Equipment_Control folder and run "pip install -r requirements.txt"
  - You may need to install libusb (backend for pyusb): https://github.com/pyusb/pyusb/issues/120#issuecomment-322058585 (You'll need 7-zip to unzip it: https://www.7-zip.org/)
 
- - The command 'python -m visa info' should give this at the end of the response:
+ - The command 'python -m visa info' should give something like this at the end of the response, where ivi and py (ASRL and USB) backends are both available:
 ```
 PyVISA Version: 1.11.3
 
@@ -103,6 +103,7 @@ Measurements will be printed out in the console.
 ## TODO List
  - For tests with more than 1 channel, draw  lines between the blocks to separate them better.
  - Make the CH0, CH1 headings larger
+ - Make sure to take a '0 current' reading at the start of every test to determine a rough starting SoC.
  - GraphIV.py - Single IR Processing - if we have enough data points for each step, apply some statistical processing (drop outliers, try and account for capacity)
  - GraphIV.py - Allow processing of a bunch of different cell folders at a time. (e.g. ran the same test on 100 different cells and process the data all at once instead of clicking through all the folders).
      - Need to distinguish between real log csvs and other csvs.
