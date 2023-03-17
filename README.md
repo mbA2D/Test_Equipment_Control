@@ -5,14 +5,20 @@ Controlling Various Lab Test Equipment
 
 ## Setup
 ### Prerequisites:
- - Tested with Python 3.9.10 (https://www.python.org/downloads/release/python-3910/)
+ - Tested with Python 3.9.10. Download and install it from here: (https://www.python.org/downloads/release/python-3910/)  
+   - Make sure to check 'add Python to PATH' when installing, and 'Disable PATH Length Limit'
+   - If you want to use a virtual environment to store all the packages and not have package version conflicts with other programs on your system, set that up now. 
+     - Navigate to the Test_Equipment_Control directory and use the following to create a virtual environment:
+     - Create the venv: ```python -m venv venv --prompt="batlab"```
+     - Activate the venv (must be done every time you use the script: ```venv\Scripts\activate```
+     - More details on virtual environments here: https://realpython.com/python-virtual-environments-a-primer/
  - Keysight Instrument Control Bundle (https://www.keysight.com/ca/en/lib/software-detail/computer-software/keysight-instrument-control-bundle-download-1184883.html) We need IO Libraries Suite and Command Expert (.NET 3.5 may be required for Command Expert: https://dotnet.microsoft.com/en-us/download/dotnet-framework/net35-sp1)
  - NI VISA (https://www.ni.com/en-ca/support/downloads/drivers/download.ni-visa.html#460225)
  - To install all the required python packages
-    - Open a command line in the Test_Equipment_Control folder and run "pip install -r requirements.txt"
+    - Open a command line in the Test_Equipment_Control folder and run ```pip install -r requirements.txt```
  - You may need to install libusb (backend for pyusb): https://github.com/pyusb/pyusb/issues/120#issuecomment-322058585 (You'll need 7-zip to unzip it: https://www.7-zip.org/)
 
- - The command 'python -m visa info' should give something like this at the end of the response, where ivi and py (ASRL and USB) backends are both available:
+ - The command ```python -m visa info``` should give something like this at the end of the response, where ivi and py (ASRL and USB) backends are both available:
 ```
 PyVISA Version: 1.11.3
 
@@ -44,17 +50,17 @@ Backends:
 We also need to comment out a few lines in the included libraries from adafruit.  
 1. Find where the python packages get installed ("Users->UserName->AppData->Local->Programs->Python->Python39->Lib->site-packages" for me, not using a virtual environment) and find the folder adafruit_blinka->microcontroller->mcp2221  
 2. Adafruit packages are amazing, but this one tries to create an object and creates an error when it can't find an mcp2221 device.  
-3. In the file "mcp2221.py", comment out the last line "#mcp2221 = MCP2221()" that tries to create the object.  
-4. In the file "i2c.py", comment out the first line "#from .mcp2221 import mcp2221" that tries to import that object that was created.  
+3. In the file ```mcp2221.py```, comment out the last line ```#mcp2221 = MCP2221()``` that tries to create the object.  
+4. In the file ```i2c.py```, comment out the first line ```#from .mcp2221 import mcp2221``` that tries to import that object that was created.  
 
 ### Testing Connection:
 To make sure that your computer can see the devices you connect, run Keysight Connection Expert and see which devices are available.  
-You can open the Interactive IO and send the query "\*IDN?" to get the device's identification.  
+You can open the Interactive IO and send the query ```\*IDN?``` to get the device's identification.  
 If Keysight Connection Expert can see it, then the drivers are installed and you should be able to connect from the python script.  
 	
 ## Running Tests
 ### Testing Batteries:
-Run '__battery_test.py__' from command line.  
+Run ```battery_test.py``` from command line.  
 1. File->Scan resources
     - This checks all the backends for available equipment. Some equipment previously connected to but not available now may be recognized.
 2. File->Connect to equipment
@@ -81,21 +87,21 @@ Run '__battery_test.py__' from command line.
 
 The setups and tests can be exported and imported (.json format) for easy reconfiguration when restarting the software.  
 
-See the results with GraphIV.py. Graphs and stats (capacity_ah, capacity_wh, max temperature, etc.) for each cycle can be generated.  
+See the results with ```GraphIV.py```. Graphs and stats (capacity_ah, capacity_wh, max temperature, etc.) for each cycle can be generated.  
 
 ### Testing DC-DC Converters:  
-Run '__dc_dc_test.py__' from command line  
+Run ```dc_dc_test.py``` from command line  
 - Allows setting up a test with psu on input, eload on output.  
 - Sweeps a range of output currents and a range of input voltages.  
 
-An efficiency graph can be generated from the data with DC_DC_Graph.py    
+An efficiency graph can be generated from the data with ```DC_DC_Graph.py```   
 
 ### Testing solar panels by sweeping an e-load in CV mode:  
-Run '__Eload_cv_sweep.py__' from command line  
-See results (solar panel IV curve with MPP marked) with Eload_cv_sweep.py  
+Run ```Eload_cv_sweep.py``` from command line  
+See results (solar panel IV curve with MPP marked) with ```Eload_cv_sweep.py```  
 
 ### Quick measurements with a DMM:
-Run '__Measurement_Script.py__' from command line.  
+Run ```Measurement_Script.py``` from command line.  
 Choose to measure voltage, current, or temperature, the number of measurements to take, and the delay before starting the measurements.  
 Measurements will be printed out in the console.  
 
