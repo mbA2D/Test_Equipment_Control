@@ -352,6 +352,7 @@ def step_cell(filepath, log_filepath, step_settings, eq_dict, data_out_queue = N
     if start_step(step_settings, eq_dict, log_filepath):
         FileIO.write_line_txt(log_filepath, "Start Step Successful")
         step_start_time = time.time()
+        perf_counter_start = time.perf_counter()
         
         data = dict()
         data.update(measure_battery(eq_dict))
@@ -369,7 +370,16 @@ def step_cell(filepath, log_filepath, step_settings, eq_dict, data_out_queue = N
         
         #Do the measurements and check the end conditions at every logging interval
         while end_condition == 'none':
-            time.sleep(step_settings["meas_log_int_s"] - ((time.time() - step_start_time) % step_settings["meas_log_int_s"]))
+            perf_counter_end = perf_counter_start + step_settings["meas_log_int_s"]
+            while time.perf_counter() < perf_counter_end:
+                pass
+                
+            #while ((time.time() - data["Data_Timestamp"]) < step_settings["meas_log_int_s"]):
+            #    time.sleep(
+            #time.sleep(step_settings["meas_log_int_s"] - ((time.time() - step_start_time) % step_settings["meas_log_int_s"]))
+            
+            perf_counter_start = time.perf_counter()
+            
             data.update(measure_battery(eq_dict, data_out_queue = data_out_queue, step_index = step_index))
             data["Data_Timestamp_From_Step_Start"] = (data["Data_Timestamp"] - step_start_time)
             end_condition = evaluate_end_condition(step_settings, data, data_in_queue, log_filepath)
