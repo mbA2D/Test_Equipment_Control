@@ -12,7 +12,7 @@ Controlling Various Lab Test Equipment
     - Open a command line in the Test_Equipment_Control folder and run "pip install -r requirements.txt"
  - You may need to install libusb (backend for pyusb): https://github.com/pyusb/pyusb/issues/120#issuecomment-322058585 (You'll need 7-zip to unzip it: https://www.7-zip.org/)
 
- - The command 'python -m visa info' should give this at the end of the response:
+ - The command 'python -m visa info' should show that all backends are available at the end of the response:
 ```
 PyVISA Version: 1.11.3
 
@@ -128,6 +128,7 @@ Measurements will be printed out in the console.
  - Properly synchronize voltage and current measurements (only available on certain equipment). - Low Priority
  - finish adding ICA: smooth data before analysis
  - HPPC test profile creation gui
+ - Allow different measurement rates for different equipment - temperature can be measured more slowly
  
 
 ## TODO List Graveyard
