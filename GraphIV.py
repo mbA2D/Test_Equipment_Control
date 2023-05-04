@@ -38,48 +38,20 @@ def process_one_file(df, save_as_name, database, datatype, windowlength = 9,
     if not os.path.exists(database): 
         init_master_table(database)
     cleanset_name = save_as_name + 'CleanSet'
-    if datatype == 'ARBIN':
-        df['datatype'] = 'ARBIN'
-        expected_cols = [
-            'Cycle_Index',
-            'Voltage(V)',
-            'Current(A)',
-            'Charge_Capacity(Ah)',
-            'Discharge_Capacity(Ah)',
-            'Step_Index']
-        assert all(item in list(df.columns) for item in expected_cols)
-    elif datatype == 'MACCOR':
-        df['MaccCharLab'] = df.apply(
-            lambda row: macc_chardis(row), axis=1)
-        df['Current(A)'] = df['Current [A]'] * df['MaccCharLab']
-        df['datatype'] = 'MACCOR'
-        expected_cols = [
-            'Cycle C',
-            'Voltage [V]',
-            'Current [A]',
-            'Cap. [Ah]',
-            'Md']
-        assert all(item in list(df.columns) for item in expected_cols)
-        df.rename(
-            columns={
-                'Cycle C': 'Cycle_Index',
-                'Voltage [V]': 'Voltage(V)',
-                'Current [A]': 'Abs_Current(A)',
-                'Cap. [Ah]': 'Cap(Ah)'},
-            inplace=True)
-    elif datatype == 'A2D':
-        expected_cols = [
-            'Voltage',
-            'Current',
-            'Abs_Capacity_Ah_Up_To']
-        assert all(item in list(df.columns) for item in expected_cols)
-        df.rename(
-            columns={
-                'Voltage': 'Voltage(V)',
-                'Current': 'Current(A)',
-                'Abs_Capacity_Ah_Up_To': 'Cap(Ah)'},
-            inplace=True)
-        df['Cycle_Index'] = 1
+    
+    expected_cols = [
+        'Voltage',
+        'Current',
+        'Abs_Capacity_Ah_Up_To']
+    assert all(item in list(df.columns) for item in expected_cols)
+    df.rename(
+        columns={
+            'Voltage': 'Voltage(V)',
+            'Current': 'Current(A)',
+            'Abs_Capacity_Ah_Up_To': 'Cap(Ah)'},
+        inplace=True)
+    df['Cycle_Index'] = 1
+        
     process_data(
         save_as_name,
         database,
@@ -100,7 +72,7 @@ def process_one_file(df, save_as_name, database, datatype, windowlength = 9,
 def diffcapanalyzer_plot_ica(df, cell_name, filepath_dqdv_graph, filepath_dqdv_stats):
     database = os.path.join(os.path.split(filepath_dqdv_stats)[0], 'diff_cap_analyzer_db.db')
     base_filename = 'CS2_33_8_30_10'
-    datatype = 'A2D'
+    datatype = 'MACCOR'
 
     descriptors_df = process_one_file(df, base_filename, database, datatype, peak_thresh = 0.3)
 
@@ -154,8 +126,12 @@ def diffcapanalyzer_plot_ica(df, cell_name, filepath_dqdv_graph, filepath_dqdv_s
 def plot_ica(df_charge, df_discharge, cell_name, filepath_dqdv_graph, filepath_dqdv_stats):    
     df_discharge['Step_Index'] = 1
     df_ica = df_charge.append(df_discharge, ignore_index=True)
-    df_ica['datatype'] = 'A2D'
+    df_ica['datatype'] = 'MACCOR'
     df_ica['Abs_Capacity_Ah_Up_To'] = df_ica['Capacity_Ah_Up_To'].abs()
+    
+    #So it looks like a MACCOR df to the DiffCapAnalyzer tools
+    df_ica['Md'] = df_ica['Step_Index']
+    df_ica['Rec'] = df_ica['Data_Timestamp']
     
     diffcapanalyzer_plot_ica(df_ica, cell_name, filepath_dqdv_graph, filepath_dqdv_stats)
 
