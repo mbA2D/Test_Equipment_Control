@@ -2,6 +2,8 @@
 Controlling Various Lab Test Equipment
  - Battery Testing (Capacity, Internal Resistance, SoC-OCV, SoC-IR) 
  - DC-DC Converter Testing (Efficiency across input voltage and output loads)
+ 
+For an overview of what this program can do, check out this post: https://a2delectronics.ca/2023/05/04/battery-test-with-standard-lab-equipment/
 
 ## Setup
 ### Prerequisites:
