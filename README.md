@@ -50,7 +50,7 @@ Backends:
 We also need to comment out a few lines in the included libraries from adafruit.  
 1. Find where the python packages get installed ("Users->UserName->AppData->Local->Programs->Python->Python39->Lib->site-packages" for me, not using a virtual environment) and find the folder adafruit_blinka->microcontroller->mcp2221  
 2. Adafruit packages are amazing, but this one tries to create an object and creates an error when it can't find an mcp2221 device.  
-3. In the file ```mcp2221.py```, comment out the last line ```#mcp2221 = MCP2221()``` that tries to create the object.  
+3. In the file ```mcp2221.py```, comment out the last line ```#mcp2221 = MCP2221()``` that creates the mcp2221 object.  
 4. In the file ```i2c.py```, comment out the first line ```#from .mcp2221 import mcp2221``` that tries to import that object that was created.  
 
 ### Testing Connection:
@@ -137,6 +137,7 @@ Measurements will be printed out in the console.
  - Properly synchronize voltage and current measurements (only available on certain equipment). - Low Priority
  - finish adding ICA: smooth data before analysis
  - HPPC test profile creation gui
+ - Allow different measurement rates for different equipment - temperature can be measured more slowly
  
 
 ## TODO List Graveyard
