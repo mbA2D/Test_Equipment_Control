@@ -1,13 +1,236 @@
 #Create a graph of a voltage and current log
 
 import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
 import easygui as eg
 import os
+import sys
 import Templates
 import PlotTemps
 import FileIO
 import scipy.signal
+
+
+
+
+######################################## DiffCapAnalyzer Example for Differential Capacity Analysis
+
+import glob
+import itertools
+import matplotlib 
+import matplotlib.pyplot as plt
+import numpy as np
+import os
+import pandas as pd
+import peakutils
+import scipy
+import sqlite3 as sql
+
+from diffcapanalyzer.databasewrappers import process_data
+from diffcapanalyzer.databasewrappers import get_filename_pref
+from diffcapanalyzer.databasefuncs import init_master_table
+from diffcapanalyzer.databasefuncs import get_file_from_database
+from diffcapanalyzer.descriptors import generate_model
+
+def process_one_file(df, save_as_name, database, datatype, windowlength = 9,
+                     polyorder = 3, peak_thresh = 0.7, save_to_excel = False):
+    if not os.path.exists(database): 
+        init_master_table(database)
+    cleanset_name = save_as_name + 'CleanSet'
+    if datatype == 'ARBIN':
+        df['datatype'] = 'ARBIN'
+        expected_cols = [
+            'Cycle_Index',
+            'Voltage(V)',
+            'Current(A)',
+            'Charge_Capacity(Ah)',
+            'Discharge_Capacity(Ah)',
+            'Step_Index']
+        assert all(item in list(df.columns) for item in expected_cols)
+    elif datatype == 'MACCOR':
+        df['MaccCharLab'] = df.apply(
+            lambda row: macc_chardis(row), axis=1)
+        df['Current(A)'] = df['Current [A]'] * df['MaccCharLab']
+        df['datatype'] = 'MACCOR'
+        expected_cols = [
+            'Cycle C',
+            'Voltage [V]',
+            'Current [A]',
+            'Cap. [Ah]',
+            'Md']
+        assert all(item in list(df.columns) for item in expected_cols)
+        df.rename(
+            columns={
+                'Cycle C': 'Cycle_Index',
+                'Voltage [V]': 'Voltage(V)',
+                'Current [A]': 'Abs_Current(A)',
+                'Cap. [Ah]': 'Cap(Ah)'},
+            inplace=True)
+    elif datatype == 'A2D':
+        expected_cols = [
+            'Voltage',
+            'Current',
+            'Abs_Capacity_Ah_Up_To']
+        assert all(item in list(df.columns) for item in expected_cols)
+        df.rename(
+            columns={
+                'Voltage': 'Voltage(V)',
+                'Current': 'Current(A)',
+                'Abs_Capacity_Ah_Up_To': 'Cap(Ah)'},
+            inplace=True)
+        df['Cycle_Index'] = 1
+    process_data(
+        save_as_name,
+        database,
+        df,
+        datatype,
+        windowlength,
+        polyorder)
+    df_clean = get_file_from_database(cleanset_name, database)
+    feedback = generate_model(
+        df_clean, save_as_name, peak_thresh, database)
+    descriptors_df = get_file_from_database(save_as_name + '-descriptors', database)
+    if save_to_excel: 
+        writer = pd.ExcelWriter(save_as_name + '-descriptors.xlsx')
+        descriptors_df.to_excel(writer, 'Sheet1')
+        writer.save()
+    return descriptors_df
+
+def diffcapanalyzer_plot_ica(df, cell_name, filepath_dqdv_graph, filepath_dqdv_stats):
+    database = os.path.join(os.path.split(filepath_dqdv_stats)[0], 'diff_cap_analyzer_db.db')
+    base_filename = 'CS2_33_8_30_10'
+    datatype = 'A2D'
+
+    descriptors_df = process_one_file(df, base_filename, database, datatype, peak_thresh = 0.3)
+
+
+    # First let's define some variable names
+    # If you are interested in plotting something other than 
+    # the file that was just processed, simply change the base_filename
+    # variable to the file name in the database you wish to plot. 
+
+    raw_filename = base_filename + "Raw"
+    model_filename = base_filename + "-ModPoints"
+    descriptors_filename = base_filename + "-descriptors"
+    clean_filename = base_filename + "CleanSet"
+
+    # First let's plot the raw dQ/dV curve of an example cycle, with the model overlaid.
+
+    raw_df = get_file_from_database(raw_filename, database)
+    mod_df = get_file_from_database(model_filename, database)
+
+    fig1 = plt.figure(figsize = (7,8), facecolor = 'w', edgecolor= 'k')
+    # create the color map based off of the max value in the cycle index column
+    colors = matplotlib.cm.Greys(np.linspace(0.3, 1, int(max(raw_df['Cycle_Index']))))
+
+    cycle_to_plot = 1
+    # plot cycle 1, this number can be changed to any cycle
+
+    for name, group in raw_df.groupby(['Cycle_Index']):
+        if name == cycle_to_plot:
+            plt.plot(group['Voltage(V)'], group['dQ/dV'], c = 'black', linewidth = 2, label = 'Cycle Data') 
+
+    for name, group in mod_df.groupby(['Cycle_Index']): 
+        if name == cycle_to_plot:
+            plt.plot(group['Voltage(V)'], group['Model'], c = 'red', linewidth = 2, label = 'Model', linestyle = '--')
+
+    plt.legend()
+    leg = plt.legend(loc = 'upper left', fontsize = 14)
+    plt.ylabel('dQ/dV (Ah/V)', fontsize =20)
+    plt.xlabel('Voltage(V)', fontsize = 20)
+    plt.title('{} ICA'.format(cell_name), fontsize = 24)
+    plt.xticks(fontsize = 20)
+    plt.yticks(fontsize = 20)
+    plt.tick_params(size = 10, width = 1)
+
+    # plt.xlim(0, 4)
+    #plt.ylim(-20,20)
+
+    # Uncomment the following line if you would like to save the plot. 
+    plt.savefig(os.path.splitext(filepath_dqdv_graph)[0], bbox_inches='tight', dpi = 600)
+
+######################################## End of DiffCapAnalyzer Example
+def plot_ica(df_charge, df_discharge, cell_name, filepath_dqdv_graph, filepath_dqdv_stats):    
+    df_discharge['Step_Index'] = 1
+    df_ica = df_charge.append(df_discharge, ignore_index=True)
+    df_ica['datatype'] = 'A2D'
+    df_ica['Abs_Capacity_Ah_Up_To'] = df_ica['Capacity_Ah_Up_To'].abs()
+    
+    diffcapanalyzer_plot_ica(df_ica, cell_name, filepath_dqdv_graph, filepath_dqdv_stats)
+
+'''
+#Function to plot the incremental capacity analysis of a battery's charge or discharge data.
+#DiffCapAnalyzer may be helpful here: https://www.theoj.org/joss-papers/joss.02624/10.21105.joss.02624.pdf
+#Also, a few other articles as well: https://www.mdpi.com/2313-0105/5/2/37
+def plot_ica(data_charge, sub_dirs, cell_name, filedir, filename):
+    
+    #################### Setting up all the graphs:
+    fig = plt.figure()
+    
+    ax_ica_raw = fig.add_subplot(411)
+    ax_cap_raw = ax_ica_raw.twinx()
+    
+    title = cell_name + ' Incremental Capacity Analysis'
+    fig.suptitle(title)
+    ax_cap_raw.set_ylabel('Capacity (Ah)', color = 'r')
+    
+    #Smoothing the voltage curve:
+    ax_ica_smoothed_v = fig.add_subplot(412, sharex = ax_ica_raw)
+    #Set Y-label to be smoothed ICA - ylabel will be shared by all since its positioned in the middle.
+    ax_ica_smoothed_v.set_ylabel('dQ/dV (Ah/V)')
+    
+    #add another subplot below, and share the X-axis.
+    ax_ica_smoothed1 = fig.add_subplot(413, sharex = ax_ica_raw)
+    
+    
+    #another subplot - 2nd pass of Savgol Filter
+    ax_ica_smoothed2 = fig.add_subplot(414, sharex = ax_ica_raw)
+    
+    #Label on the bottom-most subplot since all x is shared.
+    ax_ica_smoothed2.set_xlabel('Voltage')
+    
+    fig.subplots_adjust(hspace=0.5) #add a little extra space vertically
+    
+    
+    ################# First step - smooth the voltage curve
+    data_w_cap['SecsFromLastTimestamp'] = data_w_cap['Data_Timestamp'].diff().fillna(0)
+    data_w_cap['Capacity_Ah'] = data_w_cap['Current'] * data_w_cap['SecsFromLastTimestamp'] / 3600
+    
+    data_w_cap['Voltage_Diff'] = data_w_cap['Voltage'].diff()
+    data_w_cap = data_w_cap.assign(dQ_dV = data_w_cap['Capacity_Ah'] / data_w_cap['Voltage_Diff'])
+    
+    #Voltage should not change too quickly - this will only be computed on constant current curves
+    data_w_cap['Voltage_smoothed'] = scipy.signal.savgol_filter(data_w_cap['Voltage'].tolist(), 9, 3)
+    #need to recalculate the voltage difference
+    data_w_cap['Voltage_smoothed_diff'] = data_w_cap['Voltage_smoothed'].diff()
+    data_w_cap = data_w_cap.assign(dQ_dV_v_smoothed = data_w_cap['Capacity_Ah'] / data_w_cap['Voltage_smoothed_diff'])
+    
+    ################# 2nd Step - smooth the resulting data
+    #savgol filter with window size 9 and polynomial order 3 as suggested by DiffCapAnalyzer.
+    data_w_cap['dQ_dV_smoothed1'] = scipy.signal.savgol_filter(data_w_cap['dQ_dV_v_smoothed'].tolist(), 9, 3)
+    
+    ################# 3rd Step - 2nd pass of Savgol Filter
+    data_w_cap['dQ_dV_smoothed2'] = scipy.signal.savgol_filter(data_w_cap['dQ_dV_smoothed1'].tolist(), 9, 3)
+    
+    
+    ################ Plots
+    #Plot raw data
+    ax_cap_raw.plot('Voltage', 'Capacity_Ah_Up_To', data = data_w_cap, color = 'r')
+    ax_ica_raw.plot('Voltage', 'dQ_dV', data = data_w_cap, color = 'b')
+    #Plot 1st step
+    ax_ica_smoothed_v.plot('Voltage_smoothed', 'dQ_dV_v_smoothed', data = data_w_cap, color = 'c')
+    #Plot 2nd step
+    ax_ica_smoothed1.plot('Voltage', 'dQ_dV_smoothed1', data = data_w_cap, color = 'g')
+    #Plot 3rd step
+    ax_ica_smoothed2.plot('Voltage','dQ_dV_smoothed2', data = data_w_cap, color = 'y')
+    
+    
+    #Save graph
+    filename_ica_graph = 'ICA ' + filename
+    filepath_ica_graph = os.path.join(filedir, sub_dirs[0], filename_ica_graph)
+    plt.savefig(os.path.splitext(filepath_ica_graph)[0])
+'''
 
 def plot_iv(log_data, save_filepath = '', show_graph=False):
     #plot time(in seconds) as x
@@ -38,75 +261,11 @@ def plot_iv(log_data, save_filepath = '', show_graph=False):
     else:
         plt.close()
 
-#Function to plot the incremental capacity analysis of a battery's charge or discharge data.
-#DiffCapAnalyzer may be helpful here: https://www.theoj.org/joss-papers/joss.02624/10.21105.joss.02624.pdf
-#Also, a few other articles as well: https://www.mdpi.com/2313-0105/5/2/37
-def plot_ica(data_w_cap):
-    
-    #################### Setting up all the graphs:
-    fig = plt.figure()
-    
-    ax_ica_raw = fig.add_subplot(411)
-    ax_cap_raw = ax_ica_raw.twinx()
-    
-    title = 'Charge and Incremental Capacity Analysis'
-    if(data_w_cap.loc[data_w_cap.index[0], 'Current'] < 0):
-        title = 'Discharge'
-    fig.suptitle(title)
-    ax_cap_raw.set_ylabel('Capacity (Ah)', color = 'r')
-    
-    #Smoothing the voltage curve:
-    ax_ica_smoothed_v = fig.add_subplot(412, sharex = ax_ica_raw)
-    #Set Y-label to be smoothed ICA - ylabel will be shared by all since its positioned in the middle.
-    ax_ica_smoothed_v.set_ylabel('dQ/dV (Ah/V)')
-    
-    #add another subplot below, and share the X-axis.
-    ax_ica_smoothed1 = fig.add_subplot(413, sharex = ax_ica_raw)
-    
-    
-    #another subplot - 2nd pass of Savgol Filter
-    ax_ica_smoothed2 = fig.add_subplot(414, sharex = ax_ica_raw)
-    
-    #Label on the bottom-most subplot since all x is shared.
-    ax_ica_smoothed2.set_xlabel('Voltage')
-    
-    fig.subplots_adjust(hspace=0.5) #add a little extra space vertically
-    
-    
-    ################ Plot capacity and raw dQ/dV - lots of noise
-    ax_cap_raw.plot('Voltage', 'Capacity_Ah_Up_To', data = data_w_cap, color = 'r')
-    
-    ax_ica_raw.plot('Voltage', 'dQ_dV', data = data_w_cap, color = 'b')
-    
-    
-    ################# First step - smooth the voltage curve
-    #Voltage should not change too quickly - this will only be computed on constant current curves
-    data_w_cap['Voltage_smoothed'] = scipy.signal.savgol_filter(data_w_cap['Voltage'].tolist(), 9, 3)
-    #need to recalculate the voltage difference
-    data_w_cap['Voltage_smoothed_diff'] = data_w_cap['Voltage_smoothed'].diff()
-    data_w_cap = data_w_cap.assign(dQ_dV_v_smoothed = data_w_cap['Capacity_Ah'] / data_w_cap['Voltage_smoothed_diff'])
-    
-    ax_ica_smoothed_v.plot('Voltage_smoothed', 'dQ_dV_v_smoothed', data = data_w_cap, color = 'c')
-    
-    
-    ################# 2nd Step - smooth the resulting data
-    #savgol filter with window size 9 and polynomial order 3 as suggested by DiffCapAnalyzer.
-    data_w_cap['dQ_dV_smoothed1'] = scipy.signal.savgol_filter(data_w_cap['dQ_dV_v_smoothed'].tolist(), 9, 3)
-    
-    #plot the smoothed data on the 3rd subplot
-    ax_ica_smoothed1.plot('Voltage', 'dQ_dV_smoothed1', data = data_w_cap, color = 'g')
-    
-    ################# 3rd Step - 2nd pass of Savgol Filter
-    data_w_cap['dQ_dV_smoothed2'] = scipy.signal.savgol_filter(data_w_cap['dQ_dV_smoothed1'].tolist(), 9, 3)
-    ax_ica_smoothed2.plot('Voltage','dQ_dV_smoothed2', data = data_w_cap, color = 'y')
-    
-    plt.show()
-    
 
 #Calculates the capacity of the charge or discharge in wh and ah.
 #Also returns a dataframe that contains the temperature log entries corresponding to the
 #same timestamps as the log.
-def calc_capacity(log_data, stats, charge = True, temp_log_dir = None, show_ica_graphs = False):
+def calc_capacity(log_data, stats, sub_dirs, filedir, charge = True, temp_log_dir = None, show_ica_graphs = False):
     #create a mask to get only the discharge data
     if charge:
         prefix = 'charge'
@@ -143,9 +302,6 @@ def calc_capacity(log_data, stats, charge = True, temp_log_dir = None, show_ica_
     dsc_data['Capacity_Ah_Up_To'] = dsc_data['Capacity_Ah'].cumsum() #cumulative sum of the values
     dsc_data['Capacity_wh_Up_To'] = dsc_data['Capacity_wh'].cumsum()
     
-    dsc_data['Voltage_Diff'] = dsc_data['Voltage'].diff()
-    dsc_data = dsc_data.assign(dQ_dV = dsc_data['Capacity_Ah'] / dsc_data['Voltage_Diff'])
-    
     capacity_ah = dsc_data['Capacity_Ah_Up_To'].iloc[-1]
     capacity_wh = dsc_data['Capacity_wh_Up_To'].iloc[-1]
     
@@ -170,8 +326,7 @@ def calc_capacity(log_data, stats, charge = True, temp_log_dir = None, show_ica_
     print(f'Start Time: {start_time}')
     print(f'End Time: {end_time}')
 
-    if show_ica_graphs: 
-        plot_ica(dsc_data)
+    #plot_ica(dsc_data, sub_dirs, filedir)
     
     if separate_temps:
         #now add some temperature data
@@ -193,24 +348,24 @@ def calc_capacity(log_data, stats, charge = True, temp_log_dir = None, show_ica_
 
 #adds a CycleStatistic dictionary to a CSV without duplicating results in the csv
 def dict_to_csv(dict, filepath):
+    if dict['charge_start_time'] == 0:
+        #if we only have discharge data
+        dict['charge_start_time'] = dict['discharge_start_time']
     dict_dataframe = pd.DataFrame(dict, index = [0])
-
+    
     if(os.path.exists(filepath)):
-        write_header = False
-        
         FileIO.allow_write(filepath)
-        
         dataframe_csv = pd.read_csv(filepath)
         
-        dataframe_csv = dataframe_csv.set_index('charge_start_time')
         try:
-            dataframe_csv.drop(dict['charge_start_time'], axis=0, inplace=True)
-        except KeyError:
+            #drop any entries with the same charge start time as the one we want to add
+            matching_index = dataframe_csv.index[dataframe_csv['charge_start_time'] == dict['charge_start_time']].tolist()[0]
+            dataframe_csv.drop(matching_index, axis=0, inplace=True)
+        except IndexError:
             pass
-        dataframe_csv.reset_index(inplace=True)
-        dataframe_csv.rename(columns={'index': 'charge_start_time'})
-        
-        dict_dataframe = dataframe_csv.append(dict_dataframe)
+            
+        dict_dataframe = pd.DataFrame(dict, index = [0])
+        dict_dataframe = dataframe_csv.append(dict_dataframe)#, ignore_index=True)
         
     dict_dataframe.to_csv(filepath, mode='w', header=True, index=False)
     
@@ -274,8 +429,8 @@ def process_standard_charge_discharge_cycle(filedir, filename, subdirs, df, sepa
     cycle_stats.stats['cell_name'] = cell_name
     
     #Calculate capacity and get temperature datasets
-    temps_charge = calc_capacity(df, cycle_stats, charge=True, temp_log_dir = temp_log_dir, show_ica_graphs = show_ica_graphs)
-    temps_discharge = calc_capacity(df, cycle_stats, charge=False, temp_log_dir = temp_log_dir, show_ica_graphs = show_ica_graphs)
+    temps_charge = calc_capacity(df, cycle_stats, subdirs, filedir, charge=True, temp_log_dir = temp_log_dir, show_ica_graphs = show_ica_graphs)
+    temps_discharge = calc_capacity(df, cycle_stats, subdirs, filedir, charge=False, temp_log_dir = temp_log_dir, show_ica_graphs = show_ica_graphs)
     dict_to_csv(cycle_stats.stats, filepath_stats)
     
     #Plot temperatures
@@ -312,6 +467,7 @@ def df_drop_low_and_high_value_by_column(df, column_label):
 
 def clean_single_step_data_ir_test(df):
     #Clean up the data
+    df.reset_index(inplace=True)
     if df['Voltage'].size > 1:
         #If more than 1 measurement, discard the first since the current may still be rising.
         df.drop(index=0, inplace=True)
@@ -358,7 +514,7 @@ def process_single_ir_test(df, printout = False):
     
     return ir
     
-def process_repeated_ir_test(df, return_type = 'array'):
+def process_repeated_ir_test(df, return_type = 'array', printout = False):
     #find index of last entry in first step
     
     #Data_Timestamp_From_Step_Start goes from high back to low - diff is negative.
@@ -378,6 +534,9 @@ def process_repeated_ir_test(df, return_type = 'array'):
         #put it in the right spot in the df
         df['internal_resistance_ohms'].iloc[indexes_at_current_change[i]] = ir_step
     
+    if printout:
+        print(df['internal_resistance_ohms'].dropna().values)
+    
     if return_type == 'df':
         return df
     elif return_type == 'array':
@@ -395,12 +554,15 @@ def process_repeated_ir_discharge_test(df, filename, filedir, sub_dirs, cell_nam
     
     #Plot IR vs SoC
     fig, ax = plt.subplots()
-    fig.set_size_inches(12, 10)
-    ax.plot('soc', 'internal_resistance_ohms', data = df_soc_ir)
-    fig.suptitle('{} IR vs SoC'.format(cell_name))
+    fig.set_size_inches(7, 8)
+    ax.plot('soc', 'internal_resistance_ohms', data = df_soc_ir, linewidth=2)
+    fig.suptitle('{} IR vs SoC'.format(cell_name), fontsize =24)
     ax.set_xlim(1, 0) #high SoC at left, low SoC at right
-    ax.set_ylabel('Internal Resistance (Ohms)')
-    ax.set_xlabel('State of Charge')
+    ax.set_ylabel('Internal Resistance (Ohms)', fontsize =20)
+    ax.set_xlabel('State of Charge', fontsize =20)
+    plt.xticks(fontsize = 20)
+    plt.yticks(fontsize = 20)
+    plt.tick_params(size = 10, width = 1)
 
     ax.xaxis.grid(which='both')
     ax.yaxis.grid(which='both')
@@ -414,19 +576,123 @@ def process_repeated_ir_discharge_test(df, filename, filedir, sub_dirs, cell_nam
     
     #export csv and png for graph
     df_soc_ir.to_csv(filepath_SoC_IR, index=False)
-    plt.savefig(os.path.splitext(filepath_SoC_IR_graph)[0])
+    plt.savefig(os.path.splitext(filepath_SoC_IR_graph)[0], bbox_inches='tight', dpi = 600)
 
-def add_soc_by_coulomb_counting(df):
+def process_soc_ocv_test(df_charge, df_discharge, cell_name, sub_dirs, filedir, log_date, log_time):
+    df_charge = add_soc_by_coulomb_counting(df_charge, charging=True)
+    #need to reverse to have increasing SoC for np.interp
+    df_discharge_before_reverse = add_soc_by_coulomb_counting(df_discharge)
+    df_discharge = df_discharge_before_reverse.iloc[::-1] #[df_discharge.columns[::-1]]
+    
+    #Now we have soc and voltage pairs.
+    #Need to match up the soc pairs to a common format and then interpolate/extrapolate and average the two
+    soc_points = np.linspace(0, 1, int(100/0.05) + 1).tolist()
+    list_points = list()
+    for soc in soc_points:
+        v_charge = np.interp(soc, df_charge['soc'], df_charge['Voltage'])
+        v_discharge = np.interp(soc, df_discharge['soc'], df_discharge['Voltage'])
+        v_avg = (v_charge + v_discharge) / 2
+        list_points.append({"soc": soc, "Voltage": v_avg, "v_charge": v_charge, "v_discharge": v_discharge})
+    df_soc_ocv = pd.DataFrame.from_records(list_points)
+    
+    #Modify file names for saving graphs and other files
+    filename_SoC_OCV = 'SoC-OCV ' + cell_name + ' ' + log_date + ' ' + log_time
+    filename_dqdv = 'dQdV ' + cell_name + ' ' + log_date + ' ' + log_time
+    
+    #Create directory names to store graphs etc.
+    filepath_SoC_OCV = os.path.join(filedir, sub_dirs[1], filename_SoC_OCV)	
+    filepath_SoC_OCV_graph = os.path.join(filedir, sub_dirs[0], filename_SoC_OCV)	
+    filepath_dqdv_stats = os.path.join(filedir, sub_dirs[1], filename_dqdv)	
+    filepath_dqdv_graph = os.path.join(filedir, sub_dirs[0], filename_dqdv)
+    
+    plot_ica(df_charge, df_discharge_before_reverse, cell_name, filepath_dqdv_graph, filepath_dqdv_stats)
+    
+    #Plot OCV vs SoC
+    fig, ax = plt.subplots()
+    fig.set_size_inches(8, 7)
+    ax.plot('soc', 'Voltage', data = df_soc_ocv, linewidth = 2)
+    fig.suptitle('{} OCV vs SoC'.format(cell_name), fontsize =24)
+    ax.set_xlim(1, 0) #high SoC at left, low SoC at right
+    ax.set_ylabel('Open Circuit Voltage (V)', fontsize =20)
+    ax.set_xlabel('State of Charge', fontsize =20)
+    plt.xticks(fontsize = 20)
+    plt.yticks(fontsize = 20)
+    plt.tick_params(size = 10, width = 1)
+    
+    ax.xaxis.grid(which='both')
+    ax.yaxis.grid(which='both')
+    
+    
+    
+    #Save csv and png
+    df_soc_ocv.to_csv(filepath_SoC_OCV, index = False)
+    plt.savefig(os.path.splitext(filepath_SoC_OCV_graph)[0], bbox_inches='tight', dpi = 600)  
+
+def process_rest(df, printout = True):
+    #Rest start voltage, end voltage, and average voltage.
+    #A rest cycle should have only a single step.
+    
+    first_voltage = df['Voltage'].iloc[0]
+    average_voltage = df['Voltage'].mean()
+    last_voltage = df['Voltage'].iloc[-1]
+    time_s = df['Data_Timestamp_From_Step_Start'].max()
+    
+    if printout:
+        print("Rest Voltages: First: {} V  Average: {} V  Last: {} V  Time: {} s".format(first_voltage, average_voltage, last_voltage, time_s))
+    
+    return (first_voltage, average_voltage, last_voltage, time_s)
+
+def add_soc_by_coulomb_counting(df, charging=False):
     #We know for a full cycle, we start with a full charge and end with a full discharge
     df['SecsFromLastTimestamp'] = df['Data_Timestamp'].diff().fillna(0)
     df['Capacity_Ah_Step'] = df['Current'] * df['SecsFromLastTimestamp'] / 3600
     total_capacity = df['Capacity_Ah_Step'].sum()
     df['Capacity_Ah_Up_To'] = df['Capacity_Ah_Step'].cumsum()
-    df['soc'] = 1 - (df['Capacity_Ah_Up_To'] / total_capacity)
+    if charging:
+        df['soc'] = df['Capacity_Ah_Up_To'] / total_capacity
+    else:
+        df['soc'] = 1 - (df['Capacity_Ah_Up_To'] / total_capacity)
     return df
 
+def parse_filename(filename):
+    filename_parts = filename.split()
+    if len(filename_parts) == 3:
+        cell_name = filename_parts[0]
+        log_date = filename_parts[1]
+        log_time = filename_parts[2]
+        cycle_type = "Standard_Charge-Discharge_Cycle"
+        cycle_display = "Step"
+    elif len(filename_parts) == 4:
+        cell_name = filename_parts[0]
+        cycle_type = filename_parts[1]
+        log_date = filename_parts[2]
+        log_time = filename_parts[3]
+        cycle_display = "Step"
+    elif len(filename_parts) == 5:
+        cell_name = filename_parts[0]
+        cycle_type = filename_parts[1]
+        cycle_display = filename_parts[2]
+        log_date = filename_parts[3]
+        log_time = filename_parts[4]
+        
+    return cell_name, cycle_type, log_date, log_time, cycle_display
+
 if __name__ == '__main__':
-    filepaths = FileIO.get_multiple_filepaths()
+    
+    message = "Do you want to process all files in a directory or select files yourself?"
+    title = "File Location"
+    choices = ["Directory", "Files"]
+    choice = eg.buttonbox(message, title, choices)
+    if choice == None:
+        quit()
+    elif choice == "Files":
+        filepaths = FileIO.get_multiple_filepaths()
+    elif choice == "Directory":
+        filepaths = list()
+        for root, dirs, files in os.walk(FileIO.get_directory()):
+            for name in files:
+                if os.path.splitext(name)[1] == ".csv":
+                    filepaths.append(os.path.join(root, name))
     
     #Are there temperature logs associated?
     temp_log_dir = None
@@ -437,10 +703,15 @@ if __name__ == '__main__':
         #get the temps file location
         temp_log_dir = FileIO.get_directory("Choose the directory that contains the temp logs")
     
-    show_discharge_graphs = eg.ynbox(title = "Discharge Graphs",
-                                     msg = "Show the discharge plots?")
-    show_ica_graphs = eg.ynbox(title = "ICA Graphs",
-                               msg = "Show the ICA plots?")
+    #Are these 2 files meant for SoC-OCV tracking?
+    soc_ocv = eg.ynbox(title = "SoC-OCV Test",
+                       msg = "Are these 2 files for SoC-OCV Testing?\n" + 
+                             "Only include the charge and discharge files")
+                       
+    show_discharge_graphs = False  #eg.ynbox(title = "Discharge Graphs",
+                                   #  msg = "Show the discharge plots?")
+    show_ica_graphs = False #eg.ynbox(title = "ICA Graphs",
+                            #   msg = "Show the ICA plots?")
     
     #ensure that all directories exist
     filedir = os.path.dirname(filepaths[0])
@@ -449,49 +720,43 @@ if __name__ == '__main__':
     for sub_dir in sub_dirs:
         FileIO.ensure_subdir_exists_dir(filedir, sub_dir)
     
-    #Determining the cycle type
-    cycle_type = None
-    supported_cycle_types = [
-                            "Standard_Charge-Discharge_Cycle",
-                            "Single_IR_Test",
-                            "Repeated_IR_Test",
-                            "Repeated_IR_Discharge Test",
-                            ]
-    #cycle_type = eg.choicebox(title = "Cycle Type",
-    #                          msg = "Choose the cycle type of the files selected",
-    #                          choices = supported_cycle_types)
-    
     #go through each voltage log and check it
+    if soc_ocv:
+        if len(filepaths) != 2:
+            print("Please Choose 2 Files!")
+            sys.exit()
+        if "Charge" in filepaths[0] and "Discharge" in filepaths[1]:
+            filepath_charge = filepaths[0]
+            filepath_discharge = filepaths[1]
+        elif "Charge" in filepaths[1] and "Discharge" in filepaths[0]:
+            filepath_charge = filepaths[1]
+            filepath_discharge = filepaths[0]
+        else:
+            print("Please select a Charge and a Discharge file!")
+            sys.exit()
+            
+        #Now we have the charge and discharge files.
+        df_charge = pd.read_csv(filepath_charge)
+        df_discharge = pd.read_csv(filepath_discharge)
+        
+        
+        filedir = os.path.dirname(filepath_charge)
+        filename_charge = os.path.split(filepath_charge)[-1] 
+        cell_name, cycle_type, log_date, log_time, cycle_display = parse_filename(filename_charge)
+        process_soc_ocv_test(df_charge, df_discharge, cell_name, sub_dirs, filedir, log_date, log_time)
+        
+    
     for filepath in filepaths:
-        print(f"Voltage Log File: {os.path.split(filepath)[-1]}")
+        print(f"Log File: {os.path.split(filepath)[-1]}")
+        
         filedir = os.path.dirname(filepath)
         filename = os.path.split(filepath)[-1]  
-        
+            
+        cell_name, cycle_type, log_date, log_time, cycle_display = parse_filename(filename)
+
         df = pd.read_csv(filepath)
         
-        filename_parts = filename.split()
-        if len(filename_parts) == 3:
-            cell_name = filename_parts[0]
-            log_date = filename_parts[1]
-            log_time = filename_parts[2]
-            cycle_type = "Standard_Charge-Discharge_Cycle"
-            cycle_display = "Step"
-        elif len(filename_parts) == 4:
-            cell_name = filename_parts[0]
-            cycle_type = filename_parts[1]
-            log_date = filename_parts[2]
-            log_time = filename_parts[3]
-            cycle_display = "Step"
-        elif len(filename_parts) == 5:
-            cell_name = filename_parts[0]
-            cycle_type = filename_parts[1]
-            cycle_display = filename_parts[2]
-            log_date = filename_parts[3]
-            log_time = filename_parts[4]
-
-
-        ################ THIS ALL HAPPENS FOR A STANDARD CHARGE-DISCHARGE CYCLE ########################
-        
+        #THIS ALL HAPPENS FOR A STANDARD CHARGE-DISCHARGE CYCLE
         if  cycle_type == "Standard_Charge-Discharge_Cycle" or \
             cycle_type == "Single_CC_Cycle" or \
             cycle_type == "One_Setting_Continuous_CC_Cycles_With_Rest" or \
@@ -501,12 +766,15 @@ if __name__ == '__main__':
             
             process_standard_charge_discharge_cycle(filedir, filename, sub_dirs, df, separate_temps, temp_log_dir, show_ica_graphs, show_discharge_graphs)
         
-        elif cycle_type == "Single_IR_Test": #Prints out an IR value
+        elif cycle_display == "Single_IR_Test": #Prints out an IR value
             process_single_ir_test(df, printout = True)
         
-        elif cycle_type == "Repeated_IR_Test": #Prints out array with IR values
-            process_repeated_ir_test(df)
+        elif cycle_display == "Repeated_IR_Test": #Prints out array with IR values
+            process_repeated_ir_test(df, printout = True)
         
-        elif cycle_type == "Repeated_IR_Discharge_Test": #Creates a csv with SoC and IR
+        elif cycle_display == "Repeated_IR_Discharge_Test": #Creates a csv with SoC and IR
             process_repeated_ir_discharge_test(df, filename, filedir, sub_dirs, cell_name)
+            
+        elif cycle_display == "Rest": #Prints out first, last and average voltages of the rest period
+            process_rest(df, printout = True)
         

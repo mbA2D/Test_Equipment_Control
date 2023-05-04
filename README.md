@@ -5,14 +5,20 @@ Controlling Various Lab Test Equipment
 
 ## Setup
 ### Prerequisites:
- - Tested with Python 3.9.10 (https://www.python.org/downloads/release/python-3910/)
+ - Tested with Python 3.9.10. Download and install it from here: (https://www.python.org/downloads/release/python-3910/)  
+   - Make sure to check 'add Python to PATH' when installing, and 'Disable PATH Length Limit'
+   - If you want to use a virtual environment to store all the packages and not have package version conflicts with other programs on your system, set that up now. 
+     - Navigate to the Test_Equipment_Control directory and use the following to create a virtual environment:
+     - Create the venv: ```python -m venv venv --prompt="batlab"```
+     - Activate the venv (must be done every time you use the script: ```venv\Scripts\activate```
+     - More details on virtual environments here: https://realpython.com/python-virtual-environments-a-primer/
  - Keysight Instrument Control Bundle (https://www.keysight.com/ca/en/lib/software-detail/computer-software/keysight-instrument-control-bundle-download-1184883.html) We need IO Libraries Suite and Command Expert (.NET 3.5 may be required for Command Expert: https://dotnet.microsoft.com/en-us/download/dotnet-framework/net35-sp1)
  - NI VISA (https://www.ni.com/en-ca/support/downloads/drivers/download.ni-visa.html#460225)
  - To install all the required python packages
     - Open a command line in the Test_Equipment_Control folder and run ```pip install -r requirements.txt```
  - You may need to install libusb (backend for pyusb): https://github.com/pyusb/pyusb/issues/120#issuecomment-322058585 (You'll need 7-zip to unzip it: https://www.7-zip.org/)
 
- - The command ```python -m visa info``` should show that all backends are available at the end of the response:
+ - The command ```python -m visa info``` should give something like this at the end of the response, where ivi and py (ASRL and USB) backends are both available:
 ```
 PyVISA Version: 1.11.3
 
@@ -44,7 +50,7 @@ Backends:
 We also need to comment out a few lines in the included libraries from adafruit.  
 1. Find where the python packages get installed ("Users->UserName->AppData->Local->Programs->Python->Python39->Lib->site-packages" for me, not using a virtual environment) and find the folder adafruit_blinka->microcontroller->mcp2221  
 2. Adafruit packages are amazing, but this one tries to create an object and creates an error when it can't find an mcp2221 device.  
-3. In the file ```mcp2221.py```, comment out the last line ```#mcp2221 = MCP2221()``` that creates the msp2221 object.  
+3. In the file ```mcp2221.py```, comment out the last line ```#mcp2221 = MCP2221()``` that creates the mcp2221 object.  
 4. In the file ```i2c.py```, comment out the first line ```#from .mcp2221 import mcp2221``` that tries to import that object that was created.  
 
 ### Testing Connection:
@@ -88,11 +94,11 @@ Run ```dc_dc_test.py``` from command line
 - Allows setting up a test with psu on input, eload on output.  
 - Sweeps a range of output currents and a range of input voltages.  
 
-An efficiency graph can be generated from the data with DC_DC_Graph.py    
+An efficiency graph can be generated from the data with ```DC_DC_Graph.py```   
 
 ### Testing solar panels by sweeping an e-load in CV mode:  
 Run ```Eload_cv_sweep.py``` from command line  
-See results (solar panel IV curve with MPP marked) with Eload_cv_sweep.py  
+See results (solar panel IV curve with MPP marked) with ```Eload_cv_sweep.py```  
 
 ### Quick measurements with a DMM:
 Run ```Measurement_Script.py``` from command line.  
@@ -103,8 +109,11 @@ Measurements will be printed out in the console.
 ## TODO List
  - For tests with more than 1 channel, draw  lines between the blocks to separate them better.
  - Make the CH0, CH1 headings larger
+ - Make sure to take a '0 current' reading at the start of every test to determine a rough starting SoC.
  - GraphIV.py - Single IR Processing - if we have enough data points for each step, apply some statistical processing (drop outliers, try and account for capacity)
  - GraphIV.py - Allow processing of a bunch of different cell folders at a time. (e.g. ran the same test on 100 different cells and process the data all at once instead of clicking through all the folders).
+     - Need to distinguish between real log csvs and other csvs.
+ - Make the cycles a dictionary instead of just a list of steps so we can store other information in them (e.g. Cycle Type, eq required, etc.)
  - There are way too many queues and processes in the MainWindow. Consolidate them and make a better messaging system
  - Allow adding another cycle types to test configuration GUI - e.g. Rest then Single IR Test
  - Make 'charge_discharge_control' file into a class
