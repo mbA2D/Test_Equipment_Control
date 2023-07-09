@@ -16,6 +16,7 @@ import traceback
 
 #from BATT_HIL import fet_board_management as fbm
 #from lab_equipment import A2D_DAQ_management as adm
+from lab_equipment import A2D_DAQ_control
 import charge_discharge_control as cdc
 import equipment as eq
 import easygui as eg
@@ -45,9 +46,9 @@ class MainTestWindow(QMainWindow):
         self.connected_equipment_list = list()
         self.connected_equipment_process_list = list()
         
-        self.dict_for_event_and_queue = {}
-        self.multi_ch_device_process = None
-        self.multi_ch_management_queue = None
+        #self.dict_for_event_and_queue = {}
+        #self.multi_ch_device_process = None
+        #self.multi_ch_management_queue = None
     
         self.eq_assignment_queue = Queue()
         self.resources_list_queue = Queue()
@@ -356,6 +357,7 @@ class MainTestWindow(QMainWindow):
         
         #Check the equipment assignment queue
         try:
+            #if we have a multi channel device, we want to connect to the CHANNEL
             new_eq_assignment = self.eq_assignment_queue.get_nowait()
             
             for key in new_eq_assignment['res_ids_dict']:
@@ -382,6 +384,7 @@ class MainTestWindow(QMainWindow):
         
         #Check the new equipment queue
         try:
+            #for multi-channel devices, connects to the EQUIPMENT
             new_eq_res_id_dict = self.new_equipment_queue.get_nowait()
             
             self.create_new_equipment(new_eq_res_id_dict)
@@ -562,6 +565,7 @@ class MainTestWindow(QMainWindow):
     
     @staticmethod
     def select_idn_matching_type(connected_equipment_list, eq_type):
+        #connected_equipment_list contains the equipment dict with 'res_id', 'local_id', 'class_name', etc. created in create_new_equipment
         eq_idn_list = [connected_equipment['eq_idn'] for connected_equipment in connected_equipment_list if connected_equipment['eq_type'] == eq_type]
         
         eq_idn = None
@@ -582,6 +586,15 @@ class MainTestWindow(QMainWindow):
         for connected_equipment_dict in connected_equipment_list:
             if connected_equipment_dict['eq_idn'] == eq_idn:
                 return connected_equipment_dict['local_id']
+        return None
+    
+    
+    @staticmethod
+    def get_connected_equipment_index_matching_idn(connected_equipment_list, eq_idn):
+        #returns the index in the connected_equipment_list
+        for index, connected_equipment_dict in enumerate(connected_equipment_list):
+            if connected_equipment_dict['eq_idn'] == eq_idn:
+                return index
         return None
     
     @staticmethod
@@ -656,7 +669,13 @@ class MainTestWindow(QMainWindow):
                             #dmm_extra = eq.dmms.choose_dmm(multi_ch_event_and_queue_dict = dict_for_event_and_queue, resources_list = resources_list)
                             #res_ids_dict[dev_name] = eq.get_res_id_dict_and_disconnect(dmm_extra)
                             dmm_extra_idn = MainTestWindow.select_idn_matching_type(connected_equipment_list, 'dmm')
-                            idns_dict[dev_name] = dmm_extra_idn
+                            
+                            #if this is a A2D_64_CH_DAQ, we need to choose which channel to use
+                            connected_equipment_list_index = MainTestWindow.get_connected_equipment_index_matching_idn(connected_equipment_list, dmm_extra_idn)
+                            if connected_equipment_list[connected_equipment_list_index]['class_name'] == 'A2D_DAQ_CH':
+                                ch = eq.choose_channel(num_channels = A2D_DAQ_control.A2D_DAQ.num_channels)
+                            
+                            idns_dict[dev_name] = {'idn': dmm_extra_idn, 'ch': ch}
                         
                 #Add power flow control? - such as relay board to disconnect equipment.
                 msg = "Do you want to add a relay board for channel {}?".format(ch_num)
@@ -668,10 +687,19 @@ class MainTestWindow(QMainWindow):
                     idns_dict['relay_board'] = relay_board_idn
                     
                 for key in idns_dict.keys():
-                    if idns_dict[key] != None:
+                    if idns_dict[key] is not None:
                         res_ids_dict[key] = {}
-                        local_id = MainTestWindow.get_connected_equipment_local_id_matching_idn(connected_equipment_list, idns_dict[key])
-                        res_ids_dict[key]['res_id'] = {'queue_in': None, 'queue_out': None, 'local_id': local_id}
+                        
+                        eq_ch = None
+                        if type(idns_dict[key]) is dict:
+                            eq_idn = idns_dict[key]['idn']
+                            eq_ch = idns_dict[key]['ch']
+                        else:
+                            eq_idn = idns_dict[key]
+                        local_id = MainTestWindow.get_connected_equipment_local_id_matching_idn(connected_equipment_list, eq_idn)
+                            
+                        res_ids_dict[key]['res_id'] = {'queue_in': None, 'queue_out': None, 'local_id': local_id, 'eq_ch': eq_ch}
+                        
                 
                 #if all values are None, print No equipment assigned and return.
                 if not any(idns_dict.values()):
@@ -852,8 +880,7 @@ class MainTestWindow(QMainWindow):
             self._clear_queue(data_in_queue)
             #print("Done Clearing Queues")
             self.mp_process_list[ch_num] = Process(target=cdc.charge_discharge_control, 
-                                                    args = (res_ids_dict, data_out_queue, data_in_queue, cdc_input_dict, 
-                                                    self.dict_for_event_and_queue, ch_num))
+                                                    args = (res_ids_dict, data_out_queue, data_in_queue, cdc_input_dict, ch_num))
             self.mp_process_list[ch_num].start()
         except:
             traceback.print_exc()
@@ -870,7 +897,7 @@ class MainTestWindow(QMainWindow):
             self._clear_queue(data_out_queue)
             self._clear_queue(data_in_queue)
             #print("CH{} - Idle Process res_ids_dict: {}".format(ch_num, res_ids_dict))
-            self.mp_idle_process_list[ch_num] = Process(target=cdc.idle_control, args = (res_ids_dict, data_out_queue, data_in_queue, self.dict_for_event_and_queue))
+            self.mp_idle_process_list[ch_num] = Process(target=cdc.idle_control, args = (res_ids_dict, data_out_queue, data_in_queue))
             self.mp_idle_process_list[ch_num].start()
         except:
             traceback.print_exc()
@@ -916,8 +943,8 @@ class MainTestWindow(QMainWindow):
         for equipment_process_dict in self.connected_equipment_process_list:
             queue_in, queue_out = self.get_connected_equipment_queues_matching_local_id(equipment_process_dict['local_id'])
             self.stop_process(equipment_process_dict['process'], queue_in)
-        if self.multi_ch_device_process is not None and self.multi_ch_management_queue is not None:
-            self.stop_process(self.multi_ch_device_process, self.multi_ch_management_queue)
+        #if self.multi_ch_device_process is not None and self.multi_ch_management_queue is not None:
+        #    self.stop_process(self.multi_ch_device_process, self.multi_ch_management_queue)
             
     
 
