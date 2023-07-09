@@ -629,7 +629,13 @@ class MainTestWindow(QMainWindow):
                     #dmm_v = eq.dmms.choose_dmm(multi_ch_event_and_queue_dict = dict_for_event_and_queue, resources_list = resources_list)
                     #res_ids_dict['dmm_v'] = eq.get_res_id_dict_and_disconnect(dmm_v)
                     dmm_v_idn = MainTestWindow.select_idn_matching_type(connected_equipment_list, 'dmm')
-                    idns_dict['dmm_v'] = dmm_v_idn
+                    
+                    #if this is a A2D_64_CH_DAQ, we need to choose which channel to use
+                    connected_equipment_list_index = MainTestWindow.get_connected_equipment_index_matching_idn(connected_equipment_list, dmm_v_idn)
+                    if connected_equipment_list[connected_equipment_list_index]['class_name'] == 'A2D_DAQ_CH':
+                        ch = eq.choose_channel(num_channels = A2D_DAQ_control.A2D_DAQ.num_channels)
+                    idns_dict['dmm_v'] = {'idn': dmm_v_idn, 'ch': ch}
+
                     
                 msg = "Do you want to use a separate device to measure current on channel {}?".format(ch_num)
                 title = "CH {} Current Measurement Device".format(ch_num)
