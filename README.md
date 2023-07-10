@@ -109,6 +109,7 @@ Measurements will be printed out in the console.
 
 
 ## TODO List
+ - Why does it take so long to get the instrument idns when connecting equipment?
  - For tests with more than 1 channel, draw  lines between the blocks to separate them better.
  - Make the CH0, CH1 headings larger
  - Make sure to take a '0 current' reading at the start of every test to determine a rough starting SoC.
