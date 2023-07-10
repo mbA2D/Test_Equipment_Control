@@ -219,7 +219,10 @@ def connect_to_eq(key, class_name, res_id, setup_dict = None):
 
 #Used in charge_discharge_control get_equipment_dict
 def connect_to_virtual_eq(virtual_res_id_dict):
-    instrument = VirtualDeviceTemplate.VirtualDeviceTemplate(virtual_res_id_dict['queue_in'], virtual_res_id_dict['queue_out'], virtual_res_id_dict['eq_ch'])
+    if virtual_res_id_dict.get('eq_ch') != None:
+        instrument = VirtualDeviceTemplate.VirtualDeviceTemplate(virtual_res_id_dict['queue_in'], virtual_res_id_dict['queue_out'], virtual_res_id_dict['eq_ch'])
+    else:
+        instrument = VirtualDeviceTemplate.VirtualDeviceTemplate(virtual_res_id_dict['queue_in'], virtual_res_id_dict['queue_out'])
     return instrument
 
 #used in battery_test.py when connecting to a new piece of equipment
