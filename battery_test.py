@@ -632,6 +632,7 @@ class MainTestWindow(QMainWindow):
                     
                     #if this is a A2D_64_CH_DAQ, we need to choose which channel to use
                     connected_equipment_list_index = MainTestWindow.get_connected_equipment_index_matching_idn(connected_equipment_list, dmm_v_idn)
+                    ch = None
                     if connected_equipment_list[connected_equipment_list_index]['class_name'] == 'A2D_DAQ_CH':
                         ch = eq.choose_channel(num_channels = A2D_DAQ_control.A2D_DAQ.num_channels)
                     idns_dict['dmm_v'] = {'idn': dmm_v_idn, 'ch': ch}
@@ -678,6 +679,7 @@ class MainTestWindow(QMainWindow):
                             
                             #if this is a A2D_64_CH_DAQ, we need to choose which channel to use
                             connected_equipment_list_index = MainTestWindow.get_connected_equipment_index_matching_idn(connected_equipment_list, dmm_extra_idn)
+                            ch = None
                             if connected_equipment_list[connected_equipment_list_index]['class_name'] == 'A2D_DAQ_CH':
                                 ch = eq.choose_channel(num_channels = A2D_DAQ_control.A2D_DAQ.num_channels)
                             
