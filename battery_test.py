@@ -577,7 +577,7 @@ class MainTestWindow(QMainWindow):
             if(eg.ynbox(msg, title="Equipment Selection: {}".format(eq_type))):
                 eq_idn = eq_idn_list[0]
         else:
-            eq_idn = eg.choicebox(msg = f'Select equipment idn for {eq_type}', title = f'{eq_type} Selection', eq_idn_list)
+            eq_idn = eg.choicebox(msg = f'Select equipment idn for {eq_type}', title = f'{eq_type} Selection', choices = eq_idn_list)
             
         return eq_idn
     
