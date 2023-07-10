@@ -10,7 +10,7 @@ def main():
     choices = ['voltage', 'current', 'temperature']
     msg = "What do you want to measure?"
     title = "Measurement Type"
-    measurement_type = int(eg.choicebox(msg = msg, title = title, choices = choices))
+    measurement_type = eg.choicebox(msg = msg, title = title, choices = choices)
     
     msg = "How Many Measurements to perform?"
     title = "Number of Measurements"

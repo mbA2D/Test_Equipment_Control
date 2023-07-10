@@ -79,7 +79,7 @@ class PyVisaDevice:
                                     instrument.query("") #clear output buffer
                                     idns_dict[resource] = resource
                                 except (pyvisa.errors.VisaIOError, PermissionError, serial.serialutil.SerialException):
-                                    pass
+                                    print("Failed to query BK9100")
                             else:
                                 idns_dict[resource] = resource
                         except AttributeError:

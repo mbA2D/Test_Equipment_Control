@@ -6,7 +6,6 @@ import pyvisa
 
 #multi channel device management functions
 from BATT_HIL import fet_board_management as fbm
-from lab_equipment import A2D_DAQ_management as adm
 
 import queue #For handling queue.Empty error
 
@@ -35,8 +34,8 @@ from lab_equipment import PSU_Fake
 from lab_equipment import DMM_DM3000
 from lab_equipment import DMM_SDM3065X
 from lab_equipment import DMM_FET_BOARD_EQ
-from lab_equipment import A2D_DAQ_control #Just for num_channels at the moment
-from lab_equipment import DMM_A2D_DAQ_CH
+from lab_equipment import A2D_DAQ_control
+from lab_equipment import A2D_DAQ_config #to load config file from csv
 from lab_equipment import DMM_A2D_SENSE_BOARD
 from lab_equipment import DMM_Fake
 
@@ -50,6 +49,12 @@ from lab_equipment import VirtualDeviceTemplate
 #def get_connection_settings_list():
     #looks through all the devices that have libraries written and creates a dictionary with the possible combinations.
 
+def choose_channel(num_channels = 64, start_val = 0):
+    max_number = num_channels + start_val - 1
+    ch_num = eg.integerbox(msg = "Which channel on this device would you like to use?",title = "Channel Selection", default = 0, lowerbound = start_val, upperbound = max_number)
+    return ch_num
+
+#used in create_new_equipment in battery_test.py
 def virtual_device_management_process(eq_type, new_eq_res_id_dict, queue_in, queue_out):
     # - connect to the equipment using the equipment type and the res_id_dict
             # - Then loop:
@@ -172,18 +177,27 @@ def setup_instrument(instrument, setup_dict):
             
         instrument.set_i2c_adc_addr(setup_dict['i2c_adc_addr'])
     
+    #A2D 64 CH DAQ special setup
+    if isinstance(instrument, A2D_DAQ_control.A2D_DAQ):
+        if 'config_dict' not in setup_dict.keys():
+            #Get the config dict and save it in the setup_dict
+            setup_dict['config_dict'] = A2D_DAQ_config.get_config_dict()
+        setup_dict['config_dict'] = {int(key):value for key, value in setup_dict['config_dict'].items()}
+        instrument.config_dict = setup_dict['config_dict']
+        instrument.configure_from_dict()
+    
     return setup_dict
 
-def get_equipment_dict(res_ids_dict, multi_channel_event_and_queue_dict = None):
+def get_equipment_dict(res_ids_dict):
     eq_dict = {}
     for key in res_ids_dict:
         if res_ids_dict[key] != None and res_ids_dict[key]['res_id'] != None:
-            eq_dict[key] = connect_to_eq(key, res_ids_dict[key]['class_name'], res_ids_dict[key]['res_id'], res_ids_dict[key]['setup_dict'], multi_channel_event_and_queue_dict)
+            eq_dict[key] = connect_to_eq(key, res_ids_dict[key]['class_name'], res_ids_dict[key]['res_id'], res_ids_dict[key]['setup_dict'])
         else:
             eq_dict[key] = None
     return eq_dict
 
-def connect_to_eq(key, class_name, res_id, setup_dict = None, multi_channel_event_and_queue_dict = None):
+def connect_to_eq(key, class_name, res_id, setup_dict = None):
     #Key should be 'eload', 'psu', 'dmm', 'relay_board'
     #'dmm' with any following characters will be considered a dmm
     instrument = None
@@ -195,19 +209,31 @@ def connect_to_eq(key, class_name, res_id, setup_dict = None, multi_channel_even
         instrument = eLoads.choose_eload(class_name, res_id, setup_dict)[1]
     elif key == 'psu':
         instrument = powerSupplies.choose_psu(class_name, res_id, setup_dict)[1]
-    elif key == 'dmm' or ('dmm' in key): #for dmm_i and dmm_v and dmm_t keys
-        instrument = dmms.choose_dmm(class_name, resource_id = res_id, multi_ch_event_and_queue_dict = multi_channel_event_and_queue_dict, setup_dict = setup_dict)[1]
-    elif key == 'relay_board' or 'other':
+    elif 'dmm' in key: #for dmm_i and dmm_v and dmm_t keys
+        instrument = dmms.choose_dmm(class_name, resource_id = res_id, setup_dict = setup_dict)[1]
+    elif key == 'relay_board' or key == 'other':
         instrument = otherEquipment.choose_equipment(class_name, res_id, setup_dict)[1]
     time.sleep(0.1)
     return instrument
 
-def connect_to_virtual_eq(queue_dict):
-    instrument = VirtualDeviceTemplate.VirtualDeviceTemplate(queue_dict['queue_in'], queue_dict['queue_out'])
+
+#Used in charge_discharge_control get_equipment_dict
+def connect_to_virtual_eq(virtual_res_id_dict):
+    if virtual_res_id_dict.get('eq_ch') != None:
+        instrument = VirtualDeviceTemplate.VirtualDeviceTemplate(virtual_res_id_dict['queue_in'], virtual_res_id_dict['queue_out'], virtual_res_id_dict['eq_ch'])
+    else:
+        instrument = VirtualDeviceTemplate.VirtualDeviceTemplate(virtual_res_id_dict['queue_in'], virtual_res_id_dict['queue_out'])
     return instrument
 
+#used in battery_test.py when connecting to a new piece of equipment
+#equipment_list comes from the choose_eload, choose_dmm, etc. functions in equipment.py
+'''
+eq_list has 3 items: 
+    class_name - the instrument class e.g. 'DM3000'
+    instrument - the instrument object that communicates with the instrument
+    setup_dict - gets passed to the setup_equipment function for special setup
+'''
 def get_res_id_dict_and_disconnect(eq_list):
-    #get resource id
     class_name = eq_list[0]
     
     eq_type = None
@@ -237,7 +263,7 @@ def get_res_id_dict_and_disconnect(eq_list):
         'setup_dict':   {}
     }
     
-    if class_name == 'MATICIAN_FET_BOARD_CH' or class_name == 'A2D_DAQ_CH':
+    if class_name == 'MATICIAN_FET_BOARD_CH':# or class_name == 'A2D_DAQ_CH':
         eq_res_id_dict['res_id'] = {'board_name': eq_list[1].board_name, 'ch_num': eq_list[1].ch_num}
     elif class_name == 'Parallel Eloads':
         eq_res_id_dict['res_id'] = {}
@@ -415,15 +441,16 @@ class dmms:
             print("Failed to select the equipment.")
             return			
         
-        if(class_name == 'DM3000'):
+        if class_name == 'DM3000':
             dmm = DMM_DM3000.DM3000(resource_id = resource_id, resources_list = resources_list)
-        if class_name == 'SDM3065X':
+        elif class_name == 'SDM3065X':
             dmm = DMM_SDM3065X.SDM3065X(resource_id = resource_id, resources_list = resources_list)
         elif class_name == 'Fake Test DMM':
             dmm = DMM_Fake.Fake_DMM(resource_id = resource_id, resources_list = resources_list)
         elif class_name == 'A2D_SENSE_BOARD':
             dmm = DMM_A2D_SENSE_BOARD.A2D_SENSE_BOARD(resource_id = resource_id, resources_list = resources_list)
         elif class_name == 'A2D_DAQ_CH':
+            '''
             #if running from this process then create the extra process from here.
             if multi_ch_event_and_queue_dict == None:
                 multi_ch_event_and_queue_dict = adm.create_event_and_queue_dicts(1, A2D_DAQ_control.A2D_DAQ.num_channels)
@@ -453,8 +480,10 @@ class dmms:
                 resource_id = {'board_name': board_name, 'ch_num': ch_num}
             
             event_and_queue_dict = multi_ch_event_and_queue_dict[resource_id['board_name']][resource_id['ch_num']]
+            '''
             
-            dmm = DMM_A2D_DAQ_CH.A2D_DAQ_CH(resource_id, event_and_queue_dict)
+            #dmm = DMM_A2D_DAQ_CH.A2D_DAQ_CH(resource_id = resource_id, resources_list = resources_list)
+            dmm = A2D_DAQ_control.A2D_DAQ(resource_id = resource_id, resources_list = resources_list)
         elif class_name == 'MATICIAN_FET_BOARD_CH':
             #if running from this process then create the extra process from here.
             if multi_ch_event_and_queue_dict == None:

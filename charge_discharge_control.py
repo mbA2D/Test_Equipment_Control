@@ -27,22 +27,23 @@ def init_psu(psu):
     psu.set_current(0)
 
 def init_dmm_v(dmm):
-    test_v = dmm.measure_voltage()
     #test voltage measurement to ensure everything is set up correctly
     #often the first measurement takes longer as it needs to setup range, NPLC
     #This also gets it setup to the correct range.
     #TODO - careful of batteries that will require a range switch during the charge
     #	  - this could lead to a measurement delay. 6S happens to cross the 20V range.
+    test_v = dmm.measure_voltage()
+    #print(test_v)
 
 def init_dmm_i(dmm):
-    test_i = dmm.measure_current()
     #test measurement to ensure everything is set up correctly
     #and the fisrt measurement which often takes longer is out of the way
+    test_i = dmm.measure_current()
     
 def init_dmm_t(dmm):
-    test_t = dmm.measure_temperature()
     #test measurement to ensure everything is set up correctly
     #and the fisrt measurement which often takes longer is out of the way
+    test_t = dmm.measure_temperature()
 
 def init_relay_board(relay_board):
     #turn off all channels
@@ -50,6 +51,8 @@ def init_relay_board(relay_board):
     relay_board.connect_psu(False)
     
 def initialize_connected_equipment(eq_dict):
+    #print("initialize_connected_equipment")
+    
     if eq_dict['eload'] != None:	
         init_eload(eq_dict['eload'])
     if eq_dict['psu'] != None:
@@ -78,6 +81,7 @@ def initialize_connected_equipment(eq_dict):
                     init_dmm_t(dev)
             else:
                 valid_device = False
+            count += 1
 
 def disable_equipment_single(equipment):
     if equipment != None:
@@ -1058,7 +1062,7 @@ def get_input_dict(ch_num = None, queue = None, current_cell_name = None):
     else:
         return input_dict
 
-def get_equipment_dict(res_ids_dict, multi_channel_event_and_queue_dict):
+def get_equipment_dict(res_ids_dict):
     eq_dict = {}
     for key in res_ids_dict:
         if res_ids_dict[key] != None and res_ids_dict[key]['res_id'] != None:
@@ -1066,23 +1070,24 @@ def get_equipment_dict(res_ids_dict, multi_channel_event_and_queue_dict):
                 #This is a virtual equipment that is communicated with through queues.
                 eq_dict[key] = eq.connect_to_virtual_eq(res_ids_dict[key]['res_id'])
             else:
-                eq_dict[key] = eq.connect_to_eq(key, res_ids_dict[key]['class_name'], res_ids_dict[key]['res_id'], res_ids_dict[key]['setup_dict'], multi_channel_event_and_queue_dict)
+                eq_dict[key] = eq.connect_to_eq(key, res_ids_dict[key]['class_name'], res_ids_dict[key]['res_id'], res_ids_dict[key]['setup_dict'])
         else:
             eq_dict[key] = None
     return eq_dict
 
 ################################## BATTERY CYCLING SETUP FUNCTION ######################################
-def idle_control(res_ids_dict, data_out_queue = None, data_in_queue = None, multi_channel_event_and_queue_dict = None):
+def idle_control(res_ids_dict, data_out_queue = None, data_in_queue = None):
     try:
-        eq_dict = get_equipment_dict(res_ids_dict, multi_channel_event_and_queue_dict)
+        eq_dict = get_equipment_dict(res_ids_dict)
         idle_cell_cycle(eq_dict, data_out_queue = data_out_queue, data_in_queue = data_in_queue)
         disable_equipment(eq_dict)
     except Exception:
         traceback.print_exc()
     
-def charge_discharge_control(res_ids_dict, data_out_queue = None, data_in_queue = None, input_dict = None, multi_channel_event_and_queue_dict = None, ch_num = None):
+def charge_discharge_control(res_ids_dict, data_out_queue = None, data_in_queue = None, input_dict = None, ch_num = None):
     try:
-        eq_dict = get_equipment_dict(res_ids_dict, multi_channel_event_and_queue_dict)
+        eq_dict = get_equipment_dict(res_ids_dict)
+        #print("Got Equipment Dict")
         
         if input_dict == None:
             input_dict = get_input_dict()
@@ -1100,9 +1105,8 @@ def charge_discharge_control(res_ids_dict, data_out_queue = None, data_in_queue 
         csv_dir = FileIO.ensure_subdir_exists_dir(input_dict['directory'], input_dict['cell_name'])
         log_dir = FileIO.ensure_subdir_exists_dir(csv_dir, 'logs')
         
-        initialize_connected_equipment(eq_dict)
         #Now initialize all the equipment that is connected
-        
+        initialize_connected_equipment(eq_dict)
         
         #TODO - looping a current profile until safety limits are hit
         #TODO - current step profiles to/from csv

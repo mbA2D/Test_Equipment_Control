@@ -1,4 +1,4 @@
-﻿Channel,Input_Type,Voltage_Scaling,Temp _A,Temp_B,Temp_C
+﻿Channel,Input_Type,Voltage_Scaling,Temp_A,Temp_B,Temp_C
 0,voltage,1,0,0,0
 1,voltage,1,0,0,0
 2,voltage,1,0,0,0
