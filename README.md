@@ -67,8 +67,10 @@ Run ```battery_test.py``` from command line.
     - This checks all the backends for available equipment. Some equipment previously connected to but not available now may be recognized.
 2. File->Connect to equipment
     - Choose the type and model of equipment that you want to connect to. Fake equipment is available for playing around with the software.
+    - If you connect equipment with multiple channels (e.g. A2D 64CH DAQ), then here you connect only to the board.
 3. Assign Equipment to channel
     - Equipment that you have previously connected to will be available to assign to the channel.
+    - For equipment with multiple channels (e.g. A2D 64CH DAQ), then here you must select the channel of the equipment to assign to the test channel as well.
     - An 'idle_test' will be started that will measure voltage and current using the connected equipment.
     - Ensure voltage shown matches the battery voltage expected (if one is connected).
 4. Configure Test
@@ -101,6 +103,13 @@ An efficiency graph can be generated from the data with ```DC_DC_Graph.py```
 ### Testing solar panels by sweeping an e-load in CV mode:  
 Run ```Eload_cv_sweep.py``` from command line  
 See results (solar panel IV curve with MPP marked) with ```Eload_cv_sweep.py```  
+
+### Measuring a bunch of thermistors with A2D 64CH DAQ:
+Using ```battery_test.py``` connect to the A2D 64CH DAQ, and a Fake DMM.
+The config file for the A2D 64CH DAQ should be set up following the 'A2D_DAQ_Config_All_Thermistor_NXRT15XV.csv' format, using Steinhart-Hart coefficienct specific to your thermistor.
+Assign the Fake DMM as a separate voltage measurement equipment, and the A2D 64CH DAQ channels you want to measure as additional DMMs to measure temperature for the channel.
+Configure a test for the channel, using a single rest step for the amount of time you want to log the thermistors for. Make sure to change the safety_time_s as well. Setting safety_time_s to 0 will disable the time safety check.
+Start the test, and a log will be created with a fake voltage measurement as well as all the temperature channels.
 
 ### Quick measurements with a DMM:
 Run ```Measurement_Script.py``` from command line.  
