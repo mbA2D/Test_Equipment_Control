@@ -118,6 +118,7 @@ Measurements will be printed out in the console.
 
 
 ## TODO List
+ - Do not allow starting a test when a safety error exists.
  - Why does it take so long to get the instrument idns when connecting equipment?
  - For tests with more than 1 channel, draw  lines between the blocks to separate them better.
  - Make the CH0, CH1 headings larger
