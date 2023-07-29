@@ -867,6 +867,9 @@ class MainTestWindow(QMainWindow):
     
     
     def start_test(self, ch_num):
+        if self.safety_label_list[ch_num].text() != 'Safety: OK':
+            print("CH{} - Please Check and Clear the Safety Error before starting a test!".format(ch_num))
+            return
         if self.res_ids_dict_list[ch_num] == None:
             print("CH{} - Please Assign Equipment before starting a test!".format(ch_num))
             return
