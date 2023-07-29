@@ -45,10 +45,6 @@ class MainTestWindow(QMainWindow):
         self.disconnect_equipment_process = None
         self.connected_equipment_list = list()
         self.connected_equipment_process_list = list()
-        
-        #self.dict_for_event_and_queue = {}
-        #self.multi_ch_device_process = None
-        #self.multi_ch_management_queue = None
     
         self.eq_assignment_queue = Queue()
         self.resources_list_queue = Queue()
@@ -207,9 +203,8 @@ class MainTestWindow(QMainWindow):
         eq_res_id_dict = eq.get_res_id_dict_and_disconnect(equipment_list)
         
         #And put the res id to a queue
+        #In update_loop, the queue is read and we create the equipment communication queues for virtual instrument
         new_equipment_queue.put_nowait(eq_res_id_dict)
-        
-        #In update loop read the queue and create the equipment communication queues for virtual instrument
         
     
     def clear_layout(self, layout):
@@ -539,11 +534,6 @@ class MainTestWindow(QMainWindow):
         self.connected_equipment_list.append(equipment_dict)
         self.connected_equipment_process_list.append(equipment_process_dict)
         
-    #def multi_ch_devices_process(self):
-        #TODO - ask which board to connect to - for now, we will just connect to an A2D DAQ
-        #self.dict_for_event_and_queue, self.multi_ch_management_queue, self.multi_ch_device_process = adm.create_event_and_queue_dicts()
-        #self.dict_for_event_and_queue = fbm.create_event_and_queue_dicts(4,4)
-        
     
     def get_connected_equipment_queues_matching_local_id(self, local_id):
         for connected_equipment_dict in self.connected_equipment_list:
@@ -599,7 +589,6 @@ class MainTestWindow(QMainWindow):
     
     @staticmethod
     def assign_equipment(ch_num, assignment_queue, res_ids_dict = None, connected_equipment_list = None):
-    #def assign_equipment(ch_num, assignment_queue, res_ids_dict = None, dict_for_event_and_queue = None, resources_list = None):
         try:
             if res_ids_dict == None:
                 res_ids_dict = {'psu': None, 'eload': None, 'dmm_v': None, 'dmm_i': None}
@@ -609,16 +598,12 @@ class MainTestWindow(QMainWindow):
                 msg = "Do you want to connect a power supply for channel {}?".format(ch_num)
                 title = "CH {} Power Supply Connection".format(ch_num)
                 if eg.ynbox(msg, title):
-                    #psu = eq.powerSupplies.choose_psu(resources_list = resources_list)
-                    #res_ids_dict['psu'] = eq.get_res_id_dict_and_disconnect(psu)
                     psu_idn = MainTestWindow.select_idn_matching_type(connected_equipment_list, 'psu')
                     idns_dict['psu'] = psu_idn
                 
                 msg = "Do you want to connect an eload for channel {}?".format(ch_num)
                 title = "CH {} Eload Connection".format(ch_num)
                 if eg.ynbox(msg, title):
-                    #eload = eq.eLoads.choose_eload(resources_list = resources_list)
-                    #res_ids_dict['eload'] = eq.get_res_id_dict_and_disconnect(eload)
                     eload_idn = MainTestWindow.select_idn_matching_type(connected_equipment_list, 'eload')
                     idns_dict['eload'] = eload_idn
                     
@@ -626,8 +611,6 @@ class MainTestWindow(QMainWindow):
                 msg = "Do you want to use a separate device to measure voltage on channel {}?".format(ch_num)
                 title = "CH {} Voltage Measurement Device".format(ch_num)
                 if eg.ynbox(msg, title):
-                    #dmm_v = eq.dmms.choose_dmm(multi_ch_event_and_queue_dict = dict_for_event_and_queue, resources_list = resources_list)
-                    #res_ids_dict['dmm_v'] = eq.get_res_id_dict_and_disconnect(dmm_v)
                     dmm_v_idn = MainTestWindow.select_idn_matching_type(connected_equipment_list, 'dmm')
                     
                     #if this is a A2D_64_CH_DAQ, we need to choose which channel to use
@@ -641,8 +624,6 @@ class MainTestWindow(QMainWindow):
                 msg = "Do you want to use a separate device to measure current on channel {}?".format(ch_num)
                 title = "CH {} Current Measurement Device".format(ch_num)
                 if eg.ynbox(msg, title):
-                    #dmm_i = eq.dmms.choose_dmm(multi_ch_event_and_queue_dict = dict_for_event_and_queue, resources_list = resources_list)
-                    #res_ids_dict['dmm_i'] = eq.get_res_id_dict_and_disconnect(dmm_i)
                     dmm_i_idn = MainTestWindow.select_idn_matching_type(connected_equipment_list, 'dmm')
                     idns_dict['dmm_i'] = dmm_i_idn
                 
@@ -800,10 +781,8 @@ class MainTestWindow(QMainWindow):
         #What if the required equipment could not be found?? - connect everything else? (TODO)
             
     def disconnect_all_equipment(self):
-        #These are the 2 lists that we need to empty and reset to default
-        #self.connected_equipment_list = list()
-        #self.connected_equipment_process_list = list()
         
+        #Stop the processes used to communicate with equipment
         for index in range(len(self.connected_equipment_process_list)):
             #get the queue in from connected_equipment_list
             queue_in = self.connected_equipment_list[index]['queue_in']
@@ -811,6 +790,8 @@ class MainTestWindow(QMainWindow):
             process_id = self.connected_equipment_process_list[index]['process']
             
             self.stop_process(process_id, queue_in)
+            
+        #These are the 2 lists that we need to empty and reset to default
         self.connected_equipment_list =list()
         self.connected_equipment_process_list = list()
         
@@ -954,8 +935,6 @@ class MainTestWindow(QMainWindow):
         for equipment_process_dict in self.connected_equipment_process_list:
             queue_in, queue_out = self.get_connected_equipment_queues_matching_local_id(equipment_process_dict['local_id'])
             self.stop_process(equipment_process_dict['process'], queue_in)
-        #if self.multi_ch_device_process is not None and self.multi_ch_management_queue is not None:
-        #    self.stop_process(self.multi_ch_device_process, self.multi_ch_management_queue)
             
     
 
