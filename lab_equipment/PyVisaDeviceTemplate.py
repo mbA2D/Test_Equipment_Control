@@ -11,7 +11,8 @@ class PyVisaDevice:
     connection_settings = {
         'pyvisa_backend':           '@py',
         'time_wait_after_open':     0,
-        'idn_available':            True
+        'idn_available':            True,
+        'timeout':                  1000
     }
     
     def __init__(self, resource_id = None, resources_list = None):
@@ -26,7 +27,7 @@ class PyVisaDevice:
                 resources = [resource['resource'] for resource in resources_list if resource['backend'] == self.connection_settings['pyvisa_backend']]
 
             ################# IDN VERSION #################
-            #Attempt to connect to each Visa Resource and get the IDN response
+            #Attempt to connect to each Visa Resource using the connection settings for this instrument and get the IDN response
             if(len(resources) == 0):
                 resource_id = 0
                 print("No PyVisa Resources Available. Connection attempt will exit with errors")
@@ -90,7 +91,7 @@ class PyVisaDevice:
                 except (pyvisa.errors.VisaIOError, PermissionError, serial.serialutil.SerialException):
                     pass
                     
-            #Now we have all the available resources that we can connect to, with their IDNs.
+            #Now we have all the available resources that we can connect to, with their IDNs if they were able to communicate with the same settings as the chosen device.
             resource_id = 0
             idn = None
             if(len(idns_dict.values()) == 0):
