@@ -50,7 +50,13 @@ class A2D_DAQ(PyVisaDevice):
             elif self.config_dict[ch]['Input_Type'] == 'temperature':
                 self.conf_io(ch, 1) #output
                 self.set_dig(ch, 1) #pull high
-    
+            elif self.config_dict[ch]['Input_Type'] == 'dig_in':
+                self.conf_io(ch, 0) #input
+            elif self.config_dict[ch]['Input_Type'] == 'dig_out':
+                self.conf_io(ch, 1) #output
+                self.set_dig(ch, 0) #pull low
+                
+                
     def reset(self):
         self.inst.write('*RST')
         
