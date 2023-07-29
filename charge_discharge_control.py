@@ -293,16 +293,21 @@ def evaluate_end_condition(step_settings, data, data_in_queue, log_filepath):
 
 ######################### MEASURING ######################
 
-def measure_battery(eq_dict, data_out_queue = None, step_index = 0):
+def measure_battery(eq_dict, data_out_queue = None, step_index = 0, current_time = None):
     data_dict = {'type': 'measurement', 'data': {}}
     data_dict['data']["Voltage"] = 0
+    data_dict['data']["Current"] = 0
+    data_dict['data']["Step_Index"] = step_index
+    
+    if current_time is not None:
+        data_dict['data']["Data_Timestamp"] = time.perf_counter()
+    else:
+        data_dict['data']["Data_Timestamp"] = current_time
+    
     if eq_dict['dmm_v'] != None:
         data_dict['data']["Voltage"] = eq_dict['dmm_v'].measure_voltage()
-    data_dict['data']["Current"] = 0
     if eq_dict['dmm_i'] != None:
         data_dict['data']["Current"] = eq_dict['dmm_i'].measure_current()
-    data_dict['data']["Data_Timestamp"] = time.time()
-    data_dict['data']["Step_Index"] = step_index
     
     #Now, measure all the extra devices that were added to the channel - these being less time-critical.
     prefix_list = ['v', 'i', 't']
@@ -355,12 +360,14 @@ def step_cell(filepath, log_filepath, step_settings, eq_dict, data_out_queue = N
     
     if start_step(step_settings, eq_dict, log_filepath):
         FileIO.write_line_txt(log_filepath, "Start Step Successful")
-        step_start_time = time.time()
+        
         perf_counter_start = time.perf_counter()
+        step_start_time_perf = perf_counter_start
         
         data = dict()
-        data.update(measure_battery(eq_dict))
+        data.update(measure_battery(eq_dict, current_time = step_start_time_perf))
         data["Data_Timestamp_From_Step_Start"] = 0
+        FileIO.write_data(filepath, data) #Log the measurements from the start of the step - e.g. OCV point for starting SoC.
         
         #If we are charging to the end of a CC cycle, then we need to not exit immediately.
         if (step_settings["drive_style"] == "voltage_v" and
@@ -376,16 +383,13 @@ def step_cell(filepath, log_filepath, step_settings, eq_dict, data_out_queue = N
         while end_condition == 'none':
             perf_counter_end = perf_counter_start + step_settings["meas_log_int_s"]
             while time.perf_counter() < perf_counter_end:
+                time.sleep(0.001) #1ms
                 pass
-                
-            #while ((time.time() - data["Data_Timestamp"]) < step_settings["meas_log_int_s"]):
-            #    time.sleep(
-            #time.sleep(step_settings["meas_log_int_s"] - ((time.time() - step_start_time) % step_settings["meas_log_int_s"]))
             
             perf_counter_start = time.perf_counter()
             
-            data.update(measure_battery(eq_dict, data_out_queue = data_out_queue, step_index = step_index))
-            data["Data_Timestamp_From_Step_Start"] = (data["Data_Timestamp"] - step_start_time)
+            data.update(measure_battery(eq_dict, data_out_queue = data_out_queue, step_index = step_index, current_time = perf_counter_start))
+            data["Data_Timestamp_From_Step_Start"] = (data["Data_Timestamp"] - step_start_time_perf)
             end_condition = evaluate_end_condition(step_settings, data, data_in_queue, log_filepath)
             FileIO.write_data(filepath, data)
         
