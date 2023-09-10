@@ -165,5 +165,8 @@ class PowerSupplyDevice(PyVisaDevice):
 class EloadDevice(PyVisaDevice):
     selection_window_title = "Eload Selection"
     
+class SourceMeasureDevice(PyVisaDevice):
+    selection_window_title = "Source Measure Selection"
+    
 class DMMDevice(PyVisaDevice):
     selection_window_title = "DMM Selection"

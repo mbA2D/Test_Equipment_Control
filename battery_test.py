@@ -2,7 +2,6 @@
 
 #Actions and menus from this tutorial: https://realpython.com/python-menus-toolbars/
 
-
 from PyQt6.QtWidgets import QApplication, QMainWindow, QPushButton, QLabel, QVBoxLayout, QHBoxLayout, QWidget, QGridLayout, QMenuBar
 from PyQt6.QtGui import QAction
 from PyQt6 import QtCore
@@ -12,17 +11,14 @@ from multiprocessing import Process, Queue, Event
 from functools import partial
 import queue #queue module required for exception handling of multiprocessing.Queue
 import traceback
-#from random import randint
 
 #from BATT_HIL import fet_board_management as fbm
-#from lab_equipment import A2D_DAQ_management as adm
 from lab_equipment import A2D_DAQ_control
 import charge_discharge_control as cdc
 import equipment as eq
 import easygui as eg
 import jsonIO
 import time
-
 import json
 
 class LivePlot:
@@ -480,6 +476,8 @@ class MainTestWindow(QMainWindow):
             self.last_update_time = time.time()
     
     def create_new_equipment(self, eq_res_id_dict):
+        print(eq_res_id_dict)
+    
         if eq_res_id_dict.get('local_id') is not None:
             eq_local_id = eq_res_id_dict.get('local_id')
         else:
@@ -556,7 +554,13 @@ class MainTestWindow(QMainWindow):
     @staticmethod
     def select_idn_matching_type(connected_equipment_list, eq_type):
         #connected_equipment_list contains the equipment dict with 'res_id', 'local_id', 'class_name', etc. created in create_new_equipment
-        eq_idn_list = [connected_equipment['eq_idn'] for connected_equipment in connected_equipment_list if connected_equipment['eq_type'] == eq_type]
+        
+        eq_type_match = list()
+        if 'dmm' in eq_type or eq_type == 'eload' or eq_type == 'psu':
+            eq_type_match.append('smu')
+        eq_type_match.append(eq_type)
+        
+        eq_idn_list = [connected_equipment['eq_idn'] for connected_equipment in connected_equipment_list if connected_equipment['eq_type'] in eq_type_match]
         
         eq_idn = None
         if len(eq_idn_list) == 0:

@@ -30,6 +30,9 @@ from lab_equipment import PSU_KAXXXXP
 from lab_equipment import PSU_E3631A
 from lab_equipment import PSU_Fake
 
+#SMUs
+from lab_equipment import SMU_A2D_POWER_BOARD
+
 #Digital Multimeters
 from lab_equipment import DMM_DM3000
 from lab_equipment import DMM_SDM3065X
@@ -63,7 +66,7 @@ def virtual_device_management_process(eq_type, new_eq_res_id_dict, queue_in, que
                 # - put responses to messages in queue_out
     
     device = connect_to_eq(eq_type, new_eq_res_id_dict['class_name'], new_eq_res_id_dict['res_id'], new_eq_res_id_dict['setup_dict'])
-    #print("Device Connected")
+    print(f"Virtual Device Connected: {new_eq_res_id_dict['class_name']}")
     
     queue_in_message_type = None
     #All queue in message must be a dict with 'type' and 'data' keys.
@@ -177,6 +180,29 @@ def setup_instrument(instrument, setup_dict):
             
         instrument.set_i2c_adc_addr(setup_dict['i2c_adc_addr'])
     
+    #A2D Power Board Special Setup
+    if isinstance(instrument, SMU_A2D_POWER_BOARD.A2D_POWER_BOARD):
+
+        if 'i2c_adc_addr' not in setup_dict.keys():
+            title = "A2D Power Board Setup - I2C ADC"
+            msg = "Enter ADC I2C Address\n Use 7-bit right-justified hexadecimal\n(e.g. '0x77')"
+            response = eg.enterbox(msg, title, default = '0x32')
+            if response == None:
+                return None
+            setup_dict['i2c_adc_addr'] = int(response, 16)
+            
+        instrument.set_i2c_adc_addr(setup_dict['i2c_adc_addr'])
+            
+        if 'i2c_dac_addr' not in setup_dict.keys():
+            title = "A2D Power Board Setup - I2C DAC"
+            msg = "Enter DAC I2C Address\n Use 7-bit right-justified hexadecimal\n(e.g. '0x77')"
+            response = eg.enterbox(msg, title, default = '0x74')
+            if response == None:
+                return None
+            setup_dict['i2c_dac_addr'] = int(response, 16)
+            
+        instrument.set_i2c_dac_addr(setup_dict['i2c_dac_addr'])
+    
     #A2D 64 CH DAQ special setup
     if isinstance(instrument, A2D_DAQ_control.A2D_DAQ):
         if 'config_dict' not in setup_dict.keys():
@@ -202,6 +228,12 @@ def connect_to_eq(key, class_name, res_id, setup_dict = None):
     #'dmm' with any following characters will be considered a dmm
     instrument = None
     
+    print(key)
+    print(class_name)
+    print(res_id)
+    print(setup_dict)
+    
+    
     if class_name == 'E3631A': time.sleep(1) #testing E3631A and delay for passing equipment between threads
     
     #return the actual equipment object instead of the equipment dictionary
@@ -213,6 +245,8 @@ def connect_to_eq(key, class_name, res_id, setup_dict = None):
         instrument = dmms.choose_dmm(class_name, resource_id = res_id, setup_dict = setup_dict)[1]
     elif key == 'relay_board' or key == 'other':
         instrument = otherEquipment.choose_equipment(class_name, res_id, setup_dict)[1]
+    elif key == 'smu':
+        instrument = smus.choose_smu(class_name, res_id, setup_dict)[1]
     time.sleep(0.1)
     return instrument
 
@@ -236,7 +270,11 @@ eq_list has 3 items:
 def get_res_id_dict_and_disconnect(eq_list):
     class_name = eq_list[0]
     
+    #print(eq_list)
+    
     eq_type = None
+    if class_name in smus.part_numbers.keys():
+        eq_type = 'smu'
     if class_name in otherEquipment.part_numbers.keys():
         if class_name == otherEquipment.part_numbers['A2D Relay Board']:
             eq_type = 'relay_board'
@@ -347,7 +385,7 @@ class eLoads:
         if class_name == None:
             msg = "In which series is the E-Load?"
             title = "E-Load Series Selection"
-            class_name = eg.choicebox(msg, title, eLoads.part_numbers.keys())
+            class_name = eg.choicebox(msg, title, list(eLoads.part_numbers.keys())+list(smus.part_numbers.keys()))
 
         if class_name == None:
             print("Failed to select the equipment.")
@@ -361,6 +399,8 @@ class eLoads:
             eload = Eload_KEL10X.KEL10X(resource_id = resource_id, resources_list = resources_list)
         elif class_name == 'IT8500':
             eload = Eload_IT8500.IT8500(resource_id = resource_id, resources_list = resources_list)
+        elif class_name == 'A2D_POWER_BOARD':
+            eload = SMU_A2D_POWER_BOARD.A2D_POWER_BOARD(resource_id = resource_id, resources_list = resources_list)
         elif class_name == 'Parallel Eloads':
             eload = Eload_PARALLEL.PARALLEL(resource_id = resource_id, resources_list = resources_list)
         elif class_name == 'Fake Test Eload':
@@ -390,7 +430,7 @@ class powerSupplies:
         if class_name == None:
             msg = "In which series is the PSU?"
             title = "PSU Series Selection"
-            class_name = eg.choicebox(msg, title, powerSupplies.part_numbers.keys())
+            class_name = eg.choicebox(msg, title, list(powerSupplies.part_numbers.keys())+list(smus.part_numbers.keys()))
 
         if class_name == None:
             print("Failed to select the equipment.")
@@ -410,6 +450,8 @@ class powerSupplies:
             psu = PSU_KAXXXXP.KAXXXXP(resource_id = resource_id, resources_list = resources_list)
         elif class_name == 'E3631A':
             psu = PSU_E3631A.E3631A(resource_id = resource_id, resources_list = resources_list)
+        elif class_name == 'A2D_POWER_BOARD':
+            psu = SMU_A2D_POWER_BOARD.A2D_POWER_BOARD(resource_id = resource_id, resources_list = resources_list)
         elif class_name == 'Fake Test PSU':
             psu = PSU_Fake.Fake_PSU(resource_id = resource_id, resources_list = resources_list)
             
@@ -419,6 +461,32 @@ class powerSupplies:
             return
         return class_name, psu, setup_dict
 
+
+class smus:
+    part_numbers = part_numbers = {
+        'A2D_POWER_BOARD':          'SMU_A2D_POWER_BOARD',
+    }
+    
+    @classmethod
+    def choose_smu(self, class_name = None, resource_id = None, setup_dict = None, resources_list = None):
+        if class_name == None:
+            msg = "In which series is the PSU?"
+            title = "PSU Series Selection"
+            class_name = eg.choicebox(msg, title, list(powerSupplies.part_numbers.keys())+list(smus.part_numbers.keys()))
+
+        if class_name == None:
+            print("Failed to select the equipment.")
+            return
+        
+        if class_name == 'A2D_POWER_BOARD':
+            smu = SMU_A2D_POWER_BOARD.A2D_POWER_BOARD(resource_id = resource_id, resources_list = resources_list)
+            
+        setup_dict = setup_instrument(smu, setup_dict)
+        if setup_dict == None:
+            print("Equipment Setup Failed")
+            return
+        return class_name, smu, setup_dict
+        
 
 class dmms:
     part_numbers = {
@@ -435,7 +503,7 @@ class dmms:
         if class_name == None:
             msg = "In which series is the DMM?"
             title = "DMM Series Selection"
-            class_name = eg.choicebox(msg, title, dmms.part_numbers.keys())
+            class_name = eg.choicebox(msg, title, list(dmms.part_numbers.keys())+list(smus.part_numbers.keys()))
 
         if class_name == None:
             print("Failed to select the equipment.")
@@ -449,6 +517,8 @@ class dmms:
             dmm = DMM_Fake.Fake_DMM(resource_id = resource_id, resources_list = resources_list)
         elif class_name == 'A2D_SENSE_BOARD':
             dmm = DMM_A2D_SENSE_BOARD.A2D_SENSE_BOARD(resource_id = resource_id, resources_list = resources_list)
+        elif class_name == 'A2D_POWER_BOARD':
+            dmm = SMU_A2D_POWER_BOARD.A2D_POWER_BOARD(resource_id = resource_id, resources_list = resources_list)
         elif class_name == 'A2D_DAQ_CH':
             '''
             #if running from this process then create the extra process from here.

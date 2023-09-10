@@ -147,3 +147,7 @@ class VirtualDeviceTemplate:
     def set_i2c_adc_addr(self, addr):
         write_dict = {'type': 'set_i2c_adc_addr', 'data': addr}
         self._queue_in.put_nowait(write_dict)
+        
+    def set_i2c_dac_addr(self, addr):
+        write_dict = {'type': 'set_i2c_dac_addr', 'data': addr}
+        self._queue_in.put_nowait(write_dict)
