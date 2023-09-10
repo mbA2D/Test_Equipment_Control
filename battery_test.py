@@ -476,7 +476,7 @@ class MainTestWindow(QMainWindow):
             self.last_update_time = time.time()
     
     def create_new_equipment(self, eq_res_id_dict):
-        print(eq_res_id_dict)
+        #print(eq_res_id_dict)
     
         if eq_res_id_dict.get('local_id') is not None:
             eq_local_id = eq_res_id_dict.get('local_id')

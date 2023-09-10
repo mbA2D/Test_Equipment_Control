@@ -196,7 +196,7 @@ def setup_instrument(instrument, setup_dict):
         if 'i2c_dac_addr' not in setup_dict.keys():
             title = "A2D Power Board Setup - I2C DAC"
             msg = "Enter DAC I2C Address\n Use 7-bit right-justified hexadecimal\n(e.g. '0x77')"
-            response = eg.enterbox(msg, title, default = '0x74')
+            response = eg.enterbox(msg, title, default = '0x4A')
             if response == None:
                 return None
             setup_dict['i2c_dac_addr'] = int(response, 16)
@@ -227,12 +227,6 @@ def connect_to_eq(key, class_name, res_id, setup_dict = None):
     #Key should be 'eload', 'psu', 'dmm', 'relay_board'
     #'dmm' with any following characters will be considered a dmm
     instrument = None
-    
-    print(key)
-    print(class_name)
-    print(res_id)
-    print(setup_dict)
-    
     
     if class_name == 'E3631A': time.sleep(1) #testing E3631A and delay for passing equipment between threads
     
