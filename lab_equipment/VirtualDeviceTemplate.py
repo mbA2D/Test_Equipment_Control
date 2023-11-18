@@ -37,6 +37,15 @@ class VirtualDeviceTemplate:
         self._queue_in.put_nowait(query_dict)
         return float(self._queue_out.get(timeout = 10))
         
+    def measure_voltage_at_adc(self):
+        msg_data = None
+        if self._eq_ch is not None:
+            msg_data = self._eq_ch
+        query_dict = {'type': 'measure_voltage', 'data': msg_data}
+        #print(f"Sending query: {query_dict}")
+        self._queue_in.put_nowait(query_dict)
+        return float(self._queue_out.get(timeout = 10))
+        
     def measure_current(self):
         msg_data = None
         if self._eq_ch is not None:
@@ -106,6 +115,39 @@ class VirtualDeviceTemplate:
         
     def reset(self):
         write_dict = {'type': 'reset', 'data': None}
+        self._queue_in.put_nowait(write_dict)
+    
+    #calibration
+    def reset_calibration(self):
+        msg_data = None
+        if self._eq_ch is not None:
+            msg_data = self._eq_ch
+        write_dict = {'type': 'reset_calibration', 'data': msg_data}
+        self._queue_in.put_nowait(write_dict)
+        
+    #calibration
+    def save_calibration(self):
+        msg_data = None
+        if self._eq_ch is not None:
+            msg_data = self._eq_ch
+        write_dict = {'type': 'save_calibration', 'data': msg_data}
+        self._queue_in.put_nowait(write_dict)
+        
+    #calibration
+    def get_calibration(self):
+        msg_data = None
+        if self._eq_ch is not None:
+            msg_data = self._eq_ch
+        write_dict = {'type': 'get_calibration', 'data': msg_data}
+        self._queue_in.put_nowait(write_dict)
+        return [float(val) for val in self._queue_out.get(timeout = 10)]
+    
+    #calibration
+    def calibrate_voltage(self, v1a, v1m, v2a, v2m):
+        msg_data = [v1a, v1m, v2a, v2m]
+        if self._eq_ch is not None:
+            msg_data.append(self._eq_ch)
+        write_dict = {'type': 'save_calibration', 'data': msg_data}
         self._queue_in.put_nowait(write_dict)
     
     #relay board

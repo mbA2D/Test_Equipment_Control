@@ -14,7 +14,11 @@ def main():
     
     msg = "How Many Measurements to perform?"
     title = "Number of Measurements"
-    num_measurements = int(eg.enterbox(msg = msg, title = title, default = 100, strip = True))
+    num_measurements = int(eg.enterbox(msg = msg, title = title, default = 10, strip = True))
+
+    msg = "How many seconds to delay between measurements?"
+    title = "Between Measurement Delay"
+    delay_s_between = float(eg.enterbox(msg = msg, title = title, default = 0.1, strip = True))
 
     msg = "How many seconds to delay before starting to measure?"
     title = "Pre-Measurement Delay"
@@ -29,6 +33,7 @@ def main():
             print(dmm.measure_current())
         elif measurement_type == 'temperature':
             print(dmm.measure_temperature())
+        time.sleep(delay_s_between)
 
 if __name__ == '__main__':
     main()

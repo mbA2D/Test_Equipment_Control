@@ -5,7 +5,7 @@ import easygui as eg
 import pyvisa
 
 #multi channel device management functions
-from BATT_HIL import fet_board_management as fbm
+#from BATT_HIL import fet_board_management as fbm
 
 import queue #For handling queue.Empty error
 
@@ -36,10 +36,11 @@ from lab_equipment import SMU_A2D_POWER_BOARD
 #Digital Multimeters
 from lab_equipment import DMM_DM3000
 from lab_equipment import DMM_SDM3065X
-from lab_equipment import DMM_FET_BOARD_EQ
+#from lab_equipment import DMM_FET_BOARD_EQ
 from lab_equipment import A2D_DAQ_control
 from lab_equipment import A2D_DAQ_config #to load config file from csv
 from lab_equipment import DMM_A2D_SENSE_BOARD
+from lab_equipment import DMM_A2D_4CH_Isolated_ADC
 from lab_equipment import DMM_Fake
 
 #Other Equipment
@@ -295,9 +296,9 @@ def get_res_id_dict_and_disconnect(eq_list):
         'setup_dict':   {}
     }
     
-    if class_name == 'MATICIAN_FET_BOARD_CH':# or class_name == 'A2D_DAQ_CH':
-        eq_res_id_dict['res_id'] = {'board_name': eq_list[1].board_name, 'ch_num': eq_list[1].ch_num}
-    elif class_name == 'Parallel Eloads':
+    #if class_name == 'MATICIAN_FET_BOARD_CH':# or class_name == 'A2D_DAQ_CH':
+    #    eq_res_id_dict['res_id'] = {'board_name': eq_list[1].board_name, 'ch_num': eq_list[1].ch_num}
+    if class_name == 'Parallel Eloads':
         eq_res_id_dict['res_id'] = {}
         eq_res_id_dict['res_id']['class_name_1'] = eq_list[1].class_name_1
         eq_res_id_dict['res_id']['class_name_2'] = eq_list[1].class_name_2
@@ -484,12 +485,13 @@ class smus:
 
 class dmms:
     part_numbers = {
-        'DM3000': 					'DMM_DM3000',
-        'SDM3065X': 				'DMM_SDM3065X',
-        'MATICIAN_FET_BOARD_CH':	'DMM_FET_BOARD',
-        'A2D_DAQ_CH':				'A2D_DAQ',
-        'A2D_SENSE_BOARD':          'A2D_SENSE_BOARD',
-        'Fake Test DMM': 			'DMM_Fake'
+        'DM3000': 					        'DMM_DM3000',
+        'SDM3065X': 				        'DMM_SDM3065X',
+        #'MATICIAN_FET_BOARD_CH':	        'DMM_FET_BOARD',
+        'A2D_DAQ_CH':				        'A2D_DAQ',
+        'A2D_SENSE_BOARD':                  'A2D_SENSE_BOARD',
+        'A2D_4CH_Isolated_ADC_Channel':     'A2D_4CH_Isolated_ADC',
+        'Fake Test DMM': 			        'DMM_Fake'
     }
     
     @classmethod
@@ -514,40 +516,10 @@ class dmms:
         elif class_name == 'A2D_POWER_BOARD':
             dmm = SMU_A2D_POWER_BOARD.A2D_POWER_BOARD(resource_id = resource_id, resources_list = resources_list)
         elif class_name == 'A2D_DAQ_CH':
-            '''
-            #if running from this process then create the extra process from here.
-            if multi_ch_event_and_queue_dict == None:
-                multi_ch_event_and_queue_dict = adm.create_event_and_queue_dicts(1, A2D_DAQ_control.A2D_DAQ.num_channels)
-            
-            if resource_id == None:
-                #get the event and queue dict from the proper channel of the proper device
-                #Figure out which devices are connected
-                #dict keyed by device name should be passed in
-                #Choose the device
-                msg = "Which Multi Channel Device to Use?"
-                title = "Multi Channel Device Selection"
-                num_available = len(multi_ch_event_and_queue_dict.keys())
-                if num_available == 0:
-                    print("No Equipment Available. Connection attempt will exit with errors")
-                elif num_available == 1:
-                    msg = "There is only 1 A2D DAQ board available.\nWould you like to use it?\n{}".format(list(multi_ch_event_and_queue_dict.keys())[0])
-                    if(eg.ynbox(msg, title)):
-                        board_name = int(list(multi_ch_event_and_queue_dict.keys())[0])
-                else:
-                    board_name = int(eg.choicebox(msg, title, multi_ch_event_and_queue_dict.keys()))
-                
-                #Choose the channel
-                msg = "Choose Which Channel of This Device to Use:"
-                title = "Multi Channel Device Channel Selection"
-                ch_num = int(eg.choicebox(msg, title, multi_ch_event_and_queue_dict[board_name].keys()))
-                
-                resource_id = {'board_name': board_name, 'ch_num': ch_num}
-            
-            event_and_queue_dict = multi_ch_event_and_queue_dict[resource_id['board_name']][resource_id['ch_num']]
-            '''
-            
-            #dmm = DMM_A2D_DAQ_CH.A2D_DAQ_CH(resource_id = resource_id, resources_list = resources_list)
             dmm = A2D_DAQ_control.A2D_DAQ(resource_id = resource_id, resources_list = resources_list)
+        elif class_name == 'A2D_4CH_Isolated_ADC_Channel':
+            dmm = DMM_A2D_4CH_Isolated_ADC.A2D_4CH_Isolated_ADC(resource_id = resource_id, resources_list = resources_list)
+        '''
         elif class_name == 'MATICIAN_FET_BOARD_CH':
             #if running from this process then create the extra process from here.
             if multi_ch_event_and_queue_dict == None:
@@ -572,7 +544,7 @@ class dmms:
             event_and_queue_dict = multi_ch_event_and_queue_dict[resource_id['board_name']][resource_id['ch_num']]
             
             dmm = DMM_FET_BOARD_EQ.FET_BOARD_EQ(resource_id, event_and_queue_dict)
-            
+        '''
         setup_dict = setup_instrument(dmm, setup_dict)
         if setup_dict == None:
             print("Equipment Setup Failed")
