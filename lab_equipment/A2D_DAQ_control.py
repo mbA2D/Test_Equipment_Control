@@ -9,6 +9,7 @@ from .PyVisaDeviceTemplate import PyVisaDevice
 #Data Acquisition Unit
 class A2D_DAQ(PyVisaDevice):
     num_channels = 64
+    start_channel = 0
     connection_settings = {
         'read_termination':         '\r\n',
         'write_termination':        '\n',

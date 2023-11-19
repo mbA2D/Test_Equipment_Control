@@ -6,6 +6,7 @@ from .PyVisaDeviceTemplate import DMMDevice
 # DMM
 class A2D_4CH_Isolated_ADC(DMMDevice):
     num_channels = 4
+    start_channel = 1
     connection_settings = {
         'read_termination':         '\r\n',
         'write_termination':        '\n',
@@ -17,7 +18,7 @@ class A2D_4CH_Isolated_ADC(DMMDevice):
         'idn_available':            True
     }
     
-    def reset():
+    def reset(self):
         self.inst.write('*RST')
     
     def reset_calibration(self, channel = 1):

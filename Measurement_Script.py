@@ -6,6 +6,11 @@ import easygui as eg
 
 def main():
     dmm = eq.dmms.choose_dmm()[1]
+    channel = None
+    try:
+        channel = eq.choose_channel(dmm.num_channels, dmm.start_channel)
+    except AttributeError:
+        pass
     
     choices = ['voltage', 'current', 'temperature']
     msg = "What do you want to measure?"
@@ -28,11 +33,23 @@ def main():
 
     for i in range(num_measurements):
         if measurement_type == 'voltage':
-            print(dmm.measure_voltage())
+            if channel is not None:
+                voltage = dmm.measure_voltage(channel)
+            else:
+                voltage = dmm.measure_voltage()
+            print(voltage)
         elif measurement_type == 'current':
-            print(dmm.measure_current())
+            if channel is not None:
+                current = dmm.measure_current(channel)
+            else:
+                current = dmm.measure_current()
+            print(current)
         elif measurement_type == 'temperature':
-            print(dmm.measure_temperature())
+            if channel is not None:
+                temperature = dmm.measure_temperature(channel)
+            else:
+                temperature = dmm.measure_temperature()
+            print(temperature)
         time.sleep(delay_s_between)
 
 if __name__ == '__main__':
