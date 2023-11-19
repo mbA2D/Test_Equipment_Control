@@ -6,6 +6,7 @@ from .PyVisaDeviceTemplate import DMMDevice
 # DMM
 class A2D_4CH_Isolated_ADC(DMMDevice):
     num_channels = 4
+    start_channel = 1
     connection_settings = {
         'read_termination':         '\r\n',
         'write_termination':        '\n',
