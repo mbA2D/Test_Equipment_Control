@@ -123,7 +123,7 @@ class CalibrationClass:
     def check_voltage_calibration(self):
         voltages = self.get_cal_check_points()
         
-        self.psu.set_voltage(min_voltage)
+        self.psu.set_voltage(0)
         self.psu.toggle_output(True)
         
         measurements_list = []
