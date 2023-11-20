@@ -27,20 +27,30 @@ class CalibrationClass:
         self.dut_channel = None
 
     def connect_psu(self):
+        if self.psu is not None:
+            self.psu.close()
+    
         self.psu = eq.powerSupplies.choose_psu()[1]
         self.psu_idn = self.psu.inst_idn
         
     def connect_dmm(self):
+        if self.dmm is not None:
+            self.psu.close()
+            
         self.dmm = eq.dmms.choose_dmm()[1]
         self.dmm_idn = self.dmm.inst_idn
     
     def connect_dut(self):
+        if self.dut in not None:
+            self.dut.close()
+    
         self.dut = eq.dmms.choose_dmm()[1]
         self.dut.reset()
         self.dut_idn = self.dut.inst_idn
         
         try:
             self.dut_channel = eq.choose_channel(self.dut.num_channels, self.dut.start_channel)
+            self.dut_idn += f' CH {self.dut_channel}'
         except AttributeError:
             pass
 
