@@ -28,21 +28,21 @@ class CalibrationClass:
 
     def connect_psu(self):
         if self.psu is not None:
-            self.psu.close()
+            self.psu.inst.close()
     
         self.psu = eq.powerSupplies.choose_psu()[1]
         self.psu_idn = self.psu.inst_idn
         
     def connect_dmm(self):
         if self.dmm is not None:
-            self.psu.close()
+            self.dmm.inst.close()
             
         self.dmm = eq.dmms.choose_dmm()[1]
         self.dmm_idn = self.dmm.inst_idn
     
     def connect_dut(self):
-        if self.dut in not None:
-            self.dut.close()
+        if self.dut is not None:
+            self.dut.inst.close()
     
         self.dut = eq.dmms.choose_dmm()[1]
         self.dut.reset()
@@ -109,7 +109,6 @@ class CalibrationClass:
         measurements_list = []
         
         for voltage in voltages:
-            print(voltage)
             self.psu.set_voltage(voltage)
             time.sleep(1)
             measurements = {'psu': voltage}
