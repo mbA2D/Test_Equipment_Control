@@ -54,9 +54,20 @@ class CalibrationClass:
         except AttributeError:
             pass
 
+    def get_lin_cal_points(self):
+        values = eg.multenterbox(msg = 'Enter the 2 points for linear calibration',
+                        title = 'Calibration Settings',
+                        fields = ['point_1', 'point_2'],
+                        values = [2,4])
+        
+        return [float(val) for val in values]
+
     def calibrate_voltage_meter(self):
+        
+        points = self.get_lin_cal_points()
+        
         #CAL POINT 1
-        self.psu.set_voltage(0)
+        self.psu.set_voltage(points[0])
         self.psu.set_current(0.1)
         self.psu.toggle_output(True)
         
@@ -64,7 +75,7 @@ class CalibrationClass:
         voltage_1 = self.measure_average(num_to_average = 10, at_adc = True)
         
         #CAL POINT 2
-        self.psu.set_voltage(4)
+        self.psu.set_voltage(points[1])
         time.sleep(1)
         voltage_2 = self.measure_average(num_to_average = 10, at_adc = True)
         
@@ -96,12 +107,21 @@ class CalibrationClass:
                 self.dut.save_calibration()
         else:
             self.dut.reset() #resets calibration values back to original values
-
+    
+    def get_cal_check_points(self):
+        values = eg.multenterbox(msg = 'Enter the voltage range and number of steps',
+                        title = 'Calibration Check Settings',
+                        fields = ['min_voltage', 'max_voltage','num_steps'],
+                        values = [0,5,10])
+        
+        min_voltage = float(values[0])
+        max_voltage = float(values[1])
+        steps = int(values[2])
+        
+        return np.linspace(min_voltage, max_voltage, steps)
+    
     def check_voltage_calibration(self):
-        steps = 10
-        min_voltage = 0
-        max_voltage = 5
-        voltages = np.linspace(min_voltage, max_voltage, steps)
+        voltages = self.get_cal_check_points()
         
         self.psu.set_voltage(min_voltage)
         self.psu.toggle_output(True)
