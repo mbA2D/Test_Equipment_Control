@@ -29,20 +29,23 @@ class MultimeterCalibrationApp(QWidget):
 
         self.check_calibration_btn = QPushButton('Check Calibration', self)
         self.check_calibration_btn.clicked.connect(self.check_calibration)
+        
+        dut_layout = QHBoxLayout()
+        dut_layout.addWidget(self.connect_btn1)
+        dut_layout.addWidget(self.connected_label1)
+        
+        dmm_layout = QHBoxLayout()
+        dmm_layout.addWidget(self.connect_btn2)
+        dmm_layout.addWidget(self.connected_label2)
+        
+        psu_layout = QHBoxLayout()
+        psu_layout.addWidget(self.connect_btn3)
+        psu_layout.addWidget(self.connected_label3)
 
-        button_layout = QVBoxLayout()
-        button_layout.addWidget(self.connect_btn1)
-        button_layout.addWidget(self.connect_btn2)
-        button_layout.addWidget(self.connect_btn3)
-
-        label_layout = QVBoxLayout()
-        label_layout.addWidget(self.connected_label1)
-        label_layout.addWidget(self.connected_label2)
-        label_layout.addWidget(self.connected_label3)
-
-        control_layout = QHBoxLayout()
-        control_layout.addLayout(button_layout)
-        control_layout.addLayout(label_layout)
+        control_layout = QVBoxLayout()
+        control_layout.addLayout(dut_layout)
+        control_layout.addLayout(dmm_layout)
+        control_layout.addLayout(psu_layout)
 
         action_layout = QHBoxLayout()
         action_layout.addWidget(self.calibrate_btn)

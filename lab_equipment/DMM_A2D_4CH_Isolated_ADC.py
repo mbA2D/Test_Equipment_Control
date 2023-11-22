@@ -44,15 +44,15 @@ class A2D_4CH_Isolated_ADC(DMMDevice):
     def measure_voltage_at_adc(self, channel = 1):
         if channel == 0:
             #return a list with all 4 values.
-            return [float(val) for val in self.inst.query_ascii_values(f'MEAS:VOLT:ATADC {channel}?')]
+            return [float(val) for val in self.inst.query_ascii_values(f'MEAS:VOLT:ADC {channel}?')]
         else:
-            return float(self.inst.query(f'MEAS:VOLT:ATADC {channel}?'))
+            return float(self.inst.query(f'MEAS:VOLT:ADC {channel}?'))
         
     def set_led(self, state): #state is a bool
         if state:
-            self.inst.write('INSTR:SET:LED 1')
+            self.inst.write('INSTR:LED 1')
         else:
-            self.inst.write('INSTR:SET:LED 0')
+            self.inst.write('INSTR:LED 0')
     
     def get_num_channels(self):
         return A2D_4CH_Isolated_ADC.num_channels
