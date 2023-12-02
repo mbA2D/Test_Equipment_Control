@@ -14,130 +14,182 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-def calibrate_voltage_meter():
-    #CAL POINT 1
-    psu.set_voltage(0)
-    psu.set_current(0.1)
-    psu.toggle_output(True)
-    
-    time.sleep(1)
-    voltage_1 = measure_average(num_to_average = 10, dut_channel = channel, at_adc = True)
-    
-    #CAL POINT 2
-    psu.set_voltage(4)
-    time.sleep(1)
-    voltage_2 = measure_average(num_to_average = 10, dut_channel = channel, at_adc = True)
-    
-    psu.toggle_output(False)
-    
-    if channel is not None:
-        old_calibration = dut.get_calibration(channel)
-    else:
-        old_calibration = dut.get_calibration()
-    
-    #CALIBRATE
-    if channel is not None:
-        dut.calibrate_voltage(voltage_1['dmm'], voltage_1['dut'], voltage_2['dmm'], voltage_2['dut'], channel)
-    else:
-        dut.calibrate_voltage(voltage_1['dmm'], voltage_1['dut'], voltage_2['dmm'], voltage_2['dut'])
-    
-    if channel is not None:
-        new_calibration = dut.get_calibration(channel)
-    else:
-        new_calibration = dut.get_calibration()
-    
-    title = 'Use New Calibration?'
-    message = f'Would you like to save the new calibration?\nOld Calibration: {old_calibration}\nNew Calibration: {new_calibration}'
-    
-    if eg.ynbox(title = title,msg = message):
-        if channel is not None:
-            dut.save_calibration(channel)
-        else:
-            dut.save_calibration()
-    else:
-        dut.reset() #resets calibration values back to original values
-
-def check_voltage_calibration():
-    steps = 10
-    min_voltage = 0
-    max_voltage = 5
-    voltages = np.linspace(min_voltage, max_voltage, steps)
-    
-    psu.set_voltage(min_voltage)
-    psu.toggle_output(True)
-    
-    measurements_list = []
-    
-    for voltage in voltages:
-        print(voltage)
-        psu.set_voltage(voltage)
-        time.sleep(1)
-        measurements = {'psu': voltage}
-        measurements.update(measure_average(dut_channel = channel, at_adc = False))
-        measurements_list.append(measurements)
-    
-    psu.toggle_output(False)
-    
-    df = pd.DataFrame.from_records(measurements_list)
-    df['dut-dmm'] = df['dut'] - df['dmm']
-    df['dut-dmm_percent'] = df['dut-dmm']/df['psu']*100
-    
-    fig, ax1 = plt.subplots()
-    ax1.set_xlabel('Input Voltage (V)')
-    ax1.plot(df['psu'], df['dut-dmm'], color='r')
-    ax1.set_ylabel('Error (V)', color='r')
-    
-    ax2 = ax1.twinx()
-    
-    ax2.plot(df['psu'], df['dut-dmm_percent'], color='b')
-    ax2.set_ylabel('Error (%)', color = 'b')
-    
-    fig.suptitle('Calibration Check')
-    fig.tight_layout()
-    plt.show()
-
-def measure_average(num_to_average = 10, dut_channel = None, at_adc = False):
-    #get measurements from each source
-    measurements = {'dut': [],'dmm': []}
-    for i in range(num_to_average):
-        if dut_channel is not None:
-            if at_adc:
-                measurements['dut'].append(dut.measure_voltage_at_adc(channel))
-            else:
-                measurements['dut'].append(dut.measure_voltage(channel))
-        else:
-            if at_adc:
-                measurements['dut'].append(dut.measure_voltage_at_adc())
-            else:
-                measurements['dut'].append(dut.measure_voltage())
-        measurements['dmm'].append(dmm.measure_voltage())
-        time.sleep(0.1)
-    
-    #remove high and low readings if there are enough
-    if num_to_average >= 5:
-        measurements['dut'].remove(max(measurements['dut']))
-        measurements['dut'].remove(min(measurements['dut']))
-        measurements['dmm'].remove(max(measurements['dmm']))
-        measurements['dmm'].remove(min(measurements['dmm']))
-    
-    measurements['dut'] = np.mean(measurements['dut'])
-    measurements['dmm'] = np.mean(measurements['dmm']) 
+class CalibrationClass:
+    def __init__(self):
+        self.dmm = None
+        self.dut = None
+        self.psu = None
         
-    return measurements
+        self.dmm_idn = "None"
+        self.dut_idn = "None"
+        self.psu_idn = "None"
+        
+        self.dut_channel = None
+
+    def connect_psu(self):
+        if self.psu is not None:
+            self.psu.inst.close()
+    
+        self.psu = eq.powerSupplies.choose_psu()[1]
+        self.psu_idn = self.psu.inst_idn
+        
+    def connect_dmm(self):
+        if self.dmm is not None:
+            self.dmm.inst.close()
+            
+        self.dmm = eq.dmms.choose_dmm()[1]
+        self.dmm_idn = self.dmm.inst_idn
+    
+    def connect_dut(self):
+        if self.dut is not None:
+            self.dut.inst.close()
+    
+        self.dut = eq.dmms.choose_dmm()[1]
+        self.dut.reset()
+        self.dut_idn = self.dut.inst_idn
+        
+        try:
+            self.dut_channel = eq.choose_channel(self.dut.num_channels, self.dut.start_channel)
+            self.dut_idn += f' CH {self.dut_channel}'
+        except AttributeError:
+            pass
+
+    def get_lin_cal_points(self):
+        values = eg.multenterbox(msg = 'Enter the 2 points for linear calibration',
+                        title = 'Calibration Settings',
+                        fields = ['point_1', 'point_2'],
+                        values = [2,4])
+        
+        return [float(val) for val in values]
+
+    def calibrate_voltage_meter(self):
+        
+        points = self.get_lin_cal_points()
+        
+        #CAL POINT 1
+        self.psu.set_voltage(points[0])
+        self.psu.set_current(0.1)
+        self.psu.toggle_output(True)
+        
+        time.sleep(1)
+        voltage_1 = self.measure_average(num_to_average = 10, at_adc = True)
+        
+        #CAL POINT 2
+        self.psu.set_voltage(points[1])
+        time.sleep(1)
+        voltage_2 = self.measure_average(num_to_average = 10, at_adc = True)
+        
+        self.psu.toggle_output(False)
+        
+        if self.dut_channel is not None:
+            old_calibration = self.dut.get_calibration(self.dut_channel)
+        else:
+            old_calibration = self.dut.get_calibration()
+        
+        #CALIBRATE
+        if self.dut_channel is not None:
+            self.dut.calibrate_voltage(voltage_1['dmm'], voltage_1['dut'], voltage_2['dmm'], voltage_2['dut'], self.dut_channel)
+        else:
+            self.dut.calibrate_voltage(voltage_1['dmm'], voltage_1['dut'], voltage_2['dmm'], voltage_2['dut'])
+        
+        if self.dut_channel is not None:
+            new_calibration = self.dut.get_calibration(self.dut_channel)
+        else:
+            new_calibration = self.dut.get_calibration()
+        
+        title = 'Use New Calibration?'
+        message = f'Would you like to save the new calibration?\nOld Calibration: {old_calibration}\nNew Calibration: {new_calibration}'
+        
+        if eg.ynbox(title = title,msg = message):
+            if self.dut_channel is not None:
+                self.dut.save_calibration(self.dut_channel)
+            else:
+                self.dut.save_calibration()
+        else:
+            self.dut.reset() #resets calibration values back to original values
+    
+    def get_cal_check_points(self):
+        values = eg.multenterbox(msg = 'Enter the voltage range and number of steps',
+                        title = 'Calibration Check Settings',
+                        fields = ['min_voltage', 'max_voltage','num_steps'],
+                        values = [0,5,10])
+        
+        min_voltage = float(values[0])
+        max_voltage = float(values[1])
+        steps = int(values[2])
+        
+        return np.linspace(min_voltage, max_voltage, steps)
+    
+    def check_voltage_calibration(self):
+        voltages = self.get_cal_check_points()
+        
+        self.psu.set_voltage(0)
+        self.psu.toggle_output(True)
+        
+        measurements_list = []
+        
+        for voltage in voltages:
+            self.psu.set_voltage(voltage)
+            time.sleep(1)
+            measurements = {'psu': voltage}
+            measurements.update(self.measure_average(at_adc = False))
+            measurements_list.append(measurements)
+        
+        self.psu.toggle_output(False)
+        
+        df = pd.DataFrame.from_records(measurements_list)
+        df['dut-dmm'] = df['dut'] - df['dmm']
+        df['dut-dmm_percent'] = df['dut-dmm']/df['psu']*100
+        
+        fig, ax1 = plt.subplots()
+        ax1.set_xlabel('Input Voltage (V)')
+        ax1.plot(df['psu'], df['dut-dmm'], color='r')
+        ax1.set_ylabel('Error (V)', color='r')
+        
+        ax2 = ax1.twinx()
+        
+        ax2.plot(df['psu'], df['dut-dmm_percent'], color='b')
+        ax2.set_ylabel('Error (%)', color = 'b')
+        
+        fig.suptitle('Calibration Check')
+        fig.tight_layout()
+        plt.show()
+
+    def measure_average(self, num_to_average = 10, at_adc = False):
+        #get measurements from each source
+        measurements = {'dut': [],'dmm': []}
+        for i in range(num_to_average):
+            if self.dut_channel is not None:
+                if at_adc:
+                    measurements['dut'].append(self.dut.measure_voltage_at_adc(self.dut_channel))
+                else:
+                    measurements['dut'].append(self.dut.measure_voltage(self.dut_channel))
+            else:
+                if at_adc:
+                    measurements['dut'].append(self.dut.measure_voltage_at_adc())
+                else:
+                    measurements['dut'].append(self.dut.measure_voltage())
+            measurements['dmm'].append(self.dmm.measure_voltage())
+            time.sleep(0.1)
+        
+        #remove high and low readings if there are enough
+        if num_to_average >= 5:
+            measurements['dut'].remove(max(measurements['dut']))
+            measurements['dut'].remove(min(measurements['dut']))
+            measurements['dmm'].remove(max(measurements['dmm']))
+            measurements['dmm'].remove(min(measurements['dmm']))
+        
+        measurements['dut'] = np.mean(measurements['dut'])
+        measurements['dmm'] = np.mean(measurements['dmm']) 
+            
+        return measurements
 
 if __name__ == '__main__':
     #CONNECT EQUIPMENT
-    dmm = eq.dmms.choose_dmm()[1] #6.5 digit DMM to calibrate to
-    
-    dut = eq.dmms.choose_dmm()[1] #The voltage measurement device to calibrate
-    dut.reset() #resets calibration values to whatever is in EEPROM
-    channel = None
-    try:
-        channel = eq.choose_channel(dut.num_channels, dut.start_channel)
-    except AttributeError:
-        pass
-    
-    psu = eq.powerSupplies.choose_psu()[1]
+    cal_class = CalibrationClass()
+    cal_class.connect_dmm()
+    cal_class.connect_dut()
+    cal_class.connect_psu()
     
     cal_choices = ["Calibrate", "Check Calibration"]
     
@@ -146,10 +198,10 @@ if __name__ == '__main__':
                     choices = cal_choices,
                     default_choice = cal_choices[0])
     
-    psu.set_voltage(0)
-    psu.set_current(0.1)                
+    cal_class.psu.set_voltage(0)
+    cal_class.psu.set_current(0.1)                
     
     if cal_type == 0:
-        calibrate_voltage_meter()
+        cal_class.calibrate_voltage_meter()
     elif cal_type == 1:
-        check_voltage_calibration()
+        cal_class.check_voltage_calibration()
