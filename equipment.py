@@ -246,13 +246,14 @@ def connect_to_eq(key, class_name, res_id, setup_dict = None):
     return instrument
 
 
-#Used in charge_discharge_control get_equipment_dict
+#Used in get_equipment_dict
 def connect_to_virtual_eq(virtual_res_id_dict):
     if virtual_res_id_dict.get('eq_ch') != None:
         instrument = VirtualDeviceTemplate.VirtualDeviceTemplate(virtual_res_id_dict['queue_in'], virtual_res_id_dict['queue_out'], virtual_res_id_dict['eq_ch'])
     else:
         instrument = VirtualDeviceTemplate.VirtualDeviceTemplate(virtual_res_id_dict['queue_in'], virtual_res_id_dict['queue_out'])
     return instrument
+
 
 #used in battery_test.py when connecting to a new piece of equipment
 #equipment_list comes from the choose_eload, choose_dmm, etc. functions in equipment.py
@@ -335,6 +336,21 @@ def get_res_id_dict_and_disconnect(eq_list):
     
     return eq_res_id_dict
 
+
+#Connect to the equipment and return the handle for the virtual equipment
+def get_equipment_dict(res_ids_dict):
+    eq_dict = {}
+    for key in res_ids_dict:
+        if res_ids_dict[key] != None and res_ids_dict[key]['res_id'] != None:
+            if res_ids_dict[key]['res_id'].get('queue_in') != None:
+                #This is a virtual equipment that is communicated with through queues.
+                eq_dict[key] = connect_to_virtual_eq(res_ids_dict[key]['res_id'])
+            else:
+                eq_dict[key] = connect_to_eq(key, res_ids_dict[key]['class_name'], res_ids_dict[key]['res_id'], res_ids_dict[key]['setup_dict'])
+        else:
+            eq_dict[key] = None
+    return eq_dict    
+    
 
 class otherEquipment:
     part_numbers = {
