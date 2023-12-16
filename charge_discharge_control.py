@@ -140,12 +140,12 @@ class CyclingControl():
 
     ###################################################### TEST CONTROL ###################################################
        
-    def start_step(self, step_settings, eq_dict, log_filepath):
+    def start_step(self, step_settings, eq_dict):
         #This function will set all the supplies to the settings given in the step
         
         #CURRENT DRIVEN
         if step_settings["drive_style"] == 'current_a':
-            FileIO.write_line_txt(log_filepath, "Current-Driven Step Setup")
+            FileIO.write_line_txt(self.log_filepath, "Current-Driven Step Setup")
             if step_settings["drive_value"] > 0:
                 #charge - turn off eload first if connected, leave psu on.
                 self.disable_equipment_single(eq_dict['eload'])
@@ -159,7 +159,7 @@ class CyclingControl():
                     time.sleep(0.02)
                 else:
                     print("No PSU Connected. Can't Charge! Exiting.")
-                    FileIO.write_line_txt(log_filepath, "ERROR - No PSU Connected. Can't Charge! Exiting.")
+                    FileIO.write_line_txt(self.log_filepath, "ERROR - No PSU Connected. Can't Charge! Exiting.")
                     return False
             elif step_settings["drive_value"] < 0:
                 #discharge - turn off power supply if connected, leave eload on.
@@ -173,7 +173,7 @@ class CyclingControl():
                     #we're in constant current mode - can't set a voltage.
                 else:
                     print("No Eload Connected. Can't Discharge! Exiting.")
-                    FileIO.write_line_txt(log_filepath, "ERROR - No Eload Connected. Can't Discharge! Exiting.")
+                    FileIO.write_line_txt(self.log_filepath, "ERROR - No Eload Connected. Can't Discharge! Exiting.")
                     return False
             elif step_settings["drive_value"] == 0:
                 #rest
@@ -181,7 +181,7 @@ class CyclingControl():
         
         #VOLTAGE DRIVEN
         elif step_settings["drive_style"] == 'voltage_v':
-            FileIO.write_line_txt(log_filepath, "Voltage-Driven Step Setup")
+            FileIO.write_line_txt(self.log_filepath, "Voltage-Driven Step Setup")
             #positive current
             if step_settings["drive_value_other"] >= 0:
                 self.disable_equipment_single(eq_dict['eload']) #turn off eload
@@ -195,19 +195,19 @@ class CyclingControl():
                     time.sleep(0.02)
                 else:
                     print("No PSU Connected. Can't Charge! Exiting.")
-                    FileIO.write_line_txt(log_filepath, "ERROR - No PSU Connected. Can't Charge! Exiting.")
+                    FileIO.write_line_txt(self.log_filepath, "ERROR - No PSU Connected. Can't Charge! Exiting.")
                     return False
             #TODO - needs CV mode on eloads
             else:
                 print("Voltage Driven Step Not Yet Implemented for negative current. Exiting.")
-                FileIO.write_line_txt(log_filepath, "ERROR - Voltage Driven Step Not Yet Implemented for negative current. Exiting.")
+                FileIO.write_line_txt(self.log_filepath, "ERROR - Voltage Driven Step Not Yet Implemented for negative current. Exiting.")
                 #Ensure everything is off since not yet implemented.
                 self.disable_equipment(eq_dict)
                 return False
         
         #NOT DRIVEN
         elif step_settings["drive_style"] == 'none':
-            FileIO.write_line_txt(log_filepath, "Non-Driven (Rest) Step Setup")
+            FileIO.write_line_txt(self.log_filepath, "Non-Driven (Rest) Step Setup")
             #Ensure all sources and loads are off.
             self.disable_equipment(eq_dict)
         
@@ -215,7 +215,7 @@ class CyclingControl():
         #print("start_step returning True")
         return True
 
-    def evaluate_end_condition(self, step_settings, data, data_in_queue, log_filepath):
+    def evaluate_end_condition(self, step_settings, data, data_in_queue):
         #evaluates different end conditions (voltage, current, time)
         #returns true if the end condition has been met (e.g. voltage hits lower bound, current hits lower bound, etc.)
         #also returns true if any of the safety settings have been exceeded
@@ -230,21 +230,21 @@ class CyclingControl():
         #SAFETY SETTINGS
         #Voltage and current limits are always active
         if data["Voltage"] < step_settings["safety_min_voltage_v"]:
-            FileIO.write_line_txt(log_filepath, f'WARNING - Min Voltage Limit Hit! Data: {data["Voltage"]}V Limit: {step_settings["safety_min_voltage_v"]}V')
+            FileIO.write_line_txt(self.log_filepath, f'WARNING - Min Voltage Limit Hit! Data: {data["Voltage"]}V Limit: {step_settings["safety_min_voltage_v"]}V')
             return 'safety_condition'
         if data["Voltage"] > step_settings["safety_max_voltage_v"]:
-            FileIO.write_line_txt(log_filepath, f'WARNING - Max Voltage Limit Hit! Data: {data["Voltage"]}V Limit: {step_settings["safety_max_voltage_v"]}V')
+            FileIO.write_line_txt(self.log_filepath, f'WARNING - Max Voltage Limit Hit! Data: {data["Voltage"]}V Limit: {step_settings["safety_max_voltage_v"]}V')
             return 'safety_condition'
         if data["Current"] < step_settings["safety_min_current_a"]:
-            FileIO.write_line_txt(log_filepath, f'WARNING - Min Current Limit Hit! Data: {data["Current"]}A Limit: {step_settings["safety_min_current_a"]}A')
+            FileIO.write_line_txt(self.log_filepath, f'WARNING - Min Current Limit Hit! Data: {data["Current"]}A Limit: {step_settings["safety_min_current_a"]}A')
             return 'safety_condition'
         if data["Current"] > step_settings["safety_max_current_a"]:
-            FileIO.write_line_txt(log_filepath, f'WARNING - Max Current Limit Hit! Data: {data["Current"]}A Limit: {step_settings["safety_max_current_a"]}A')
+            FileIO.write_line_txt(self.log_filepath, f'WARNING - Max Current Limit Hit! Data: {data["Current"]}A Limit: {step_settings["safety_max_current_a"]}A')
             return 'safety_condition'
             
         if (step_settings["safety_max_time_s"] > 0 and 
             data["Data_Timestamp_From_Step_Start"] > step_settings["safety_max_time_s"]):
-            FileIO.write_line_txt(log_filepath, f'WARNING - Max Time Limit Hit! Data: {data["Data_Timestamp_From_Step_Start"]}s Limit: {step_settings["safety_max_time_s"]}s')
+            FileIO.write_line_txt(self.log_filepath, f'WARNING - Max Time Limit Hit! Data: {data["Data_Timestamp_From_Step_Start"]}s Limit: {step_settings["safety_max_time_s"]}s')
             return 'safety_condition'
         
         
@@ -362,10 +362,10 @@ class CyclingControl():
             self.measure_battery(eq_dict, data_out_queue = data_out_queue)
             time.sleep(1)
 
-    def step_cell(self, filepath, log_filepath, step_settings, eq_dict, data_out_queue = None, data_in_queue = None, step_index = 0):
+    def step_cell(self, step_settings, eq_dict, data_out_queue = None, data_in_queue = None, step_index = 0):
         
-        if self.start_step(step_settings, eq_dict, log_filepath):
-            FileIO.write_line_txt(log_filepath, "Start Step Successful")
+        if self.start_step(step_settings, eq_dict):
+            FileIO.write_line_txt(self.log_filepath, "Start Step Successful")
             
             perf_counter_start = time.perf_counter()
             step_start_time_perf = perf_counter_start
@@ -373,7 +373,7 @@ class CyclingControl():
             data = dict()
             data.update(self.measure_battery(eq_dict, current_time = step_start_time_perf))
             data["Data_Timestamp_From_Step_Start"] = 0
-            FileIO.write_data(filepath, data) #Log the measurements from the start of the step - e.g. OCV point for starting SoC.
+            FileIO.write_data(self.csv_filepath, data) #Log the measurements from the start of the step - e.g. OCV point for starting SoC.
             
             #If we are charging to the end of a CC cycle, then we need to not exit immediately.
             if (step_settings["drive_style"] == "voltage_v" and
@@ -382,29 +382,30 @@ class CyclingControl():
             
                 data["Current"] = step_settings["drive_value_other"]
             
-            end_condition = self.evaluate_end_condition(step_settings, data, data_in_queue, log_filepath)
-            FileIO.write_line_txt(log_filepath, "End Condition Before Loop: {}".format(end_condition))
+            end_condition = self.evaluate_end_condition(step_settings, data, data_in_queue)
+            FileIO.write_line_txt(self.log_filepath, "End Condition Before Loop: {}".format(end_condition))
             
             #Do the measurements and check the end conditions at every logging interval
             while end_condition == 'none':
                 perf_counter_end = perf_counter_start + step_settings["meas_log_int_s"]
-                while time.perf_counter() < perf_counter_end:
-                    time.sleep(0.001) #1ms
-                    pass
-                
                 perf_counter_start = time.perf_counter()
                 
-                data.update(self.measure_battery(eq_dict, data_out_queue = data_out_queue, step_index = step_index, current_time = perf_counter_start))
+                perf_counter_delay = perf_counter_start
+                while perf_counter_delay < perf_counter_end:
+                    time.sleep(0.001) #1ms
+                    perf_counter_delay = time.perf_counter()
+                
+                data.update(self.measure_battery(eq_dict, data_out_queue = data_out_queue, step_index = step_index, current_time = perf_counter_delay))
                 data["Data_Timestamp_From_Step_Start"] = (data["Data_Timestamp"] - step_start_time_perf)
-                end_condition = self.evaluate_end_condition(step_settings, data, data_in_queue, log_filepath)
-                FileIO.write_data(filepath, data)
+                end_condition = self.evaluate_end_condition(step_settings, data, data_in_queue)
+                FileIO.write_data(self.csv_filepath, data)
             
             #if the end condition is due to safety settings, then we want to end all future steps as well so return the exit reason
             return end_condition
         
         else:
             print("Step Setup Failed")
-            FileIO.write_line_txt(log_filepath, "ERROR - Step Setup Failed!")
+            FileIO.write_line_txt(self.log_filepath, "ERROR - Step Setup Failed!")
             return 'settings'
 
     ################################## SETTING CYCLE, CHARGE, DISCHARGE ############################
@@ -430,7 +431,7 @@ class CyclingControl():
                 
         self.idle_cell(local_eq_dict, data_out_queue = data_out_queue, data_in_queue = data_in_queue)
 
-    def single_step_cycle(self, filepath, log_filepath, step_settings, eq_dict, data_out_queue = None, data_in_queue = None, ch_num = None, step_index = 0):
+    def single_step_cycle(self, step_settings, eq_dict, data_out_queue = None, data_in_queue = None, ch_num = None, step_index = 0):
 
         local_eq_dict = eq_dict.copy()
         
@@ -444,7 +445,7 @@ class CyclingControl():
                 print("No Voltage Measurement Equipment Connected! Exiting")
                 return 'settings'
         
-        FileIO.write_line_txt(log_filepath, "Voltage Measurement Equipment Chosen")
+        FileIO.write_line_txt(self.log_filepath, "Voltage Measurement Equipment Chosen")
         
         #if we don't have separate current measurement equipment, then choose what to use:
         if eq_dict['dmm_i'] == None:
@@ -465,10 +466,10 @@ class CyclingControl():
                 print("No Current Measurement Equipment Connected and not Resting! Exiting")
                 return 'settings'
         
-        FileIO.write_line_txt(log_filepath, "Current Measurement Equipment Chosen")
+        FileIO.write_line_txt(self.log_filepath, "Current Measurement Equipment Chosen")
         
         end_reason = 'none'
-        end_reason = self.step_cell(filepath, log_filepath, step_settings, local_eq_dict, data_out_queue = data_out_queue, data_in_queue = data_in_queue, step_index = step_index)
+        end_reason = self.step_cell(step_settings, local_eq_dict, data_out_queue = data_out_queue, data_in_queue = data_in_queue, step_index = step_index)
 
         return end_reason
         
@@ -516,8 +517,8 @@ class CyclingControl():
             
             for cycle_num, settings_cycle_list in enumerate(input_dict['settings_cycle_list_step_list']):
                 
-                csv_filepath = FileIO.start_file(csv_dir, "{} {} {}".format(input_dict['cell_name'], input_dict['cycle_type'], settings_cycle_list[0]["cycle_display"]), extension = '.csv')
-                log_filepath = FileIO.start_file(log_dir, "{} {} {}".format(input_dict['cell_name'], input_dict['cycle_type'], settings_cycle_list[0]["cycle_display"]), extension = '.txt')
+                self.csv_filepath = FileIO.start_file(csv_dir, "{} {} {}".format(input_dict['cell_name'], input_dict['cycle_type'], settings_cycle_list[0]["cycle_display"]), extension = '.csv')
+                self.log_filepath = FileIO.start_file(log_dir, "{} {} {}".format(input_dict['cell_name'], input_dict['cycle_type'], settings_cycle_list[0]["cycle_display"]), extension = '.txt')
                 
                 print("CH{} - Cycle {} Starting {}".format(ch_num, cycle_num, time.ctime()), flush=True)
                 FileIO.write_line_txt(log_filepath, "Cycle {} Starting".format(cycle_num))
@@ -532,8 +533,8 @@ class CyclingControl():
                         self.connect_proper_equipment(eq_dict, eq_req_for_cycle_dict)
                 
                     for step_num, step_settings in enumerate(settings_cycle_list):
-                        FileIO.write_line_txt(log_filepath, "Cycle {} Step {} Starting".format(cycle_num, step_num))
-                        FileIO.write_line_txt(log_filepath, "Step Settings: {}".format(step_settings))
+                        FileIO.write_line_txt(self.log_filepath, "Cycle {} Step {} Starting".format(cycle_num, step_num))
+                        FileIO.write_line_txt(self.log_filepath, "Step Settings: {}".format(step_settings))
                         
                         #print("Cycle Settings: {}".format(step_settings))
                         end_condition = 'none'
@@ -553,9 +554,9 @@ class CyclingControl():
                         
                         #Step Functions
                         if current_cycle_type == 'step':
-                            end_condition = self.single_step_cycle(csv_filepath, log_filepath, step_settings, eq_dict, data_out_queue = data_out_queue, data_in_queue = data_in_queue, ch_num = ch_num, step_index = step_num)
+                            end_condition = self.single_step_cycle(step_settings, eq_dict, data_out_queue = data_out_queue, data_in_queue = data_in_queue, ch_num = ch_num, step_index = step_num)
                         
-                        FileIO.write_line_txt(log_filepath, "Cycle {} Step {} Ending. Reason: {}".format(cycle_num, step_num, end_condition))
+                        FileIO.write_line_txt(self.log_filepath, "Cycle {} Step {} Ending. Reason: {}".format(cycle_num, step_num, end_condition))
                         
                         #End Conditions
                         if end_condition == 'cycle_end_condition':
@@ -573,14 +574,14 @@ class CyclingControl():
                             break
                     
                     if end_list_of_lists:
-                        FileIO.write_line_txt(log_filepath, "Ending all cycles")
+                        FileIO.write_line_txt(self.log_filepath, "Ending all cycles")
                         break
                     
-                    FileIO.write_line_txt(log_filepath, "Cycle {} Ending".format(cycle_num))    
+                    FileIO.write_line_txt(self.log_filepath, "Cycle {} Ending".format(cycle_num))    
                 
                 except KeyboardInterrupt:
                     self.disable_equipment(eq_dict)
-                    FileIO.write_line_txt(log_filepath, "Keyboard Interrupt")
+                    FileIO.write_line_txt(self.log_filepath, "Keyboard Interrupt")
                     exit()
                     
             self.disable_equipment(eq_dict)
@@ -588,14 +589,14 @@ class CyclingControl():
             
             if end_condition == 'safety_condition':
                 print("CH{} - SAFETY LIMIT HIT: {}".format(ch_num, time.ctime()), flush=True)
-                FileIO.write_line_txt(log_filepath, "SAFETY LIMIT HIT!") 
+                FileIO.write_line_txt(self.log_filepath, "SAFETY LIMIT HIT!") 
             else:
                 print("CH{} - All Cycles Completed: {}".format(ch_num, time.ctime()), flush=True)
-                FileIO.write_line_txt(log_filepath, "All Cycles Completed!")
+                FileIO.write_line_txt(self.log_filepath, "All Cycles Completed!")
         except Exception:
             exception = traceback.format_exc()
             print(exception)
-            FileIO.write_line_txt(log_filepath, exception)
+            FileIO.write_line_txt(self.log_filepath, exception)
 
 
 class CyclingSettings():
