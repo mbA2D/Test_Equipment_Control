@@ -3,6 +3,11 @@
 import pyvisa
 import time
 from .PyVisaDeviceTemplate import PowerSupplyDevice
+from retry import retry
+
+class SetpointException(Exception):
+    #Raised when a command is not passed to the instrument correctly.
+    pass
 
 # Power Supply
 class SPD1000(PowerSupplyDevice):
@@ -18,6 +23,8 @@ class SPD1000(PowerSupplyDevice):
         'time_wait_after_open': 0,
         'idn_available':        True
     }
+    
+    setpoint_compare_tolerance = 0.0001
     
     def initialize(self):
         self.inst.write("*RST")
@@ -36,23 +43,45 @@ class SPD1000(PowerSupplyDevice):
         time.sleep(0.1)
         
     # To Set power supply current limit in Amps 
+    @retry(SetpointException, delay=0.1, tries=10)
     def set_current(self, current_setpoint_A):		
         self.inst.write("CURR {}".format(current_setpoint_A))
-
+        if abs(get_current() - current_setpoint_A) > SPD1000.setpoint_compare_tolerance:
+            raise SetpointException
+    
+    def get_current(self):
+        return float(self.inst.query("CURR?"))
+    
+    @retry(SetpointException, delay=0.1, tries=10)
     def set_voltage(self, voltage_setpoint_V):
         self.inst.write("VOLT {}".format(voltage_setpoint_V))
-
+        if abs(get_voltage() - voltage_setpoint_V) > SPD1000.setpoint_compare_tolerance:
+            raise SetpointException
+    
+    def get_voltage(self):
+        return float(self.inst.query("VOLT?"))
+    
     def toggle_output(self, state, ch = 1):
         if state:
             self.inst.write("OUTP CH{},ON".format(ch))
         else:
             self.inst.write("OUTP CH{},OFF".format(ch))
     
+    def get_output(self):
+        self.inst.query("SYST:STAT?") #returns hex format data
+        #TODO - process data
+        #Bit number 4 is Output
+    
     def remote_sense(self, state):
         if state:
             self.inst.write("MODE:SET 4W")
         else:
             self.inst.write("MODE:SET 2W")
+            
+    def get_remote_sense(self):
+        self.inst.query("SYSY:STAT?") #returns hex format data
+        #TODO - process data
+        #Bit number 5 is remote sense
     
     def lock_commands(self, state):
         if state:
