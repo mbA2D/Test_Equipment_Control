@@ -61,29 +61,31 @@ class SPD1000(PowerSupplyDevice):
     def get_voltage(self):
         return float(self.inst.query("VOLT?"))
     
+    @retry(SetpointException, delay=0.1, tries=10)
     def toggle_output(self, state, ch = 1):
         if state:
             self.inst.write("OUTP CH{},ON".format(ch))
         else:
             self.inst.write("OUTP CH{},OFF".format(ch))
+        if self.get_output() != state:
+            raise SetpointException
     
     def get_output(self):
-        val = self.inst.query("SYST:STAT?")[2:]
-        print(val)
-        print(bytearray.fromhex(val)) #returns hex format data
-        #TODO - process data
-        #Bit number 4 is Output
+        val = int(self.inst.query("SYST:STAT?"),16)
+        return val & (1<<4) #Bit number 4 is Output
     
+    @retry(SetpointException, delay=0.1, tries=10)
     def remote_sense(self, state):
         if state:
             self.inst.write("MODE:SET 4W")
         else:
             self.inst.write("MODE:SET 2W")
+        if self.get_remote_sense() != state:
+            raise SetpointException
             
     def get_remote_sense(self):
-        print(self.inst.query("SYSY:STAT?")) #returns hex format data
-        #TODO - process data
-        #Bit number 5 is remote sense
+        int(self.inst.query("SYSY:STAT?"),16)
+        return val & (1<<5) #Bit number 5 is remote sense
     
     def lock_commands(self, state):
         if state:
