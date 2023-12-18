@@ -22,8 +22,9 @@ pyqtgraph==0.12.3
 pyserial==3.5
 python-dateutil==2.8.2
 pyusb==1.1.0
-PyVISA==1.11.3
+PyVISA==1.14.1
 PyVISA-py==0.5.2
 scipy==1.7.2
 tk==0.1.0
 keyboard==0.13.5
+retry==0.9.2

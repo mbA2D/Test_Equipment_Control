@@ -46,7 +46,7 @@ class SPD1000(PowerSupplyDevice):
     @retry(SetpointException, delay=0.1, tries=10)
     def set_current(self, current_setpoint_A):		
         self.inst.write("CURR {}".format(current_setpoint_A))
-        if abs(get_current() - current_setpoint_A) > SPD1000.setpoint_compare_tolerance:
+        if abs(self.get_current() - current_setpoint_A) > SPD1000.setpoint_compare_tolerance:
             raise SetpointException
     
     def get_current(self):
@@ -55,7 +55,7 @@ class SPD1000(PowerSupplyDevice):
     @retry(SetpointException, delay=0.1, tries=10)
     def set_voltage(self, voltage_setpoint_V):
         self.inst.write("VOLT {}".format(voltage_setpoint_V))
-        if abs(get_voltage() - voltage_setpoint_V) > SPD1000.setpoint_compare_tolerance:
+        if abs(self.get_voltage() - voltage_setpoint_V) > SPD1000.setpoint_compare_tolerance:
             raise SetpointException
     
     def get_voltage(self):
@@ -68,7 +68,9 @@ class SPD1000(PowerSupplyDevice):
             self.inst.write("OUTP CH{},OFF".format(ch))
     
     def get_output(self):
-        self.inst.query("SYST:STAT?") #returns hex format data
+        val = self.inst.query("SYST:STAT?")[2:]
+        print(val)
+        print(bytearray.fromhex(val)) #returns hex format data
         #TODO - process data
         #Bit number 4 is Output
     
@@ -79,7 +81,7 @@ class SPD1000(PowerSupplyDevice):
             self.inst.write("MODE:SET 2W")
             
     def get_remote_sense(self):
-        self.inst.query("SYSY:STAT?") #returns hex format data
+        print(self.inst.query("SYSY:STAT?")) #returns hex format data
         #TODO - process data
         #Bit number 5 is remote sense
     
