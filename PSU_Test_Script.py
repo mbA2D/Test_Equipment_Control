@@ -7,7 +7,7 @@ import easygui as eg
 def main():
     psu = eq.powerSupplies.choose_psu()[1]
     psu.set_current(1)
-    psu.set_voltage(3.25)
+    psu.set_voltage(3.3)
     print(psu.get_output())
     psu.toggle_output(True)
     print(psu.get_output())

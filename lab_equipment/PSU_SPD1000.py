@@ -72,7 +72,7 @@ class SPD1000(PowerSupplyDevice):
     
     def get_output(self):
         val = int(self.inst.query("SYST:STAT?"),16)
-        return val & (1<<4) #Bit number 4 is Output
+        return bool(val & (1<<4)) #Bit number 4 is Output
     
     @retry(SetpointException, delay=0.1, tries=10)
     def remote_sense(self, state):
@@ -84,8 +84,8 @@ class SPD1000(PowerSupplyDevice):
             raise SetpointException
             
     def get_remote_sense(self):
-        int(self.inst.query("SYSY:STAT?"),16)
-        return val & (1<<5) #Bit number 5 is remote sense
+        val = int(self.inst.query("SYST:STAT?"),16)
+        return bool(val & (1<<5)) #Bit number 5 is remote sense
     
     def lock_commands(self, state):
         if state:
