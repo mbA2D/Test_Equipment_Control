@@ -19,56 +19,66 @@ import jsonIO
 class CyclingControl():
     
     def __init__(self):
+        self.eq_dict = None
+        self.input_dict = None
         pass
     
     ################################################## EQUIPMENT SETUP #############################################
 
-    def init_eload(self, eload):
-        eload.toggle_output(False)
-        eload.set_current(0)
+    def init_eload(self):
+        self.eq_dict['eload'].toggle_output(False)
+        self.eq_dict['eload'].set_current(0)
         
-    def init_psu(self, psu):
-        psu.toggle_output(False)
-        psu.set_voltage(0)
-        psu.set_current(0)
+    def init_psu(self):
+        self.eq_dict['psu'].toggle_output(False)
+        self.eq_dict['psu'].set_voltage(0)
+        self.eq_dict['psu'].set_current(0)
 
-    def init_dmm_v(self, dmm):
+    def init_dmm_v(self, device = None):
         #test voltage measurement to ensure everything is set up correctly
         #often the first measurement takes longer as it needs to setup range, NPLC
         #This also gets it setup to the correct range.
         #TODO - careful of batteries that will require a range switch during the charge
         #	  - this could lead to a measurement delay. 6S happens to cross the 20V range.
-        test_v = dmm.measure_voltage()
-        #print(test_v)
+        if device is not None:
+            device.measure_voltage()
+        else:
+            self.eq_dict['dmm_v'].measure_voltage()
 
-    def init_dmm_i(self, dmm):
+    def init_dmm_i(self, device = None):
         #test measurement to ensure everything is set up correctly
         #and the fisrt measurement which often takes longer is out of the way
-        test_i = dmm.measure_current()
+        if device is not None:
+            device.measure_current()
+        else:
+            self.eq_dict['dmm_i'].measure_current()
         
-    def init_dmm_t(self, dmm):
+    def init_dmm_t(self, device = None):
         #test measurement to ensure everything is set up correctly
         #and the fisrt measurement which often takes longer is out of the way
-        test_t = dmm.measure_temperature()
+        if device is not None:
+            device.measure_temperature()
+        else:
+            self.eq_dict['dmm_t'].measure_temperature()
 
-    def init_relay_board(self, relay_board):
+    def init_relay_board(self):
         #turn off all channels
-        relay_board.connect_eload(False)
-        relay_board.connect_psu(False)
+        self.eq_dict['relay_board'].connect_eload(False)
+        self.eq_dict['relay_board'].connect_psu(False)
         
-    def initialize_connected_equipment(self, eq_dict):
+    def initialize_connected_equipment(self):
         #print("initialize_connected_equipment")
         
-        if eq_dict['eload'] != None:	
-            self.init_eload(eq_dict['eload'])
-        if eq_dict['psu'] != None:
-            self.init_psu(eq_dict['psu'])
-        if eq_dict['dmm_v'] != None:
-            self.init_dmm_v(eq_dict['dmm_v'])
-        if eq_dict['dmm_i'] != None:
-            self.init_dmm_i(eq_dict['dmm_i'])
-        if eq_dict.get('relay_board') != None:
-            self.init_relay_board(eq_dict['relay_board'])
+        if self.eq_dict['eload'] != None:	
+            self.init_eload()
+        if self.eq_dict['psu'] != None:
+            self.init_psu()
+        if self.eq_dict['dmm_v'] != None:
+            self.init_dmm_v()
+        if self.eq_dict['dmm_i'] != None:
+            self.init_dmm_i()
+        if self.eq_dict.get('relay_board') != None:
+            self.init_relay_board()
         
         #all the extra dmms:
         dmm_postfixes = ['v', 'i', 't']
@@ -77,7 +87,7 @@ class CyclingControl():
             count = 0
             while valid_device:
                 dev_name = 'dmm_{}{}'.format(postfix, count)
-                dev = eq_dict.get(dev_name)
+                dev = self.eq_dict.get(dev_name)
                 if dev != None:
                     if postfix == 'v':
                         self.init_dmm_v(dev)
@@ -97,18 +107,18 @@ class CyclingControl():
             equipment.toggle_output(False)
             time.sleep(0.02)
 
-    def disable_equipment(self, eq_dict):
-        if eq_dict['psu'] != None:
-            self.disable_equipment_single(eq_dict['psu'])
+    def disable_equipment(self):
+        if self.eq_dict['psu'] != None:
+            self.disable_equipment_single(self.eq_dict['psu'])
             #print("Disabled PSU")
-        if eq_dict['eload'] != None:
-            self.disable_equipment_single(eq_dict['eload'])
+        if self.eq_dict['eload'] != None:
+            self.disable_equipment_single(self.eq_dict['eload'])
             #print("Disabled Eload")
-        if eq_dict.get('relay_board') != None: #TODO - figure out voltage measurement during idle. This might disconnect all our equipment.
-            eq_dict['relay_board'].connect_eload(False)
-            eq_dict['relay_board'].connect_psu(False)
+        if self.eq_dict.get('relay_board') != None: #TODO - figure out voltage measurement during idle. This might disconnect all our equipment.
+            self.eq_dict['relay_board'].connect_eload(False)
+            self.eq_dict['relay_board'].connect_psu(False)
 
-    def connect_proper_equipment(self, eq_dict, eq_req_for_cycle_dict):
+    def connect_proper_equipment(self, eq_req_for_cycle_dict):
         #If a relay board is connected (that can connect or disconnect equipment) then we want to have only the necessary equipment connected on each cycle
         #For now, we will assume that all 'relay boards' can only be connected to PSUs or eLoads - which channels these are connected to happens on setup of the relay board.
         #But only 2 channels and only 1 of each equipment.
@@ -117,30 +127,30 @@ class CyclingControl():
         
         #Disconnect first (break before make)
         #if not required but it is connected, then break connection
-        if not eq_req_for_cycle_dict['psu'] and eq_dict['relay_board'].psu_connected():
-            self.disable_equipment_single(eq_dict['psu'])
-            eq_dict['relay_board'].connect_psu(False)
-        if not eq_req_for_cycle_dict['eload'] and eq_dict['relay_board'].eload_connected():
-            self.disable_equipment_single(eq_dict['eload'])
-            eq_dict['relay_board'].connect_eload(False)
+        if not eq_req_for_cycle_dict['psu'] and self.eq_dict['relay_board'].psu_connected():
+            self.disable_equipment_single(self.eq_dict['psu'])
+            self.eq_dict['relay_board'].connect_psu(False)
+        if not eq_req_for_cycle_dict['eload'] and self.eq_dict['relay_board'].eload_connected():
+            self.disable_equipment_single(self.eq_dict['eload'])
+            self.eq_dict['relay_board'].connect_eload(False)
         
         #Connect second (break before make)
         #if required but is not connected, then make connection
-        if eq_req_for_cycle_dict['psu'] and not eq_dict['relay_board'].psu_connected(): #if changing states
+        if eq_req_for_cycle_dict['psu'] and not self.eq_dict['relay_board'].psu_connected(): #if changing states
             #ensure psu output is disabled before connecting
-            self.disable_equipment_single(eq_dict['psu'])
-            eq_dict['relay_board'].connect_psu(True)
-        if eq_req_for_cycle_dict['eload'] and not eq_dict['relay_board'].eload_connected():
+            self.disable_equipment_single(self.eq_dict['psu'])
+            self.eq_dict['relay_board'].connect_psu(True)
+        if eq_req_for_cycle_dict['eload'] and not self.eq_dict['relay_board'].eload_connected():
             #ensure eload output is disabled before connecting
-            self.disable_equipment_single(eq_dict['eload'])
-            eq_dict['relay_board'].connect_eload(True)
+            self.disable_equipment_single(self.eq_dict['eload'])
+            self.eq_dict['relay_board'].connect_eload(True)
 
-        time.sleep(0.2) #Delay to make sure all the relays click.
+        time.sleep(0.1) #Delay to make sure all the relays click.
 
 
     ###################################################### TEST CONTROL ###################################################
        
-    def start_step(self, step_settings, eq_dict):
+    def start_step(self, step_settings):
         #This function will set all the supplies to the settings given in the step
         
         #CURRENT DRIVEN
@@ -148,28 +158,28 @@ class CyclingControl():
             FileIO.write_line_txt(self.log_filepath, "Current-Driven Step Setup")
             if step_settings["drive_value"] > 0:
                 #charge - turn off eload first if connected, leave psu on.
-                self.disable_equipment_single(eq_dict['eload'])
-                if eq_dict['psu'] != None:
-                    time.sleep(0.02)
-                    eq_dict['psu'].set_current(step_settings["drive_value"])
-                    time.sleep(0.02)
-                    eq_dict['psu'].set_voltage(step_settings["drive_value_other"])
-                    time.sleep(0.02)
-                    eq_dict['psu'].toggle_output(True)
-                    time.sleep(0.02)
+                self.disable_equipment_single(self.eq_dict['eload'])
+                if self.eq_dict['psu'] != None:
+                    time.sleep(0.01)
+                    self.eq_dict['psu'].set_current(step_settings["drive_value"])
+                    time.sleep(0.01)
+                    self.eq_dict['psu'].set_voltage(step_settings["drive_value_other"])
+                    time.sleep(0.01)
+                    self.eq_dict['psu'].toggle_output(True)
+                    time.sleep(0.01)
                 else:
                     print("No PSU Connected. Can't Charge! Exiting.")
                     FileIO.write_line_txt(self.log_filepath, "ERROR - No PSU Connected. Can't Charge! Exiting.")
                     return False
             elif step_settings["drive_value"] < 0:
                 #discharge - turn off power supply if connected, leave eload on.
-                self.disable_equipment_single(eq_dict['psu'])
-                if eq_dict['eload'] != None:
-                    time.sleep(0.02)
-                    eq_dict['eload'].set_current(step_settings["drive_value"])
-                    time.sleep(0.02)
-                    eq_dict['eload'].toggle_output(True)
-                    time.sleep(0.02)
+                self.disable_equipment_single(self.eq_dict['psu'])
+                if self.eq_dict['eload'] != None:
+                    time.sleep(0.01)
+                    self.eq_dict['eload'].set_current(step_settings["drive_value"])
+                    time.sleep(0.01)
+                    self.eq_dict['eload'].toggle_output(True)
+                    time.sleep(0.01)
                     #we're in constant current mode - can't set a voltage.
                 else:
                     print("No Eload Connected. Can't Discharge! Exiting.")
@@ -177,22 +187,22 @@ class CyclingControl():
                     return False
             elif step_settings["drive_value"] == 0:
                 #rest
-                self.disable_equipment(eq_dict)
+                self.disable_equipment(self.eq_dict)
         
         #VOLTAGE DRIVEN
         elif step_settings["drive_style"] == 'voltage_v':
             FileIO.write_line_txt(self.log_filepath, "Voltage-Driven Step Setup")
             #positive current
             if step_settings["drive_value_other"] >= 0:
-                self.disable_equipment_single(eq_dict['eload']) #turn off eload
-                if eq_dict['psu'] != None:
-                    time.sleep(0.02)
-                    eq_dict['psu'].set_current(step_settings["drive_value_other"])
-                    time.sleep(0.02)
-                    eq_dict['psu'].set_voltage(step_settings["drive_value"])
-                    time.sleep(0.02)
-                    eq_dict['psu'].toggle_output(True)
-                    time.sleep(0.02)
+                self.disable_equipment_single(self.eq_dict['eload']) #turn off eload
+                if self.eq_dict['psu'] != None:
+                    time.sleep(0.01)
+                    self.eq_dict['psu'].set_current(step_settings["drive_value_other"])
+                    time.sleep(0.01)
+                    self.eq_dict['psu'].set_voltage(step_settings["drive_value"])
+                    time.sleep(0.01)
+                    self.eq_dict['psu'].toggle_output(True)
+                    time.sleep(0.01)
                 else:
                     print("No PSU Connected. Can't Charge! Exiting.")
                     FileIO.write_line_txt(self.log_filepath, "ERROR - No PSU Connected. Can't Charge! Exiting.")
@@ -202,14 +212,14 @@ class CyclingControl():
                 print("Voltage Driven Step Not Yet Implemented for negative current. Exiting.")
                 FileIO.write_line_txt(self.log_filepath, "ERROR - Voltage Driven Step Not Yet Implemented for negative current. Exiting.")
                 #Ensure everything is off since not yet implemented.
-                self.disable_equipment(eq_dict)
+                self.disable_equipment(self.eq_dict)
                 return False
         
         #NOT DRIVEN
         elif step_settings["drive_style"] == 'none':
             FileIO.write_line_txt(self.log_filepath, "Non-Driven (Rest) Step Setup")
             #Ensure all sources and loads are off.
-            self.disable_equipment(eq_dict)
+            self.disable_equipment(self.eq_dict)
         
         #return True for a successful step start.
         #print("start_step returning True")
@@ -299,7 +309,7 @@ class CyclingControl():
 
     ######################### MEASURING ######################
 
-    def measure_battery(self, eq_dict, data_out_queue = None, step_index = 0, current_time = None):
+    def measure_battery(self, data_out_queue = None, step_index = 0, current_time = None):
         data_dict = {'type': 'measurement', 'data': {}}
         data_dict['data']["Voltage"] = 0
         data_dict['data']["Current"] = 0
@@ -310,10 +320,10 @@ class CyclingControl():
         else:
             data_dict['data']["Data_Timestamp"] = current_time
         
-        if eq_dict['dmm_v'] is not None:
-            data_dict['data']["Voltage"] = eq_dict['dmm_v'].measure_voltage()
-        if eq_dict['dmm_i'] is not None:
-            data_dict['data']["Current"] = eq_dict['dmm_i'].measure_current()
+        if self.eq_dict['dmm_v'] is not None:
+            data_dict['data']["Voltage"] = self.eq_dict['dmm_v'].measure_voltage()
+        if self.eq_dict['dmm_i'] is not None:
+            data_dict['data']["Current"] = self.eq_dict['dmm_i'].measure_current()
         
         #Now, measure all the extra devices that were added to the channel - these being less time-critical.
         prefix_list = ['v', 'i', 't']
@@ -325,11 +335,11 @@ class CyclingControl():
                     dev_name = 'dmm_{}{}'.format(prefix, index)
                     measurement = 0
                     if prefix == 'v':
-                        measurement = eq_dict[dev_name].measure_voltage()
+                        measurement = self.eq_dict[dev_name].measure_voltage()
                     elif prefix == 'i':
-                        measurement = eq_dict[dev_name].measure_current()
+                        measurement = self.eq_dict[dev_name].measure_current()
                     elif prefix == 't':
-                        measurement = eq_dict[dev_name].measure_temperature()
+                        measurement = self.eq_dict[dev_name].measure_temperature()
                     data_dict['data'][dev_name] = measurement
                     index = index + 1
             except KeyError:
@@ -356,22 +366,22 @@ class CyclingControl():
             pass
         return end_signal
         
-    def idle_cell(self, eq_dict, data_out_queue = None, data_in_queue = None):
+    def idle_cell(self, data_out_queue = None, data_in_queue = None):
         #Measures voltage (and current if available) when no other process is running to have live voltage updates
         while not self.end_signal(data_in_queue):
-            self.measure_battery(eq_dict, data_out_queue = data_out_queue)
+            self.measure_battery(data_out_queue = data_out_queue)
             time.sleep(1)
 
-    def step_cell(self, step_settings, eq_dict, data_out_queue = None, data_in_queue = None, step_index = 0):
+    def step_cell(self, step_settings, data_out_queue = None, data_in_queue = None, step_index = 0):
         
-        if self.start_step(step_settings, eq_dict):
+        if self.start_step(step_settings):
             FileIO.write_line_txt(self.log_filepath, "Start Step Successful")
             
             perf_counter_start = time.perf_counter()
             step_start_time_perf = perf_counter_start
             
             data = dict()
-            data.update(self.measure_battery(eq_dict, current_time = step_start_time_perf))
+            data.update(self.measure_battery(current_time = step_start_time_perf))
             data["Data_Timestamp_From_Step_Start"] = 0
             FileIO.write_data(self.csv_filepath, data) #Log the measurements from the start of the step - e.g. OCV point for starting SoC.
             
@@ -395,7 +405,7 @@ class CyclingControl():
                     time.sleep(0.001) #1ms
                     perf_counter_delay = time.perf_counter()
                 
-                data.update(self.measure_battery(eq_dict, data_out_queue = data_out_queue, step_index = step_index, current_time = perf_counter_delay))
+                data.update(self.measure_battery(data_out_queue = data_out_queue, step_index = step_index, current_time = perf_counter_delay))
                 data["Data_Timestamp_From_Step_Start"] = (data["Data_Timestamp"] - step_start_time_perf)
                 end_condition = self.evaluate_end_condition(step_settings, data, data_in_queue)
                 FileIO.write_data(self.csv_filepath, data)
@@ -410,37 +420,32 @@ class CyclingControl():
 
     ################################## SETTING CYCLE, CHARGE, DISCHARGE ############################
 
-    def idle_cell_cycle(self, eq_dict, data_out_queue = None, data_in_queue = None):
-        
-        local_eq_dict = eq_dict.copy()
-        
-        if eq_dict['dmm_v'] == None:
-            if eq_dict['eload'] != None:
-                local_eq_dict['dmm_v'] = eq_dict['eload']
-            elif eq_dict['psu'] != None:
-                local_eq_dict['dmm_v'] = eq_dict['psu']
+    def idle_cell_cycle(self, data_out_queue = None, data_in_queue = None):
+        if self.eq_dict['dmm_v'] == None or self.eq_dict['dmm_v'] == self.eq_dict['eload'] or self.eq_dict['dmm_v'] == self.eq_dict['psu']:
+            if self.eq_dict['eload'] != None:
+                self.eq_dict['dmm_v'] = self.eq_dict['eload']
+            elif self.eq_dict['psu'] != None:
+                self.eq_dict['dmm_v'] = self.eq_dict['psu']
             else:
                 print("No Voltage Measurement Equipment Connected! Exiting")
                 return 'settings'
         
-        if eq_dict['dmm_i'] == None:
-            if eq_dict['eload'] != None:
-                local_eq_dict['dmm_i'] = eq_dict['eload']
-            elif eq_dict['psu'] != None:
-                local_eq_dict['dmm_i'] = eq_dict['psu']
+        if self.eq_dict['dmm_i'] == None or self.eq_dict['dmm_i'] == self.eq_dict['eload'] or self.eq_dict['dmm_i'] == self.eq_dict['psu']:
+            if self.eq_dict['eload'] != None:
+                self.eq_dict['dmm_i'] = self.eq_dict['eload']
+            elif self.eq_dict['psu'] != None:
+                self.eq_dict['dmm_i'] = self.eq_dict['psu']
                 
-        self.idle_cell(local_eq_dict, data_out_queue = data_out_queue, data_in_queue = data_in_queue)
+        self.idle_cell(data_out_queue = data_out_queue, data_in_queue = data_in_queue)
 
-    def single_step_cycle(self, step_settings, eq_dict, data_out_queue = None, data_in_queue = None, ch_num = None, step_index = 0):
+    def single_step_cycle(self, step_settings, data_out_queue = None, data_in_queue = None, ch_num = None, step_index = 0):
 
-        local_eq_dict = eq_dict.copy()
-        
         #if we don't have separate voltage measurement equipment, then choose what to use:
-        if eq_dict['dmm_v'] == None:
-            if eq_dict['eload'] != None:
-                local_eq_dict['dmm_v'] = eq_dict['eload']
-            elif eq_dict['psu'] != None:
-                local_eq_dict['dmm_v'] = eq_dict['psu']
+        if self.eq_dict['dmm_v'] == None or self.eq_dict['dmm_v'] == self.eq_dict['eload'] or self.eq_dict['dmm_v'] == self.eq_dict['psu']:
+            if self.eq_dict['eload'] != None:
+                self.eq_dict['dmm_v'] = self.eq_dict['eload']
+            elif self.eq_dict['psu'] != None:
+                self.eq_dict['dmm_v'] = self.eq_dict['psu']
             else:
                 print("No Voltage Measurement Equipment Connected! Exiting")
                 return 'settings'
@@ -448,7 +453,7 @@ class CyclingControl():
         FileIO.write_line_txt(self.log_filepath, "Voltage Measurement Equipment Chosen")
         
         #if we don't have separate current measurement equipment, then choose what to use:
-        if eq_dict['dmm_i'] == None:
+        if self.eq_dict['dmm_i'] == None or self.eq_dict['dmm_i'] == self.eq_dict['eload'] or self.eq_dict['dmm_i'] == self.eq_dict['psu']:
             resting = False
             left_comparator = 0
             if step_settings["drive_style"] == 'current_a':
@@ -458,10 +463,10 @@ class CyclingControl():
             if step_settings["drive_style"] == ['none'] or left_comparator == 0:
                 resting = True
             
-            if left_comparator > 0 and eq_dict['psu'] != None:
-                local_eq_dict['dmm_i'] = eq_dict['psu'] #current measurement during charge
-            elif left_comparator < 0 and eq_dict['eload'] != None:
-                local_eq_dict['dmm_i'] = eq_dict['eload'] #current measurement during discharge
+            if left_comparator > 0 and self.eq_dict['psu'] != None:
+                self.eq_dict['dmm_i'] = self.eq_dict['psu'] #current measurement during charge
+            elif left_comparator < 0 and self.eq_dict['eload'] != None:
+                self.eq_dict['dmm_i'] = self.eq_dict['eload'] #current measurement during discharge
             elif not resting:
                 print("No Current Measurement Equipment Connected and not Resting! Exiting")
                 return 'settings'
@@ -469,16 +474,16 @@ class CyclingControl():
         FileIO.write_line_txt(self.log_filepath, "Current Measurement Equipment Chosen")
         
         end_reason = 'none'
-        end_reason = self.step_cell(step_settings, local_eq_dict, data_out_queue = data_out_queue, data_in_queue = data_in_queue, step_index = step_index)
+        end_reason = self.step_cell(step_settings, data_out_queue = data_out_queue, data_in_queue = data_in_queue, step_index = step_index)
 
         return end_reason
         
     ################################## BATTERY CYCLING SETUP FUNCTION ######################################
     def idle_control(self, res_ids_dict, data_out_queue = None, data_in_queue = None):
         try:
-            eq_dict = eq.get_equipment_dict(res_ids_dict)
-            self.idle_cell_cycle(eq_dict, data_out_queue = data_out_queue, data_in_queue = data_in_queue)
-            self.disable_equipment(eq_dict)
+            self.eq_dict = eq.get_equipment_dict(res_ids_dict)
+            self.idle_cell_cycle(data_out_queue = data_out_queue, data_in_queue = data_in_queue)
+            self.disable_equipment()
         except Exception:
             traceback.print_exc()
         
@@ -486,27 +491,28 @@ class CyclingControl():
         try:
             c_i = CyclingInfo()
             
-            eq_dict = eq.get_equipment_dict(res_ids_dict)
+            self.eq_dict = eq.get_equipment_dict(res_ids_dict)
             #print("Got Equipment Dict")
             
-            if input_dict == None:
-                input_dict = c_i.get_input_dict()
+            self.input_dict = input_dict
+            if self.input_dict == None:
+                self.input_dict = c_i.get_input_dict()
             
             #CHECKING CONNECTION OF REQUIRED EQUIPMENT
-            if input_dict['eq_req_dict']['eload'] and eq_dict['eload'] == None:
+            if self.input_dict['eq_req_dict']['eload'] and self.eq_dict['eload'] == None:
                 print("Eload required for cycle but none connected! Exiting")
                 return
         
-            if input_dict['eq_req_dict']['psu'] and eq_dict['psu'] == None:
+            if self.input_dict['eq_req_dict']['psu'] and self.eq_dict['psu'] == None:
                 print("Power Supply required for cycle type but none connected! Exiting")
                 return
             
             #Ensure that the proper directories exist for logging
-            csv_dir = FileIO.ensure_subdir_exists_dir(input_dict['directory'], input_dict['cell_name'])
+            csv_dir = FileIO.ensure_subdir_exists_dir(self.input_dict['directory'], self.input_dict['cell_name'])
             log_dir = FileIO.ensure_subdir_exists_dir(csv_dir, 'logs')
             
             #Now initialize all the equipment that is connected
-            self.initialize_connected_equipment(eq_dict)
+            self.initialize_connected_equipment()
             
             #TODO - looping a current profile until safety limits are hit
             #TODO - current step profiles to/from csv
@@ -515,10 +521,10 @@ class CyclingControl():
             end_list_of_lists = False
             end_condition = 'none'
             
-            for cycle_num, settings_cycle_list in enumerate(input_dict['settings_cycle_list_step_list']):
+            for cycle_num, settings_cycle_list in enumerate(self.input_dict['settings_cycle_list_step_list']):
                 
-                self.csv_filepath = FileIO.start_file(csv_dir, "{} {} {}".format(input_dict['cell_name'], input_dict['cycle_type'], settings_cycle_list[0]["cycle_display"]), extension = '.csv')
-                self.log_filepath = FileIO.start_file(log_dir, "{} {} {}".format(input_dict['cell_name'], input_dict['cycle_type'], settings_cycle_list[0]["cycle_display"]), extension = '.txt')
+                self.csv_filepath = FileIO.start_file(csv_dir, "{} {} {}".format(self.input_dict['cell_name'], self.input_dict['cycle_type'], settings_cycle_list[0]["cycle_display"]), extension = '.csv')
+                self.log_filepath = FileIO.start_file(log_dir, "{} {} {}".format(self.input_dict['cell_name'], self.input_dict['cycle_type'], settings_cycle_list[0]["cycle_display"]), extension = '.txt')
                 
                 print("CH{} - Cycle {} Starting {}".format(ch_num, cycle_num, time.ctime()), flush=True)
                 FileIO.write_line_txt(log_filepath, "Cycle {} Starting".format(cycle_num))
@@ -527,10 +533,10 @@ class CyclingControl():
                 try:
                 
                     #TODO - If we have a relay board to disconnect equipment, ensure we are still connected to the correct equipment
-                    if eq_dict.get('relay_board') != None:
+                    if self.eq_dict.get('relay_board') != None:
                         #determine the equipment that we need for this cycle
                         eq_req_for_cycle_dict = c_i.get_eq_req_for_cycle(settings_cycle_list)
-                        self.connect_proper_equipment(eq_dict, eq_req_for_cycle_dict)
+                        self.connect_proper_equipment(eq_req_for_cycle_dict)
                 
                     for step_num, step_settings in enumerate(settings_cycle_list):
                         FileIO.write_line_txt(self.log_filepath, "Cycle {} Step {} Starting".format(cycle_num, step_num))
@@ -546,7 +552,7 @@ class CyclingControl():
                             next_display_status = settings_cycle_list[step_num + 1]["cycle_display"]
                         except (IndexError, TypeError):
                             try:
-                                next_display_status = input_dict['settings_cycle_list_step_list'][cycle_num + 1][0]["cycle_display"]
+                                next_display_status = self.input_dict['settings_cycle_list_step_list'][cycle_num + 1][0]["cycle_display"]
                             except (IndexError, TypeError):
                                 next_display_status = "Idle"
                         
@@ -554,13 +560,13 @@ class CyclingControl():
                         
                         #Step Functions
                         if current_cycle_type == 'step':
-                            end_condition = self.single_step_cycle(step_settings, eq_dict, data_out_queue = data_out_queue, data_in_queue = data_in_queue, ch_num = ch_num, step_index = step_num)
+                            end_condition = self.single_step_cycle(step_settings, data_out_queue = data_out_queue, data_in_queue = data_in_queue, ch_num = ch_num, step_index = step_num)
                         
                         FileIO.write_line_txt(self.log_filepath, "Cycle {} Step {} Ending. Reason: {}".format(cycle_num, step_num, end_condition))
                         
                         #End Conditions
                         if end_condition == 'cycle_end_condition':
-                            self.disable_equipment(eq_dict)
+                            self.disable_equipment()
                             #print("Cycle End Condition. Break.")
                             break
                         
@@ -580,11 +586,11 @@ class CyclingControl():
                     FileIO.write_line_txt(self.log_filepath, "Cycle {} Ending".format(cycle_num))    
                 
                 except KeyboardInterrupt:
-                    self.disable_equipment(eq_dict)
+                    self.disable_equipment()
                     FileIO.write_line_txt(self.log_filepath, "Keyboard Interrupt")
                     exit()
                     
-            self.disable_equipment(eq_dict)
+            self.disable_equipment()
             
             
             if end_condition == 'safety_condition':
