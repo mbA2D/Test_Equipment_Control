@@ -124,6 +124,7 @@ class CalibrationClass:
         voltages = self.get_cal_check_points()
         
         self.psu.set_voltage(0)
+        self.psu.set_current(0.1)
         self.psu.toggle_output(True)
         
         measurements_list = []

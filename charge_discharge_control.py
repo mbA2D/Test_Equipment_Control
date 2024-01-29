@@ -527,8 +527,8 @@ class CyclingControl():
                 self.log_filepath = FileIO.start_file(log_dir, "{} {} {}".format(self.input_dict['cell_name'], self.input_dict['cycle_type'], settings_cycle_list[0]["cycle_display"]), extension = '.txt')
                 
                 print("CH{} - Cycle {} Starting {}".format(ch_num, cycle_num, time.ctime()), flush=True)
-                FileIO.write_line_txt(log_filepath, "Cycle {} Starting".format(cycle_num))
-                FileIO.write_line_txt(log_filepath, "Cycle Settings List: {}".format(settings_cycle_list))
+                FileIO.write_line_txt(self.log_filepath, "Cycle {} Starting".format(cycle_num))
+                FileIO.write_line_txt(self.log_filepath, "Cycle Settings List: {}".format(settings_cycle_list))
                 
                 try:
                 
