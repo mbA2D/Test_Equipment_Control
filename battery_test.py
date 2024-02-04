@@ -835,7 +835,7 @@ class MainTestWindow(QMainWindow):
             print("CH{} - There is a cell name edit already running".format(ch_num))
             return
         try:
-            self.edit_cell_name_process_list[ch_num] = Process(target=cdc.get_cell_name, args = (ch_num, self.edit_cell_name_queue, self.cell_name_label_list[ch_num].text()))
+            self.edit_cell_name_process_list[ch_num] = Process(target=cdc.run_get_cell_name, args = (ch_num, self.edit_cell_name_queue, self.cell_name_label_list[ch_num].text()))
             self.edit_cell_name_process_list[ch_num].start()
         except:
             traceback.print_exc()
@@ -848,7 +848,7 @@ class MainTestWindow(QMainWindow):
             print("CH{} - There is a configuration already running".format(ch_num))
             return
         try:
-            self.configure_test_process_list[ch_num] = Process(target=cdc.get_input_dict, args = (ch_num, self.test_configuration_queue, self.cell_name_label_list[ch_num].text()))
+            self.configure_test_process_list[ch_num] = Process(target=cdc.run_get_input_dict, args = (ch_num, self.test_configuration_queue, self.cell_name_label_list[ch_num].text()))
             self.configure_test_process_list[ch_num].start()
         except:
             traceback.print_exc()
@@ -878,7 +878,7 @@ class MainTestWindow(QMainWindow):
             self._clear_queue(data_out_queue)
             self._clear_queue(data_in_queue)
             #print("Done Clearing Queues")
-            self.mp_process_list[ch_num] = Process(target=cdc.charge_discharge_control, 
+            self.mp_process_list[ch_num] = Process(target=cdc.run_charge_discharge_control, 
                                                     args = (res_ids_dict, data_out_queue, data_in_queue, cdc_input_dict, ch_num))
             self.mp_process_list[ch_num].start()
         except:
@@ -896,7 +896,7 @@ class MainTestWindow(QMainWindow):
             self._clear_queue(data_out_queue)
             self._clear_queue(data_in_queue)
             #print("CH{} - Idle Process res_ids_dict: {}".format(ch_num, res_ids_dict))
-            self.mp_idle_process_list[ch_num] = Process(target=cdc.idle_control, args = (res_ids_dict, data_out_queue, data_in_queue))
+            self.mp_idle_process_list[ch_num] = Process(target=cdc.run_idle_control, args = (res_ids_dict, data_out_queue, data_in_queue))
             self.mp_idle_process_list[ch_num].start()
         except:
             traceback.print_exc()
