@@ -39,6 +39,7 @@ class A2D_Eload(EloadDevice):
     
     def reset(self):
         self._inst_write("*RST")
+        self.current_setpoint = 0.0
         time.sleep(2.0)
 
     def kick(self, channel = 1):
@@ -51,17 +52,18 @@ class A2D_Eload(EloadDevice):
         self._inst_write(f"CURR {channel},{current_setpoint_A}")
         self.current_setpoint = current_setpoint_A
 
-    def toggle_output(self, state):
+    def toggle_output(self, state, channel = 1):
         if state:
-            self._inst_write("INSTR:RELAY 1")
+            self._inst_write(f"INSTR:RELAY {channel},1")
             #This device sets the current to 0 before turning the relay ON to avoid a current spike and maintain relay health
             #So we need to set the current again after turning the relay ON.
             self.set_current(self.current_setpoint) 
         else:
-            self._inst_write("INSTR:RELAY 0")
+            self._inst_write(f"INSTR:RELAY {channel},0")
+            self.current_setpoint = 0.0
     
-    def get_output(self):
-        return bool(int(self._inst_query("INSTR:RELAY?")))
+    def get_output(self, channel = 1):
+        return bool(int(self._inst_query(f"INSTR:RELAY {channel}?")))
 
     def measure_voltage_supply(self, channel = 1):
         return float(self._inst_query(f"MEAS:VOLT {channel}?"))
@@ -78,23 +80,23 @@ class A2D_Eload(EloadDevice):
     def measure_temperature(self, channel = 1):
         return (float(self._inst_query(f"MEAS:TEMP {channel}?"))) #just returns the target current
 
-    def set_led(self, state):
+    def set_led(self, state, channel = 1):
         if state:
-            self._inst_write("INSTR:LED 1")
+            self._inst_write(f"INSTR:LED {channel},1")
         else:
-            self._inst_write("INSTR:LED 0")
+            self._inst_write(f"INSTR:LED {channel},0")
 
-    def get_led(self):
-        return bool(int(self._inst_query("INSTR:LED?")))
+    def get_led(self, channel = 1):
+        return bool(int(self._inst_query(f"INSTR:LED {channel},?")))
 
-    def set_fan(self, state):
+    def set_fan(self, state, channel = 1):
         if state:
-            self._inst_write("INSTR:FAN 1")
+            self._inst_write(f"INSTR:FAN {channel},1")
         else:
-            self._inst_write("INSTR:FAN 0")
+            self._inst_write(f"INSTR:FAN {channel},0")
 
-    def get_fan(self):
-        return bool(int(self._inst_query("INSTR:FAN?")))
+    def get_fan(self, channel = 1):
+        return bool(int(self._inst_query(f"INSTR:FAN {channel},?")))
     
     def cal_v_reset(self, channel = 1):
         self._inst_write(f"CAL:V:RST {channel}")

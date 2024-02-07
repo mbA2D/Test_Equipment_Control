@@ -7,11 +7,11 @@ eload = eq.eLoads.choose_eload()[1]
 
 #set output current to a low value and print v,i,t.
 eload.toggle_output(True)
-eload.set_current(0.1)
+eload.set_current(2.0)
 
 try:
     start_time = time.time()
-    while time.time() - start_time < (5*60):
+    while time.time() - start_time < (10*60):
         temp_c = eload.measure_temperature()
         volt_v = eload.measure_voltage_supply()
         curr_a = eload.measure_current()
