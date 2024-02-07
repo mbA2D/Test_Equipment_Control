@@ -1,9 +1,9 @@
-#python library for controlling the A2D DAQ
+#python library for controlling the A2D Relay Board
 
 import pyvisa
 from .PyVisaDeviceTemplate import PyVisaDevice
 
-#Data Acquisition Unit
+#A2D Relay Board
 class A2D_Relay_Board(PyVisaDevice):
     connection_settings = {
         'read_termination':         '\r\n',

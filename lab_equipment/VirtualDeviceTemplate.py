@@ -36,6 +36,15 @@ class VirtualDeviceTemplate:
         #print(f"Sending query: {query_dict}")
         self._queue_in.put_nowait(query_dict)
         return float(self._queue_out.get(timeout = 10))
+    
+    def measure_voltage_supply(self):
+        msg_data = None
+        if self._eq_ch is not None:
+            msg_data = self._eq_ch
+        query_dict = {'type': 'measure_voltage_supply', 'data': msg_data}
+        #print(f"Sending query: {query_dict}")
+        self._queue_in.put_nowait(query_dict)
+        return float(self._queue_out.get(timeout = 10))
         
     def measure_voltage_at_adc(self):
         msg_data = None
@@ -45,12 +54,29 @@ class VirtualDeviceTemplate:
         #print(f"Sending query: {query_dict}")
         self._queue_in.put_nowait(query_dict)
         return float(self._queue_out.get(timeout = 10))
+    
+    def measure_voltage_at_adc_supply(self):
+        msg_data = None
+        if self._eq_ch is not None:
+            msg_data = self._eq_ch
+        query_dict = {'type': 'measure_voltage_at_adc_supply', 'data': msg_data}
+        #print(f"Sending query: {query_dict}")
+        self._queue_in.put_nowait(query_dict)
+        return float(self._queue_out.get(timeout = 10))
         
     def measure_current(self):
         msg_data = None
         if self._eq_ch is not None:
             msg_data = self._eq_ch
         query_dict = {'type': 'measure_current', 'data': msg_data}
+        self._queue_in.put_nowait(query_dict)
+        return float(self._queue_out.get(timeout = 10))
+    
+    def measure_current_control(self):
+        msg_data = None
+        if self._eq_ch is not None:
+            msg_data = self._eq_ch
+        query_dict = {'type': 'measure_current_control', 'data': msg_data}
         self._queue_in.put_nowait(query_dict)
         return float(self._queue_out.get(timeout = 10))
         
@@ -124,6 +150,22 @@ class VirtualDeviceTemplate:
             msg_data = self._eq_ch
         write_dict = {'type': 'reset_calibration', 'data': msg_data}
         self._queue_in.put_nowait(write_dict)
+
+    #calibration
+    def cal_v_reset(self):
+        msg_data = None
+        if self._eq_ch is not None:
+            msg_data = self._eq_ch
+        write_dict = {'type': 'cal_v_reset', 'data': msg_data}
+        self._queue_in.put_nowait(write_dict)
+
+    #calibration
+    def cal_i_reset(self):
+        msg_data = None
+        if self._eq_ch is not None:
+            msg_data = self._eq_ch
+        write_dict = {'type': 'cal_i_reset', 'data': msg_data}
+        self._queue_in.put_nowait(write_dict)
         
     #calibration
     def save_calibration(self):
@@ -131,6 +173,22 @@ class VirtualDeviceTemplate:
         if self._eq_ch is not None:
             msg_data = self._eq_ch
         write_dict = {'type': 'save_calibration', 'data': msg_data}
+        self._queue_in.put_nowait(write_dict)
+
+    #calibration
+    def cal_v_save(self):
+        msg_data = None
+        if self._eq_ch is not None:
+            msg_data = self._eq_ch
+        write_dict = {'type': 'cal_v_save', 'data': msg_data}
+        self._queue_in.put_nowait(write_dict)
+
+    #calibration
+    def cal_i_save(self):
+        msg_data = None
+        if self._eq_ch is not None:
+            msg_data = self._eq_ch
+        write_dict = {'type': 'cal_i_save', 'data': msg_data}
         self._queue_in.put_nowait(write_dict)
         
     #calibration
@@ -143,11 +201,37 @@ class VirtualDeviceTemplate:
         return [float(val) for val in self._queue_out.get(timeout = 10)]
     
     #calibration
+    def get_cal_v(self):
+        msg_data = None
+        if self._eq_ch is not None:
+            msg_data = self._eq_ch
+        write_dict = {'type': 'get_cal_v', 'data': msg_data}
+        self._queue_in.put_nowait(write_dict)
+        return [float(val) for val in self._queue_out.get(timeout = 10)]
+    
+    #calibration
+    def get_cal_i(self):
+        msg_data = None
+        if self._eq_ch is not None:
+            msg_data = self._eq_ch
+        write_dict = {'type': 'get_cal_i', 'data': msg_data}
+        self._queue_in.put_nowait(write_dict)
+        return [float(val) for val in self._queue_out.get(timeout = 10)]
+    
+    #calibration
     def calibrate_voltage(self, v1a, v1m, v2a, v2m):
         msg_data = [v1a, v1m, v2a, v2m]
         if self._eq_ch is not None:
             msg_data.append(self._eq_ch)
-        write_dict = {'type': 'save_calibration', 'data': msg_data}
+        write_dict = {'type': 'calibrate_voltage', 'data': msg_data}
+        self._queue_in.put_nowait(write_dict)
+
+    #calibration
+    def calibrate_current(self, i1a, i1m, i2a, i2m):
+        msg_data = [i1a, i1m, i2a, i2m]
+        if self._eq_ch is not None:
+            msg_data.append(self._eq_ch)
+        write_dict = {'type': 'calibrate_current', 'data': msg_data}
         self._queue_in.put_nowait(write_dict)
     
     #relay board
@@ -171,16 +255,49 @@ class VirtualDeviceTemplate:
         write_dict = {'type': 'eload_connected', 'data': None}
         self._queue_in.put_nowait(write_dict)
         return bool(self._queue_out.get(timeout = 10))
-        
+    
+    def get_output(self):
+        write_dict = {'type': 'get_output', 'data': None}
+        self._queue_in.put_nowait(write_dict)
+        return bool(self._queue_out.get(timeout = 10))
+
     def set_led(self, value):
         write_dict = {'type': 'set_led', 'data': value}
         self._queue_in.put_nowait(write_dict)
+
+    def get_led(self):
+        write_dict = {'type': 'get_led', 'data': None}
+        self._queue_in.put_nowait(write_dict)
+        return bool(self._queue_out.get(timeout = 10))
+    
+    def set_fan(self, value):
+        write_dict = {'type': 'set_fan', 'data': value}
+        self._queue_in.put_nowait(write_dict)
+
+    def get_fan(self):
+        write_dict = {'type': 'get_fan', 'data': None}
+        self._queue_in.put_nowait(write_dict)
+        return bool(self._queue_out.get(timeout = 10))
         
     def get_num_channels(self):
         write_dict = {'type': 'get_num_channels', 'data': None}
         self._queue_in.put_nowait(write_dict)
         return int(self._queue_out.get(timeout = 10))
     
+    ############## RS485
+    def get_rs485_addr(self):
+        write_dict = {'type': 'get_rs485_addr', 'data': None}
+        self._queue_in.put_nowait(write_dict)
+        return int(self._queue_out.get(timeout = 10))
+    
+    def set_rs485_addr(self, addr):
+        write_dict = {'type': 'set_rs485_addr', 'data': addr}
+        self._queue_in.put_nowait(write_dict)
+
+    def save_rs485_addr(self):
+        write_dict = {'type': 'save_rs485_addr', 'data': None}
+        self._queue_in.put_nowait(write_dict)
+
     ############## FOR RELAY BOARD and SENSE BOARD
     def set_i2c_expander_addr(self, addr):
         write_dict = {'type': 'set_i2c_expander_addr', 'data': addr}
