@@ -187,7 +187,7 @@ class CyclingControl():
                     return False
             elif step_settings["drive_value"] == 0:
                 #rest
-                self.disable_equipment(self.eq_dict)
+                self.disable_equipment()
         
         #VOLTAGE DRIVEN
         elif step_settings["drive_style"] == 'voltage_v':
@@ -212,14 +212,14 @@ class CyclingControl():
                 print("Voltage Driven Step Not Yet Implemented for negative current. Exiting.")
                 FileIO.write_line_txt(self.log_filepath, "ERROR - Voltage Driven Step Not Yet Implemented for negative current. Exiting.")
                 #Ensure everything is off since not yet implemented.
-                self.disable_equipment(self.eq_dict)
+                self.disable_equipment()
                 return False
         
         #NOT DRIVEN
         elif step_settings["drive_style"] == 'none':
             FileIO.write_line_txt(self.log_filepath, "Non-Driven (Rest) Step Setup")
             #Ensure all sources and loads are off.
-            self.disable_equipment(self.eq_dict)
+            self.disable_equipment()
         
         #return True for a successful step start.
         #print("start_step returning True")
