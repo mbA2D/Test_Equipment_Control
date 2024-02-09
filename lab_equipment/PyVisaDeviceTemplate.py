@@ -18,6 +18,8 @@ class PyVisaDevice:
     def __init__(self, resource_id = None, resources_list = None):
         rm = pyvisa.ResourceManager(self.connection_settings['pyvisa_backend'])
         
+        self._last_command_time = time.perf_counter()
+
         if(resource_id == None):
             resources = None
             if resources_list == None:
@@ -148,7 +150,10 @@ class PyVisaDevice:
             pass
         
         if self.connection_settings['idn_available']:
-            self.inst_idn = self.inst.query("*IDN?")
+            try:
+                self.inst_idn = self._inst_query("*IDN?")
+            except AttributeError:
+                self.inst_idn = self.inst.query("*IDN?")
             print("Connected to {}\n".format(self.inst_idn))
         else:
             self.inst_idn = resource_id

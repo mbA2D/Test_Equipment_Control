@@ -18,6 +18,7 @@ from lab_equipment import Eload_DL3000
 from lab_equipment import Eload_KEL10X
 from lab_equipment import Eload_IT8500
 from lab_equipment import Eload_PARALLEL
+from lab_equipment import Eload_A2D_Eload
 from lab_equipment import Eload_Fake
 
 #Power Supplies
@@ -68,7 +69,8 @@ def virtual_device_management_process(eq_type, new_eq_res_id_dict, queue_in, que
     
     device = connect_to_eq(eq_type, new_eq_res_id_dict['class_name'], new_eq_res_id_dict['res_id'], new_eq_res_id_dict['setup_dict'])
     print(f"Virtual Device Connected: {new_eq_res_id_dict['class_name']}")
-    
+    last_kick_time = time.time()
+
     queue_in_message_type = None
     #All queue in message must be a dict with 'type' and 'data' keys.
     #'type' should be a function name that the device has
@@ -93,6 +95,15 @@ def virtual_device_management_process(eq_type, new_eq_res_id_dict, queue_in, que
                 queue_out.put_nowait(return_data)
         except queue.Empty:
             pass
+        #TODO - kick device watchdog if it needs one - this should be done from the thread controlling the instrument instead?
+        #If 10s has passed, send a kick message
+        if (time.time() - last_kick_time) > 5:
+            try:
+                device.kick()
+            except AttributeError:
+                pass
+            last_kick_time = time.time()
+
         time.sleep(0.001000) #1000us = 1ms
 
 def get_resources_list():
@@ -387,6 +398,7 @@ class eLoads:
         'DL3000': 			'Eload_DL3000',
         'KEL10X': 			'Eload_KEL10X',
         'IT8500': 			'Eload_IT8500',
+        'A2D_Eload':        'Eload_A2D_Eload',
         'Parallel Eloads':	'Eload_PARALLEL',
         'Fake Test Eload': 	'Eload_Fake'
     }
@@ -412,6 +424,8 @@ class eLoads:
             eload = Eload_IT8500.IT8500(resource_id = resource_id, resources_list = resources_list)
         elif class_name == 'A2D_POWER_BOARD':
             eload = SMU_A2D_POWER_BOARD.A2D_POWER_BOARD(resource_id = resource_id, resources_list = resources_list)
+        elif class_name == 'A2D_Eload':
+            eload = Eload_A2D_Eload.A2D_Eload(resource_id = resource_id, resources_list = resources_list)
         elif class_name == 'Parallel Eloads':
             eload = Eload_PARALLEL.PARALLEL(resource_id = resource_id, resources_list = resources_list)
         elif class_name == 'Fake Test Eload':
