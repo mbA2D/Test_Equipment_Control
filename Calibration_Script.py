@@ -73,11 +73,13 @@ class CalibrationClass:
         
         time.sleep(1)
         voltage_1 = self.measure_average(num_to_average = 10, at_adc = True)
+        print(f"voltage_1: {voltage_1}")
         
         #CAL POINT 2
         self.psu.set_voltage(points[1])
         time.sleep(1)
         voltage_2 = self.measure_average(num_to_average = 10, at_adc = True)
+        print(f"voltage_2: {voltage_2}")
         
         self.psu.toggle_output(False)
         

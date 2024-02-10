@@ -32,7 +32,7 @@ class A2D_4CH_Isolated_ADC(DMMDevice):
         return [float(val) for val in self.inst.query_ascii_values(f'CAL {channel}?')]
     
     def calibrate_voltage(self, v1a, v1m, v2a, v2m, channel = 1): #2 points, actual (a) (dmm) and measured (m) (sense board)
-        self.inst.write(f'CAL:VOLT {v1a},{v1m},{v2a},{v2m},{channel}')
+        self.inst.write(f'CAL:VOLT {channel},{v1a},{v1m},{v2a},{v2m}')
     
     def measure_voltage(self, channel = 1):
         if channel == 0:

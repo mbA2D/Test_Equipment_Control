@@ -7,7 +7,7 @@ eload = eq.eLoads.choose_eload()[1]
 
 #set output current to a low value and print v,i,t.
 eload.toggle_output(True)
-eload.set_current(2.0)
+eload.set_current(0.5)
 
 try:
     start_time = time.time()
@@ -15,8 +15,9 @@ try:
         temp_c = eload.measure_temperature()
         volt_v = eload.measure_voltage_supply()
         curr_a = eload.measure_current()
+        ctrl_a = eload.measure_current_control()
 
-        print(f"temp: {temp_c}  volt: {volt_v}  curr: {curr_a}")
+        print(f"temp: {temp_c}  volt: {volt_v}  curr: {curr_a}  ctrl: {ctrl_a}")
         time.sleep(1)
     eload.toggle_output(False)
     print("Test Complete")
