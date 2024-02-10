@@ -29,7 +29,7 @@ class A2D_Eload(EloadDevice):
         self.firmware_version = idn_split[3]
 
         if 'Eload' in self.model_number:
-            self.max_current = 5
+            self.max_current = 10.0
         self.current_setpoint = 0.0
 
         self._last_command_time = time.perf_counter()
