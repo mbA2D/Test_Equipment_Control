@@ -116,10 +116,10 @@ class A2D_Eload(EloadDevice):
     def get_cal_i(self, channel = 1):
         return [float(val) for val in self._inst_query_ascii(f'CAL:I {channel}?')]
 
-    def calibrate_voltage(self, v1a, v1m, v2a, v2m, channel = 1): #2 points, actual (a) and measured (m)
+    def calibrate_voltage(self, v1a, v1m, v2a, v2m, channel = 1): #2 points, actual (a - dmm) and measured (m - dut)
         self._inst_write(f'CAL:V {channel},{v1a},{v1m},{v2a},{v2m}')
 
-    def calibrate_current(self, i1a, i1m, i2a, i2m, channel = 1): #2 points, actual (a) and measured (m)
+    def calibrate_current(self, i1a, i1m, i2a, i2m, channel = 1): #2 points, actual (a - dmm) and measured (m - dut)
         self._inst_write(f'CAL:I {channel},{i1a},{i1m},{i2a},{i2m}')
 
     def get_rs485_addr(self):
