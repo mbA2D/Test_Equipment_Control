@@ -215,7 +215,7 @@ def test_fan_control():
         print(f"test_fan_control: eload_temp {eload_temp}")
 
     #make sure fan turned off
-    if eload.get_fan() != True:
+    if eload.get_fan() != False:
         print("test_fan_control: failed to turn fan off")
         return False
     
@@ -237,7 +237,7 @@ def test_calibration():
     dmm_val_1 = (dut_val_1 - dut_val_2) / target_gain + dmm_val_2
 
     #voltage
-    eload.calibrate_voltage(-dut_val_1, dmm_val_1, -dut_val_2, dmm_val_2)
+    eload.calibrate_voltage(dut_val_1, dmm_val_1, dut_val_2, dmm_val_2)
 
     v_cal = eload.get_cal_v()
     if (abs(v_cal[0] - target_offset) > cal_val_tol):
@@ -279,14 +279,14 @@ def test_set_current_over_max():
     return True
 
 try:
-    #assert test_set_led() == True
-    #assert test_set_rs485_addr() == True
-    #assert test_save_rs485_addr() == True
-    #assert test_set_current() == True
-    #assert test_reset() == True
-    #assert test_toggle_output() == True
-    #assert test_set_current() == True
-    #assert test_watchdog() == True
+    assert test_set_led() == True
+    assert test_set_rs485_addr() == True
+    assert test_save_rs485_addr() == True
+    assert test_set_current() == True
+    assert test_reset() == True
+    assert test_toggle_output() == True
+    assert test_set_current() == True
+    assert test_watchdog() == True
     assert test_calibration() == True
     assert test_set_current_over_max() == True
     assert test_fan_control() == True
