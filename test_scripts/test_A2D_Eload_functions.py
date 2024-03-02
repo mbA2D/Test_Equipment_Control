@@ -231,10 +231,10 @@ def test_calibration():
     target_offset = -0.1
     target_gain = 12.75
 
-    dut_val_1 = 0.2
-    dmm_val_1 = (dut_val_1 - target_offset) / target_gain
     dut_val_2 = 0.3
-    dmm_val_2 = (dut_val_2 - dut_val_1) * target_gain + dmm_val_1
+    dmm_val_2 = target_offset + dut_val_2 / target_gain
+    dut_val_1 = 0.2
+    dmm_val_1 = (dut_val_1 - dut_val_2) / target_gain + dmm_val_2
 
     #voltage
     eload.calibrate_voltage(-dut_val_1, dmm_val_1, -dut_val_2, dmm_val_2)
