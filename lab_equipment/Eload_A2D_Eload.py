@@ -110,10 +110,10 @@ class A2D_Eload(EloadDevice):
     def cal_i_save(self, channel = 1):
         self._inst_write(f"CAL:I:SAV {channel}")
 
-    def get_cal_v(self, channel = 1):
+    def get_cal_v(self, channel = 1): #returns [offset,gain]
         return [float(val) for val in self._inst_query_ascii(f'CAL:V {channel}?')]
     
-    def get_cal_i(self, channel = 1):
+    def get_cal_i(self, channel = 1): #returns [offset,gain]
         return [float(val) for val in self._inst_query_ascii(f'CAL:I {channel}?')]
 
     def calibrate_voltage(self, v1a, v1m, v2a, v2m, channel = 1): #2 points, actual (a) and measured (m)
