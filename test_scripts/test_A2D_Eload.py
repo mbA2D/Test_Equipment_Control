@@ -7,7 +7,7 @@ eload = eq.eLoads.choose_eload()[1]
 
 #set output current to a low value and print v,i,t.
 eload.toggle_output(True)
-eload.set_current(0.5)
+eload.set_current(10)
 
 try:
     start_time = time.time()
