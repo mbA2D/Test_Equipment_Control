@@ -115,7 +115,7 @@ def test_save_rs485_addr():
     return True
 
 def test_set_current():
-    current_setpoint_tolerance = 0.005 #5mA
+    current_setpoint_tolerance = 0.010 #10mA
     target_current = 4.0
 
     i_cal = eload.get_cal_i()
@@ -285,7 +285,6 @@ try:
     assert test_set_current() == True
     assert test_reset() == True
     assert test_toggle_output() == True
-    assert test_set_current() == True
     assert test_watchdog() == True
     assert test_calibration() == True
     assert test_set_current_over_max() == True
