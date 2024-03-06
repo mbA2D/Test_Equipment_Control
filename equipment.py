@@ -51,12 +51,13 @@ from lab_equipment import OTHER_Arduino_IO_Module
 #Virtual Equipment Management
 from lab_equipment import VirtualDeviceTemplate
 
-#def get_connection_settings_list():
-    #looks through all the devices that have libraries written and creates a dictionary with the possible combinations.
-
 def choose_channel(num_channels = 64, start_val = 0):
     max_number = num_channels + start_val - 1
-    ch_num = eg.integerbox(msg = "Which channel on this device would you like to use?",title = "Channel Selection", default = 0, lowerbound = start_val, upperbound = max_number)
+    ch_num = eg.integerbox(msg = "Which channel on this device would you like to use?",
+                           title = "Channel Selection",
+                           default = start_val,
+                           lowerbound = start_val,
+                           upperbound = max_number)
     return ch_num
 
 #used in create_new_equipment in battery_test.py
@@ -117,10 +118,6 @@ def get_resources_list():
             resources_list.append({'resource': resource, 'backend': backend})
     return resources_list
     #How do we know which device settings to use to communicate with it? Try all the settings until we get a legible response from IDN that we can use?
-
-#def get_available_equipment():
-    #uses the resources list and the possible connection settings to look through every device and try to get an IDN response from it.
-
 
 def setup_instrument(instrument, setup_dict):
     if setup_dict == None:
@@ -256,7 +253,6 @@ def connect_to_eq(key, class_name, res_id, setup_dict = None):
     time.sleep(0.1)
     return instrument
 
-
 #Used in get_equipment_dict
 def connect_to_virtual_eq(virtual_res_id_dict):
     if virtual_res_id_dict.get('eq_ch') != None:
@@ -264,7 +260,6 @@ def connect_to_virtual_eq(virtual_res_id_dict):
     else:
         instrument = VirtualDeviceTemplate.VirtualDeviceTemplate(virtual_res_id_dict['queue_in'], virtual_res_id_dict['queue_out'])
     return instrument
-
 
 #used in battery_test.py when connecting to a new piece of equipment
 #equipment_list comes from the choose_eload, choose_dmm, etc. functions in equipment.py

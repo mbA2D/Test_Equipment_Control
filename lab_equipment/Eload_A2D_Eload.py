@@ -6,7 +6,7 @@ from .PyVisaDeviceTemplate import EloadDevice
 
 # E-Load
 class A2D_Eload(EloadDevice):
-    
+    max_channels = 32 #max 32 eloads connected on the RS485 bus
     has_remote_sense = False
     connection_settings = {
         'read_termination':         '\r\n',

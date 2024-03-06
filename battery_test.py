@@ -15,6 +15,7 @@ import traceback
 #from BATT_HIL import fet_board_management as fbm
 from lab_equipment import A2D_DAQ_control
 from lab_equipment import DMM_A2D_4CH_Isolated_ADC
+from lab_equipment import Eload_A2D_Eload
 import charge_discharge_control as cdc
 import equipment as eq
 import easygui as eg
@@ -625,6 +626,8 @@ class MainTestWindow(QMainWindow):
                         ch = eq.choose_channel(num_channels = A2D_DAQ_control.A2D_DAQ.num_channels, start_val = 0)
                     elif connected_equipment_list[connected_equipment_list_index]['class_name'] == 'A2D_4CH_Isolated_ADC_Channel':
                         ch = eq.choose_channel(num_channels = DMM_A2D_4CH_Isolated_ADC.A2D_4CH_Isolated_ADC.num_channels, start_val = 1)
+                    elif connected_equipment_list[connected_equipment_list_index]['class_name'] == 'A2D_Eload':
+                        ch = eq.choose_channel(num_channels = Eload_A2D_Eload.A2D_Eload.max_channels, start_val = 1)
                     idns_dict['dmm_v'] = {'idn': dmm_v_idn, 'ch': ch}
 
                     
