@@ -213,7 +213,7 @@ class MainTestWindow(QMainWindow):
                 if child.widget() is not None:
                     child.widget().deleteLater()
                 elif child.layout() is not None:
-                    clear_layout(child.layout())
+                    self.clear_layout(child.layout())
     
     def remove_all_channels(self):
         self.clear_layout(self.channels_layout)
