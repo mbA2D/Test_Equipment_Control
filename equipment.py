@@ -58,7 +58,7 @@ def choose_channel(num_channels = 64, start_val = 0):
                            default = start_val,
                            lowerbound = start_val,
                            upperbound = max_number)
-    return ch_num
+    return int(ch_num)
 
 #used in create_new_equipment in battery_test.py
 def virtual_device_management_process(eq_type, new_eq_res_id_dict, queue_in, queue_out):

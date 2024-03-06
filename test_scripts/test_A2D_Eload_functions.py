@@ -354,13 +354,13 @@ def test_voltage_calibration():
     eload.calibrate_voltage(dut_val_1, dmm_val_1, dut_val_2, dmm_val_2)
 
     v_cal = eload.get_cal_v()
-    if (abs(v_cal[0] - target_offset) > cal_val_tol):
-        print(f"test_calibration: voltage offset calibration not correct: {v_cal[0]}")
+    if (abs(v_cal[0] - target_v_offset) > cal_val_tol):
+        print(f"test_calibration: original voltage offset not set: {v_cal[0]}")
         eload.reset()
         return False
     
-    if (abs(v_cal[1] - target_gain) > cal_val_tol):
-        print(f"test_calibration: voltage gain calibration not correct: {v_cal[1]}")
+    if (abs(v_cal[1] - target_v_gain) > cal_val_tol):
+        print(f"test_calibration: original voltage gain not set: {v_cal[1]}")
         eload.reset()
         return False
     

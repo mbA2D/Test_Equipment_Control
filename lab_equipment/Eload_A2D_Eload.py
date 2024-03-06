@@ -78,7 +78,7 @@ class A2D_Eload(EloadDevice):
         return (float(self._inst_query(f"CURR:CTRL {channel}?")) * (-1)) #returns the applied control signal for the current (use for calibration)
 
     def measure_temperature(self, channel = 1):
-        return (float(self._inst_query(f"MEAS:TEMP {channel}?"))) #just returns the target current
+        return (float(self._inst_query(f"MEAS:TEMP {channel}?")))
 
     def set_led(self, state, channel = 1):
         if state:
