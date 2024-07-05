@@ -54,6 +54,9 @@ class A2D_4CH_Isolated_ADC(DMMDevice):
         else:
             self.inst.write('INSTR:LED 0')
     
+    def get_rs485_addr(self):
+        return int(self.inst.query(f'INSTR:RS485?'))
+    
     def get_num_channels(self):
         return A2D_4CH_Isolated_ADC.num_channels
     
