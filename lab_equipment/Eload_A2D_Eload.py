@@ -87,7 +87,7 @@ class A2D_Eload(EloadDevice):
             self._inst_write(f"INSTR:LED {channel},0")
 
     def get_led(self, channel = 1):
-        return bool(int(self._inst_query(f"INSTR:LED {channel},?")))
+        return bool(int(self._inst_query(f"INSTR:LED {channel}?")))
 
     def set_fan(self, state, channel = 1):
         if state:
@@ -96,7 +96,7 @@ class A2D_Eload(EloadDevice):
             self._inst_write(f"INSTR:FAN {channel},0")
 
     def get_fan(self, channel = 1):
-        return bool(int(self._inst_query(f"INSTR:FAN {channel},?")))
+        return bool(int(self._inst_query(f"INSTR:FAN {channel}?")))
     
     def cal_v_reset(self, channel = 1):
         self._inst_write(f"CAL:V:RST {channel}")
