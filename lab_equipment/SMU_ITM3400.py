@@ -32,6 +32,11 @@ class IT_M3400(SourceMeasureDevice):
             self.inst.write("OUTP OFF")
 
     ##COMMANDS FOR CC MODE (DISCHARGING)
+    def set_mode_current(self):
+        self.toggle_output(False)
+        self.inst.write("FUNC CURR")
+        self.mode = "CURR"
+        
     def set_current(self, current_setpoint_A):
         if self.mode != "CURR":
             print("ERROR - SMU not in correct mode")
@@ -53,14 +58,11 @@ class IT_M3400(SourceMeasureDevice):
             print("ERROR - SMU not in correct mode")
             return
         self.inst.write("VOLT:LIM:LOW {}".format(voltage_setpoint_V))
-
-    def set_mode_current(self):
-        self.inst.write("FUNC CURR")
-        self.mode = "CURR"
     ##END OF COMMANDS FOR CC MODE
 
     ##COMMANDS FOR CV MODE (CHARGING)
     def set_mode_voltage(self):
+        self.toggle_output(False)
         self.inst.write("FUNC VOLT")
         self.mode = "VOLT"
 
