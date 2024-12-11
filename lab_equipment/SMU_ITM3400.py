@@ -111,13 +111,13 @@ class IT_M3400(SourceMeasureDevice):
         if self.mode != "CURR":
             print("ERROR - SMU not in correct mode")
             return
-        self.inst.write("VOLT:LIM:LOW {}".format(voltage_setpoint_V))
+        self.inst.write("VOLT:LIM:LOW {}".format(voltage_limit_V))
     
     def set_voltage_lim_high(self, voltage_limit_V):
         if self.mode != "CURR":
             print("ERROR - SMU not in correct mode")
             return
-        self.inst.write("VOLT:LIM:LOW {}".format(voltage_setpoint_V))
+        self.inst.write("VOLT:LIM:LOW {}".format(voltage_limit_V))
     ##END OF COMMANDS FOR CC MODE
 
     ##COMMANDS FOR CV MODE (BATTERY CHARGING)
@@ -140,13 +140,13 @@ class IT_M3400(SourceMeasureDevice):
         if self.mode != "VOLT":
             print("ERROR - SMU not in correct mode")
             return
-        self.inst.write("CURR:LIM:NEG {}".format(voltage_setpoint_V))
+        self.inst.write("CURR:LIM:NEG {}".format(current_limit_A))
         
     def set_curr_lim_high(self, current_limit_A):
         if self.mode != "VOLT":
             print("ERROR - SMU not in correct mode")
             return
-        self.inst.write("CURR:LIM:POS {}".format(voltage_setpoint_V))
+        self.inst.write("CURR:LIM:POS {}".format(current_limit_A))
     ##END OF COMMANDS FOR CV MODE
     
     def remote_sense(self, state):
