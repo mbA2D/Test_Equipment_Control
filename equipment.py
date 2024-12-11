@@ -33,6 +33,7 @@ from lab_equipment import PSU_Fake
 
 #SMUs
 from lab_equipment import SMU_A2D_POWER_BOARD
+from lab_equipment import SMU_ITM3400
 
 #Digital Multimeters
 from lab_equipment import DMM_DM3000
@@ -233,7 +234,7 @@ def get_equipment_dict(res_ids_dict):
     return eq_dict
 
 def connect_to_eq(key, class_name, res_id, setup_dict = None):
-    #Key should be 'eload', 'psu', 'dmm', 'relay_board'
+    #Key should be 'eload', 'psu', 'dmm', 'relay_board', 'smu'
     #'dmm' with any following characters will be considered a dmm
     instrument = None
     
@@ -421,6 +422,8 @@ class eLoads:
             eload = SMU_A2D_POWER_BOARD.A2D_POWER_BOARD(resource_id = resource_id, resources_list = resources_list)
         elif class_name == 'A2D_Eload':
             eload = Eload_A2D_Eload.A2D_Eload(resource_id = resource_id, resources_list = resources_list)
+        elif class_name == 'IT_M3400':
+            eload = SMU_ITM3400.IT_M3400(resource_id = resource_id, resources_list = resources_list)
         elif class_name == 'Parallel Eloads':
             eload = Eload_PARALLEL.PARALLEL(resource_id = resource_id, resources_list = resources_list)
         elif class_name == 'Fake Test Eload':
@@ -472,6 +475,8 @@ class powerSupplies:
             psu = PSU_E3631A.E3631A(resource_id = resource_id, resources_list = resources_list)
         elif class_name == 'A2D_POWER_BOARD':
             psu = SMU_A2D_POWER_BOARD.A2D_POWER_BOARD(resource_id = resource_id, resources_list = resources_list)
+        elif class_name == 'IT_M3400':
+            psu = SMU_ITM3400.IT_M3400(resource_id = resource_id, resources_list = resources_list)
         elif class_name == 'Fake Test PSU':
             psu = PSU_Fake.Fake_PSU(resource_id = resource_id, resources_list = resources_list)
             
@@ -485,6 +490,7 @@ class powerSupplies:
 class smus:
     part_numbers = part_numbers = {
         'A2D_POWER_BOARD':          'SMU_A2D_POWER_BOARD',
+        'IT_M3400':                 'SMU_ITM3400',
     }
     
     @classmethod
@@ -500,6 +506,8 @@ class smus:
         
         if class_name == 'A2D_POWER_BOARD':
             smu = SMU_A2D_POWER_BOARD.A2D_POWER_BOARD(resource_id = resource_id, resources_list = resources_list)
+        elif class_name == 'IT_M3400':
+            smu = SMU_ITM3400.IT_M3400(resource_id = resource_id, resources_list = resources_list)
             
         setup_dict = setup_instrument(smu, setup_dict)
         if setup_dict == None:
@@ -540,6 +548,8 @@ class dmms:
             dmm = DMM_A2D_SENSE_BOARD.A2D_SENSE_BOARD(resource_id = resource_id, resources_list = resources_list)
         elif class_name == 'A2D_POWER_BOARD':
             dmm = SMU_A2D_POWER_BOARD.A2D_POWER_BOARD(resource_id = resource_id, resources_list = resources_list)
+        elif class_name == 'IT_M3400':
+            dmm = SMU_ITM3400.IT_M3400(resource_id = resource_id, resources_list = resources_list)
         elif class_name == 'A2D_DAQ_CH':
             dmm = A2D_DAQ_control.A2D_DAQ(resource_id = resource_id, resources_list = resources_list)
         elif class_name == 'A2D_4CH_Isolated_ADC_Channel':
