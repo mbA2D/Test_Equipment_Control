@@ -93,7 +93,7 @@ class IT_M3400(SourceMeasureDevice):
         if self.mode != "CURR":
             print("ERROR - SMU not in correct mode")
             return
-        self.inst.write("CURR {}".format(abs(current_setpoint_A)))
+        self.inst.write("CURR {}".format(current_setpoint_A))
 
     def set_voltage(self, voltage_setpoint_V):
         #for compatibility with power supplies with a 'set_voltage' command
