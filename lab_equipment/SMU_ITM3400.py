@@ -17,6 +17,7 @@ class IT_M3400(SourceMeasureDevice):
         model_number = idn_split[1]
 
         self.inst.write("*RST")
+        self.set_mode_current()
         
         if '3434' in model_number:
             self.max_power = 800
@@ -93,6 +94,14 @@ class IT_M3400(SourceMeasureDevice):
             return
         self.inst.write("CURR {}".format(abs(current_setpoint_A)))
 
+    def set_voltage(self, voltage_setpoint_V):
+        #for compatibility with power supplies with a 'set_voltage' command
+        if self.mode != "CURR":
+            print("ERROR - SMU not in correct mode")
+            return
+        self.set_voltage_lim_low(0)
+        self.set_voltage_lim_high(voltage_setpoint_V)
+    
     def set_voltage_lim_bidir(self, voltage_limit_V):
         self.set_voltage_lim_low(voltage_limit_V)
         self.set_voltage_lim_high(voltage_limit_V)
