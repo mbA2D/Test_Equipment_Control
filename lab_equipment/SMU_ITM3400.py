@@ -117,7 +117,7 @@ class IT_M3400(SourceMeasureDevice):
         if self.mode != "CURR":
             print("ERROR - SMU not in correct mode")
             return
-        self.inst.write("VOLT:LIM:LOW {}".format(voltage_limit_V))
+        self.inst.write("VOLT:LIM:HIGH {}".format(voltage_limit_V))
     ##END OF COMMANDS FOR CC MODE
 
     ##COMMANDS FOR CV MODE (BATTERY CHARGING)
