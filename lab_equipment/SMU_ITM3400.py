@@ -8,16 +8,66 @@ class IT_M3400(SourceMeasureDevice):
     
     has_remote_sense = True
     connection_settings = {
-        'read_termination':         '\r\n',
-        'write_termination':        '\n',
-        'query_delay':              0.02,
-        'pyvisa_backend':           '@py',
+        'pyvisa_backend':           '@ivi',
         'idn_available':            True
     }
         
     def initialize(self):
+        idn_split = self.inst_idn.split(',')
+        model_number = idn_split[1]
+
         self.inst.write("*RST")
-        #TODO - instrument models and voltage/current/power limits
+        
+        if '3434' in model_number:
+            self.max_power = 800
+            self.max_current = 6
+            self.max_voltage = 300
+        elif '3424' in model_number:
+            self.max_power = 400
+            self.max_current = 6
+            self.max_voltage = 300
+        elif '3414' in model_number:
+            self.max_power = 200
+            self.max_current = 6
+            self.max_voltage = 300
+        elif '3433' in model_number:
+            self.max_power = 800
+            self.max_current = 12
+            self.max_voltage = 150
+        elif '3423' in model_number:
+            self.max_power = 400
+            self.max_current = 12
+            self.max_voltage = 150
+        elif '3413' in model_number:
+            self.max_power = 200
+            self.max_current = 12
+            self.max_voltage = 150
+        elif '3432' in model_number:
+            self.max_power = 800
+            self.max_current = 30
+            self.max_voltage = 60
+        elif '3422' in model_number:
+            self.max_power = 400
+            self.max_current = 30
+            self.max_voltage = 60
+        elif '3412' in model_number:
+            self.max_power = 200
+            self.max_current = 30
+            self.max_voltage = 60
+        elif '3435' in model_number:
+            self.max_power = 800
+            self.max_current = 3
+            self.max_voltage = 600
+        elif '3425' in model_number:
+            self.max_power = 400
+            self.max_current = 3
+            self.max_voltage = 600
+        elif '3415' in model_number:
+            self.max_power = 200
+            self.max_current = 3
+            self.max_voltage = 600
+
+        #TODO - use the voltage/current/power limits in the setpoint functions
     
     def measure_voltage(self):
         return float(self.inst.query("MEAS:VOLT:DC?"))
@@ -31,7 +81,7 @@ class IT_M3400(SourceMeasureDevice):
         else:
             self.inst.write("OUTP OFF")
 
-    ##COMMANDS FOR CC MODE (DISCHARGING)
+    ##COMMANDS FOR CC MODE (BATTERY DISCHARGING)
     def set_mode_current(self):
         self.toggle_output(False)
         self.inst.write("FUNC CURR")
@@ -60,7 +110,7 @@ class IT_M3400(SourceMeasureDevice):
         self.inst.write("VOLT:LIM:LOW {}".format(voltage_setpoint_V))
     ##END OF COMMANDS FOR CC MODE
 
-    ##COMMANDS FOR CV MODE (CHARGING)
+    ##COMMANDS FOR CV MODE (BATTERY CHARGING)
     def set_mode_voltage(self):
         self.toggle_output(False)
         self.inst.write("FUNC VOLT")
