@@ -182,6 +182,7 @@ class MainTestWindow(QMainWindow):
         equipment_selection_functions = { 
             'psu':      eq.powerSupplies.choose_psu, 
             'eload':    eq.eLoads.choose_eload,
+            'smu':      eq.smus.choose_smu,
             'dmm':      eq.dmms.choose_dmm,
             'other':    eq.otherEquipment.choose_equipment
         }
@@ -377,7 +378,7 @@ class MainTestWindow(QMainWindow):
         
         #Check the new equipment queue
         try:
-            #for multi-channel devices, connects to the EQUIPMENT
+            #for multi-channel devices, connects to the EQUIPMENT, not to the CHANNEL
             new_eq_res_id_dict = self.new_equipment_queue.get_nowait()
             
             self.create_new_equipment(new_eq_res_id_dict)
@@ -619,7 +620,7 @@ class MainTestWindow(QMainWindow):
                 if eg.ynbox(msg, title):
                     dmm_v_idn = MainTestWindow.select_idn_matching_type(connected_equipment_list, 'dmm')
                     
-                    #if this is a A2D_64_CH_DAQ, we need to choose which channel to use
+                    #if this device has multiple channels, we need to choose which channel to use
                     connected_equipment_list_index = MainTestWindow.get_connected_equipment_index_matching_idn(connected_equipment_list, dmm_v_idn)
                     ch = None
                     if connected_equipment_list[connected_equipment_list_index]['class_name'] == 'A2D_DAQ_CH':
@@ -644,24 +645,44 @@ class MainTestWindow(QMainWindow):
                 device_v_counter = 0
                 device_i_counter = 0
                 device_t_counter = 0
+                custom_measurement_names = list()
                 while add_other_device:
                     add_other_device = eg.ynbox(msg, title)
                     if add_other_device:
-                        choice = eg.choicebox("What will this device measure?","Adding Measurement Device",['Voltage', 'Current', 'Temperature'])
+                        choice = eg.choicebox("What will this device measure?","Adding Measurement Device",['Voltage', 'Current', 'Temperature', 'Other'])
                         dev_name = 'dmm'
                         valid_dev = False
                         if choice == 'Voltage':
-                            dev_name = 'dmm_v{}'.format(device_v_counter)
+                            dev_name = 'dmm_v_{}'.format(device_v_counter)
                             device_v_counter = device_v_counter + 1
                             valid_dev = True
                         elif choice == 'Current':
-                            dev_name = 'dmm_i{}'.format(device_i_counter)
+                            dev_name = 'dmm_i_{}'.format(device_i_counter)
                             device_i_counter = device_i_counter + 1
                             valid_dev = True
                         elif choice == 'Temperature':
-                            dev_name = 'dmm_t{}'.format(device_t_counter)
+                            dev_name = 'dmm_t_{}'.format(device_t_counter)
                             device_t_counter = device_t_counter + 1
                             valid_dev = True
+                        elif choice == 'Other':
+                            #This category used for measuring various other things (e.g. SoC from bq fuel gauge)
+                            #The measurement function of this device must be named the same as this should return a float
+                            #
+                            #e.g. if 'soc_0' is entered here, then we will try to use a measurement function called 'measure_soc()' and we will call the device 'dmm_soc_0' 
+                            #        'soc_test_0'                                                                   'measure_soc_test()'                        'dmm_soc_test_0'
+                            #        'soc'                                                                          'measure_soc()'                             'dmm_soc'
+                            #
+                            custom_measurement_name = eg.enterbox(msg = "Enter the measurement name.\n\n" + 
+                                                                        "1.Must be unique within each channel. Use '_identifier' at the end of name if 2 measurements of the same type are required on the same channel\n" + 
+                                                                        "2.Device must have measurement function called 'measure_measurement-name-without-identifier()' that returns a float.\n" + 
+                                                                        "3.Spaces will be replaced with underscores",
+                                                                  title = "Custom Measurement Setup",
+                                                                  default = "soc")
+                            if (custom_measurement_name is not None) and (str(custom_measurement_name) not in custom_measurement_names):
+                                valid_dev = True
+                                custom_measurement_names.append(custom_measurement_name)
+                                dev_name = 'dmm_{}'.format(str(custom_measurement_name))
+                            
                         
                         if valid_dev:
                             #dmm_extra = eq.dmms.choose_dmm(multi_ch_event_and_queue_dict = dict_for_event_and_queue, resources_list = resources_list)
@@ -673,6 +694,8 @@ class MainTestWindow(QMainWindow):
                             ch = None
                             if connected_equipment_list[connected_equipment_list_index]['class_name'] == 'A2D_DAQ_CH':
                                 ch = eq.choose_channel(num_channels = A2D_DAQ_control.A2D_DAQ.num_channels)
+                            elif connected_equipment_list[connected_equipment_list_index]['class_name'] == 'A2D_4CH_Isolated_ADC_Channel':
+                                ch = eq.choose_channel(num_channels = DMM_A2D_4CH_Isolated_ADC.A2D_4CH_Isolated_ADC.num_channels, start_val = 1)
                             
                             idns_dict[dev_name] = {'idn': dmm_extra_idn, 'ch': ch}
                         
