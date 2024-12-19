@@ -498,7 +498,7 @@ class smus:
         if class_name == None:
             msg = "In which series is the PSU?"
             title = "PSU Series Selection"
-            class_name = eg.choicebox(msg, title, list(powerSupplies.part_numbers.keys())+list(smus.part_numbers.keys()))
+            class_name = eg.choicebox(msg, title, smus.part_numbers.keys)
 
         if class_name == None:
             print("Failed to select the equipment.")
