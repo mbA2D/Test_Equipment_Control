@@ -673,13 +673,15 @@ class MainTestWindow(QMainWindow):
                             #        'soc'                                                                          'measure_soc()'                             'dmm_soc'
                             #
                             custom_measurement_name = eg.enterbox(msg = "Enter the measurement name.\n\n" + 
-                                                                        "1.Must be unique within each channel. Use '_identifier' at the end of name if 2 measurements of the same type are required on the same channel\n" + 
-                                                                        "2.Device must have measurement function called 'measure_measurement-name-without-identifier()' that returns a float.\n" + 
-                                                                        "3.Spaces will be replaced with underscores",
+                                                                        "1. Must be unique within each channel.\n"
+                                                                        "2. Use '_identifier' at the end of name if 2 measurements of the same type are required on the same channel\n" + 
+                                                                        "3. Device must have measurement function called 'measure_measurement-name-without-identifier()' that returns a float.\n" + 
+                                                                        "4. Spaces will be replaced with underscores.",
                                                                   title = "Custom Measurement Setup",
                                                                   default = "soc")
                             if (custom_measurement_name is not None) and (str(custom_measurement_name) not in custom_measurement_names):
                                 valid_dev = True
+                                custom_measurement_name = custom_measurement_name.replace(' ','_')
                                 custom_measurement_names.append(custom_measurement_name)
                                 dev_name = 'dmm_{}'.format(str(custom_measurement_name))
                             
