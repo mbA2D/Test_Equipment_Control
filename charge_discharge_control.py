@@ -61,6 +61,10 @@ class CyclingControl():
         else:
             self.eq_dict['dmm_t'].measure_temperature()
 
+    def init_dmm_other(self, device, dev_name):
+        if device is not None:
+            
+    
     def init_relay_board(self):
         #turn off all channels
         self.eq_dict['relay_board'].connect_eload(False)
@@ -68,36 +72,30 @@ class CyclingControl():
         
     def initialize_connected_equipment(self):
         #print("initialize_connected_equipment")
-        
-        if self.eq_dict['eload'] != None:	
-            self.init_eload()
-        if self.eq_dict['psu'] != None:
-            self.init_psu()
-        if self.eq_dict['dmm_v'] != None:
-            self.init_dmm_v()
-        if self.eq_dict['dmm_i'] != None:
-            self.init_dmm_i()
-        if self.eq_dict.get('relay_board') != None:
-            self.init_relay_board()
-        
-        #all the extra dmms:
-        dmm_postfixes = ['v', 'i', 't']
-        for postfix in dmm_postfixes:
-            valid_device = True
-            count = 0
-            while valid_device:
-                dev_name = 'dmm_{}{}'.format(postfix, count)
+
+        for dev_name in self.eq_dict.keys():
+            if dev_name == 'eload' and self.eq_dict['eload'] != None:
+                self.init_eload()
+            elif dev_name == 'psu' and self.eq_dict['psu'] != None:
+                self.init_psu()
+            elif dev_name == 'dmm_v' and self.eq_dict['dmm_v'] != None:
+                self.init_dmm_v()
+            elif dev_name == 'dmm_i' and self.eq_dict['dmm_i'] != None:
+                self.init_dmm_i()
+            elif dev_name == 'relay_board' and self.eq_dict['relay_board'] != None:
+                self.init_relay_board()
+            elif 'dmm_v_' in dev_name:
                 dev = self.eq_dict.get(dev_name)
-                if dev != None:
-                    if postfix == 'v':
-                        self.init_dmm_v(dev)
-                    elif postfix == 'i':
-                        self.init_dmm_i(dev)
-                    elif postfix == 't':
-                        self.init_dmm_t(dev)
-                else:
-                    valid_device = False
-                count += 1
+                self.init_dmm_v(dev)
+            elif 'dmm_i_' in dev_name:
+                dev = self.eq_dict.get(dev_name)
+                self.init_dmm_i(dev)
+            elif 'dmm_t_' in dev_name:
+                dev = self.eq_dict.get(dev_name)
+                self.init_dmm_t(dev)
+            else:
+                dev = self.eq_dict.get(dev_name)
+                self.init_dmm_other(device, dev_name)
 
     def disable_equipment_single(self, equipment):
         if equipment != None:
@@ -315,7 +313,7 @@ class CyclingControl():
         data_dict['data']["Current"] = 0
         data_dict['data']["Step_Index"] = step_index
         
-        if current_time is not None:
+        if current_time is None:
             data_dict['data']["Data_Timestamp"] = time.perf_counter()
         else:
             data_dict['data']["Data_Timestamp"] = current_time
@@ -324,26 +322,31 @@ class CyclingControl():
             data_dict['data']["Voltage"] = self.eq_dict['dmm_v'].measure_voltage()
         if self.eq_dict['dmm_i'] is not None:
             data_dict['data']["Current"] = self.eq_dict['dmm_i'].measure_current()
-        
-        #Now, measure all the extra devices that were added to the channel - these being less time-critical.
-        prefix_list = ['v', 'i', 't']
-        #start at index 0 and keep increasing until we get a KeyError.
-        for prefix in prefix_list:
-            index = 0
-            try:
-                while index < 100:
-                    dev_name = 'dmm_{}{}'.format(prefix, index)
-                    measurement = 0
-                    if prefix == 'v':
-                        measurement = self.eq_dict[dev_name].measure_voltage()
-                    elif prefix == 'i':
-                        measurement = self.eq_dict[dev_name].measure_current()
-                    elif prefix == 't':
-                        measurement = self.eq_dict[dev_name].measure_temperature()
-                    data_dict['data'][dev_name] = measurement
-                    index = index + 1
-            except KeyError:
+
+        for dev_name in self.eq_dict.keys():
+            if (dev_name == 'dmm_v') or (dev_name == 'dmm_i') or ('dmm' not in dev_name):
                 continue
+            elif 'dmm_v_' in dev_name:
+                dev = self.eq_dict.get(dev_name)
+                measurement = dev.measure_voltage()
+            elif 'dmm_i_' in dev_name:
+                dev = self.eq_dict.get(dev_name)
+                measurement = dev.measure_current()
+            elif 'dmm_t_' in dev_name:
+                dev = self.eq_dict.get(dev_name)
+                measurement = dev.measure_temperature()
+            else:
+                #custom measurement name
+                dev = self.eq_dict.get(dev_name)
+                num_underscores = dev_name.count('_')
+                if num_underscores == 1:
+                    #find leftmost underscore, and take everything from there until the end
+                    measurement_name = dev_name[dev_name.index('_')+1:]
+                elif num_underscores > 1:
+                    #find leftmost and rightmost, and take everything in between
+                    measurement_name = dev_name[dev_name.index('_')+1:dev_name.rindex('_')-1]
+                measurement = float(eval('dev.measure_{}()'.format(measurement_name)))
+            data_dict['data'][dev_name] = measurement
         
         #Send voltage and current to be displayed in the main test window
         if data_out_queue != None:
@@ -600,6 +603,7 @@ class CyclingControl():
                 print("CH{} - All Cycles Completed: {}".format(ch_num, time.ctime()), flush=True)
                 FileIO.write_line_txt(self.log_filepath, "All Cycles Completed!")
         except Exception:
+            self.disable_equipment()
             exception = traceback.format_exc()
             print(exception)
             FileIO.write_line_txt(self.log_filepath, exception)
