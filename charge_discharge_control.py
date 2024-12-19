@@ -56,14 +56,19 @@ class CyclingControl():
     def init_dmm_t(self, device = None):
         #test measurement to ensure everything is set up correctly
         #and the fisrt measurement which often takes longer is out of the way
-        if device is not None:
-            device.measure_temperature()
-        else:
-            self.eq_dict['dmm_t'].measure_temperature()
+        device.measure_temperature()
 
     def init_dmm_other(self, device, dev_name):
-        if device is not None:
-            
+        #custom measurement name
+        dev = self.eq_dict.get(dev_name)
+        num_underscores = dev_name.count('_')
+        if num_underscores == 1:
+            #find leftmost underscore, and take everything from there until the end
+            measurement_name = dev_name[dev_name.index('_')+1:]
+        elif num_underscores > 1:
+            #find leftmost and rightmost, and take everything in between
+            measurement_name = dev_name[dev_name.index('_')+1:dev_name.rindex('_')-1]
+        eval('dev.measure_{}()'.format(measurement_name))     
     
     def init_relay_board(self):
         #turn off all channels
