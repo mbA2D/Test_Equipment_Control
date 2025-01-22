@@ -264,8 +264,8 @@ def calc_capacity(log_data, stats, sub_dirs, filedir, charge = True, temp_log_di
         return None
     
     #Calculate time required for cycle
-    start_time = dsc_data.loc[dsc_data.index[0], 'Data_Timestamp']
-    end_time = dsc_data.loc[dsc_data.index[-1], 'Data_Timestamp']
+    start_time = dsc_data.loc[dsc_data.index[0], 'Log_Timestamp']
+    end_time = dsc_data.loc[dsc_data.index[-1], 'Log_Timestamp']
     end_v = dsc_data.loc[dsc_data.index[-1], 'Voltage']
     total_time = (end_time - start_time)/3600
     
