@@ -12,7 +12,6 @@ from functools import partial
 import queue #queue module required for exception handling of multiprocessing.Queue
 import traceback
 
-#from BATT_HIL import fet_board_management as fbm
 from lab_equipment import A2D_DAQ_control
 from lab_equipment import DMM_A2D_4CH_Isolated_ADC
 from lab_equipment import Eload_A2D_Eload
