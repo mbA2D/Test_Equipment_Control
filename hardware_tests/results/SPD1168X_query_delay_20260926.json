@@ -1,0 +1,82 @@
+{
+  "instrument": "Siglent Technologies,SPD1168X,SPD1XEAX4R0095,2.1.1.9R1,V1.0",
+  "test_type": "read-only consecutive SCPI queries over USBTMC",
+  "commands_per_delay": 100,
+  "queries": [
+    "*IDN?",
+    "SYST:STAT?",
+    "VOLT?",
+    "CURR?"
+  ],
+  "initial_state": {
+    "idn": "Siglent Technologies,SPD1168X,SPD1XEAX4R0095,2.1.1.9R1,V1.0",
+    "output": false,
+    "remote_sense": false,
+    "voltage_setpoint_v": 0.0,
+    "current_setpoint_a": 0.0
+  },
+  "results": [
+    {
+      "query_delay_s": 0.15,
+      "commands_attempted": 100,
+      "commands_passed": 100,
+      "failure": null,
+      "elapsed_s": 15.5156,
+      "mean_response_ms": 155.156,
+      "max_response_ms": 169.126
+    },
+    {
+      "query_delay_s": 0.1,
+      "commands_attempted": 100,
+      "commands_passed": 100,
+      "failure": null,
+      "elapsed_s": 10.5019,
+      "mean_response_ms": 105.019,
+      "max_response_ms": 117.054
+    },
+    {
+      "query_delay_s": 0.05,
+      "commands_attempted": 100,
+      "commands_passed": 100,
+      "failure": null,
+      "elapsed_s": 5.5432,
+      "mean_response_ms": 55.432,
+      "max_response_ms": 61.153
+    },
+    {
+      "query_delay_s": 0.025,
+      "commands_attempted": 100,
+      "commands_passed": 100,
+      "failure": null,
+      "elapsed_s": 2.9624,
+      "mean_response_ms": 29.624,
+      "max_response_ms": 40.286
+    },
+    {
+      "query_delay_s": 0.01,
+      "commands_attempted": 100,
+      "commands_passed": 100,
+      "failure": null,
+      "elapsed_s": 1.7466,
+      "mean_response_ms": 17.466,
+      "max_response_ms": 25.251
+    },
+    {
+      "query_delay_s": 0.0,
+      "commands_attempted": 100,
+      "commands_passed": 100,
+      "failure": null,
+      "elapsed_s": 0.1913,
+      "mean_response_ms": 1.913,
+      "max_response_ms": 9.139
+    }
+  ],
+  "final_state": {
+    "idn": "Siglent Technologies,SPD1168X,SPD1XEAX4R0095,2.1.1.9R1,V1.0",
+    "output": false,
+    "remote_sense": false,
+    "voltage_setpoint_v": 0.0,
+    "current_setpoint_a": 0.0
+  },
+  "final_error_queue": "+0, No error"
+}

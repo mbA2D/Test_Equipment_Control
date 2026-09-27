@@ -31,6 +31,7 @@ class A2D_Eload(EloadDevice):
         if 'Eload' in self.model_number:
             self.max_current = 10.0
         self.current_setpoint = 0.0
+        self._selected_channel = 1
 
         self._last_command_time = time.perf_counter()
 
@@ -42,17 +43,29 @@ class A2D_Eload(EloadDevice):
         self.current_setpoint = 0.0
         time.sleep(2.0)
 
-    def kick(self, channel = 1):
+    def select_channel(self, channel):
+        """Select canonical channel ``1..32`` (the hardware uses the same numbering)."""
+        if not isinstance(channel, int) or isinstance(channel, bool) or not 1 <= channel <= self.max_channels:
+            raise ValueError(f"Channel must be between 1 and {self.max_channels}")
+        self._selected_channel = channel
+
+    def _channel(self, channel):
+        return getattr(self, '_selected_channel', 1) if channel is None else channel
+
+    def kick(self, channel=None):
+        channel = self._channel(channel)
         self._inst_write(f"INSTR:KICK {channel}")
 
     # To Set E-Load in Amps 
-    def set_current(self, current_setpoint_A, channel = 1):		 
+    def set_current(self, current_setpoint_A, channel=None):
+        channel = self._channel(channel)
         if current_setpoint_A < 0:
             current_setpoint_A = abs(current_setpoint_A)
         self._inst_write(f"CURR {channel},{current_setpoint_A}")
         self.current_setpoint = current_setpoint_A
 
-    def toggle_output(self, state, channel = 1):
+    def toggle_output(self, state, channel=None):
+        channel = self._channel(channel)
         if state:
             self._inst_write(f"INSTR:RELAY {channel},1")
             #This device sets the current to 0 before turning the relay ON to avoid a current spike and maintain relay health
@@ -62,64 +75,82 @@ class A2D_Eload(EloadDevice):
             self._inst_write(f"INSTR:RELAY {channel},0")
             self.current_setpoint = 0.0
     
-    def get_output(self, channel = 1):
+    def get_output(self, channel=None):
+        channel = self._channel(channel)
         return bool(int(self._inst_query(f"INSTR:RELAY {channel}?")))
 
-    def measure_voltage_supply(self, channel = 1):
+    def measure_voltage_supply(self, channel=None):
+        channel = self._channel(channel)
         return float(self._inst_query(f"MEAS:VOLT {channel}?"))
     
-    def measure_voltage_adc_supply(self, channel = 1):
+    def measure_voltage_adc_supply(self, channel=None):
+        channel = self._channel(channel)
         return float(self._inst_query(f"MEAS:VOLT:ADC {channel}?"))
 
-    def measure_current(self, channel = 1):
+    def measure_current(self, channel=None):
+        channel = self._channel(channel)
         return (float(self._inst_query(f"CURR {channel}?")) * (-1)) #just returns the target current
 
-    def measure_current_control(self, channel = 1):
+    def measure_current_control(self, channel=None):
+        channel = self._channel(channel)
         return (float(self._inst_query(f"CURR:CTRL {channel}?")) * (-1)) #returns the applied control signal for the current (use for calibration)
 
-    def measure_temperature(self, channel = 1):
+    def measure_temperature(self, channel=None):
+        channel = self._channel(channel)
         return (float(self._inst_query(f"MEAS:TEMP {channel}?")))
 
-    def set_led(self, state, channel = 1):
+    def set_led(self, state, channel=None):
+        channel = self._channel(channel)
         if state:
             self._inst_write(f"INSTR:LED {channel},1")
         else:
             self._inst_write(f"INSTR:LED {channel},0")
 
-    def get_led(self, channel = 1):
+    def get_led(self, channel=None):
+        channel = self._channel(channel)
         return bool(int(self._inst_query(f"INSTR:LED {channel}?")))
 
-    def set_fan(self, state, channel = 1):
+    def set_fan(self, state, channel=None):
+        channel = self._channel(channel)
         if state:
             self._inst_write(f"INSTR:FAN {channel},1")
         else:
             self._inst_write(f"INSTR:FAN {channel},0")
 
-    def get_fan(self, channel = 1):
+    def get_fan(self, channel=None):
+        channel = self._channel(channel)
         return bool(int(self._inst_query(f"INSTR:FAN {channel}?")))
     
-    def cal_v_reset(self, channel = 1):
+    def cal_v_reset(self, channel=None):
+        channel = self._channel(channel)
         self._inst_write(f"CAL:V:RST {channel}")
 
-    def cal_v_save(self, channel = 1):
+    def cal_v_save(self, channel=None):
+        channel = self._channel(channel)
         self._inst_write(f"CAL:V:SAV {channel}")
 
-    def cal_i_reset(self, channel = 1):
+    def cal_i_reset(self, channel=None):
+        channel = self._channel(channel)
         self._inst_write(f"CAL:I:RST {channel}")
 
-    def cal_i_save(self, channel = 1):
+    def cal_i_save(self, channel=None):
+        channel = self._channel(channel)
         self._inst_write(f"CAL:I:SAV {channel}")
 
-    def get_cal_v(self, channel = 1): #returns [offset,gain]
+    def get_cal_v(self, channel=None): #returns [offset,gain]
+        channel = self._channel(channel)
         return [float(val) for val in self._inst_query_ascii(f'CAL:V {channel}?')]
     
-    def get_cal_i(self, channel = 1): #returns [offset,gain]
+    def get_cal_i(self, channel=None): #returns [offset,gain]
+        channel = self._channel(channel)
         return [float(val) for val in self._inst_query_ascii(f'CAL:I {channel}?')]
 
-    def calibrate_voltage(self, v1a, v1m, v2a, v2m, channel = 1): #2 points, actual (a - dmm) and measured (m - dut)
+    def calibrate_voltage(self, v1a, v1m, v2a, v2m, channel=None): #2 points, actual (a - dmm) and measured (m - dut)
+        channel = self._channel(channel)
         self._inst_write(f'CAL:V {channel},{v1a},{v1m},{v2a},{v2m}')
 
-    def calibrate_current(self, i1a, i1m, i2a, i2m, channel = 1): #2 points, actual (a - dmm) and measured (m - dut)
+    def calibrate_current(self, i1a, i1m, i2a, i2m, channel=None): #2 points, actual (a - dmm) and measured (m - dut)
+        channel = self._channel(channel)
         self._inst_write(f'CAL:I {channel},{i1a},{i1m},{i2a},{i2m}')
 
     def get_rs485_addr(self):

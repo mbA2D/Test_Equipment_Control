@@ -1,0 +1,159 @@
+{
+  "@context": [
+    "https://schema.org/",
+    "http://www.w3.org/ns/csvw"
+  ],
+  "@type": "schema:Dataset",
+  "schema:name": "Battery test CELL_32AH_20260926 cycle 1",
+  "schema:description": "Battery cycling time-series data in the Battery Data Format.",
+  "schema:creator": [
+    {
+      "@type": "schema:Organization",
+      "schema:name": "LOCAL"
+    }
+  ],
+  "schema:keywords": [],
+  "schema:license": "https://spdx.org/licenses/CC-BY-4.0",
+  "schema:inLanguage": "en",
+  "schema:version": "0.1",
+  "schema:variableMeasured": [
+    {
+      "@type": "schema:PropertyValue",
+      "schema:name": "Test Time / s"
+    },
+    {
+      "@type": "schema:PropertyValue",
+      "schema:name": "Voltage / V"
+    },
+    {
+      "@type": "schema:PropertyValue",
+      "schema:name": "Current / A"
+    },
+    {
+      "@type": "schema:PropertyValue",
+      "schema:name": "Unix Time / s"
+    },
+    {
+      "@type": "schema:PropertyValue",
+      "schema:name": "Cycle Count / 1"
+    },
+    {
+      "@type": "schema:PropertyValue",
+      "schema:name": "Step Count / 1"
+    },
+    {
+      "@type": "schema:PropertyValue",
+      "schema:name": "Step ID"
+    },
+    {
+      "@type": "schema:PropertyValue",
+      "schema:name": "Step Time / s"
+    },
+    {
+      "@type": "schema:PropertyValue",
+      "schema:name": "Step Type"
+    },
+    {
+      "@type": "schema:PropertyValue",
+      "schema:name": "Surface Temperature T1 / degC"
+    },
+    {
+      "@type": "schema:PropertyValue",
+      "schema:name": "Surface Temperature T2 / degC"
+    },
+    {
+      "@type": "schema:PropertyValue",
+      "schema:name": "Surface Temperature T3 / degC"
+    },
+    {
+      "@type": "schema:PropertyValue",
+      "schema:name": "Surface Temperature T4 / degC"
+    },
+    {
+      "@type": "schema:PropertyValue",
+      "schema:name": "Surface Temperature T5 / degC"
+    },
+    {
+      "@type": "schema:PropertyValue",
+      "schema:name": "Cycle Charging Capacity / Ah"
+    },
+    {
+      "@type": "schema:PropertyValue",
+      "schema:name": "Cycle Discharging Capacity / Ah"
+    },
+    {
+      "@type": "schema:PropertyValue",
+      "schema:name": "Cycle Charging Energy / Wh"
+    },
+    {
+      "@type": "schema:PropertyValue",
+      "schema:name": "Cycle Discharging Energy / Wh"
+    }
+  ],
+  "schema:distribution": [
+    {
+      "@type": "schema:DataDownload",
+      "@id": "LOCAL__CELL_32AH_20260926__20260927_001.bdf.csv",
+      "schema:name": "LOCAL__CELL_32AH_20260926__20260927_001.bdf.csv",
+      "schema:contentUrl": "LOCAL__CELL_32AH_20260926__20260927_001.bdf.csv",
+      "schema:encodingFormat": "text/csv"
+    }
+  ],
+  "testEquipmentControl": {
+    "metadata_schema": "test_equipment_control.bdf_metadata",
+    "metadata_version": "0.1",
+    "data_file": "LOCAL__CELL_32AH_20260926__20260927_001.bdf.csv",
+    "institution_code": "LOCAL",
+    "identity": {
+      "profile_id": "profile-27433a98-905d-401a-8598-ae9a1fc65731",
+      "profile_version": "sha256:7eaf3f192ca013b506fed080f2d9cb2bc0629584be161768008403d04c72ef7f",
+      "test_id": "test-55604a7f-34e5-43d0-9ecb-8f7eeb6a74bb",
+      "session_id": "session-0f0e7da4-da54-41c9-80bf-775627236ef1",
+      "continued_from_test_id": null
+    },
+    "cell": {
+      "name": "CELL_32AH_20260926"
+    },
+    "test": {
+      "cycle_count": 1,
+      "type": "CC charge 1 A for 30 s",
+      "status": "completed",
+      "start_time_utc": "2026-09-27T04:13:21.439753+00:00",
+      "end_time_utc": "2026-09-27T04:13:55.160524+00:00",
+      "steps": [
+        {
+          "step_id": 1,
+          "step_type": "CC_CHG",
+          "display_name": "CC charge 1 A for 30 s",
+          "settings": {
+            "cycle_type": "step",
+            "cycle_display": "CC charge 1 A for 30 s",
+            "drive_style": "current_a",
+            "drive_value": 1.0,
+            "drive_value_other": 4.2,
+            "end_style": "time_s",
+            "end_condition": "greater",
+            "end_value": 30.0,
+            "meas_log_int_s": 1.0,
+            "safety_min_voltage_v": 2.8,
+            "safety_max_voltage_v": 4.2,
+            "safety_min_current_a": -10.0,
+            "safety_max_current_a": 8.0,
+            "safety_max_time_s": 40.0
+          }
+        }
+      ]
+    },
+    "equipment": {
+      "psu": {
+        "driver": "PowerSupplyProxy"
+      }
+    },
+    "temperature_sensors": {},
+    "measurement": {
+      "current_sign_convention": "positive_charge_negative_discharge",
+      "capacity_energy_integration": "right_endpoint_current_voltage_times_delta_time",
+      "time_reference": "Test Time / s is elapsed from test start"
+    }
+  }
+}

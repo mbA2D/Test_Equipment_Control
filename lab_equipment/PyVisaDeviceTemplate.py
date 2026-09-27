@@ -1,9 +1,32 @@
 #Class to have all device selection have a common area instead of repeated in each device class.
 
 import pyvisa
-import easygui as eg
 import serial
 import time
+import logging
+
+
+logger = logging.getLogger(__name__)
+
+
+def _dialogs():
+    """Load GUI dialogs only when automatic resource selection is requested."""
+    from battery_gui import dialogs
+
+    return dialogs
+
+
+def _open_resource_manager(backend):
+    """Open a VISA backend, falling back from optional IVI to PyVISA-py."""
+    try:
+        return backend, pyvisa.ResourceManager(backend)
+    except (OSError, ValueError, pyvisa.errors.Error) as error:
+        if backend != '@ivi':
+            raise
+
+        logger.warning("VISA backend @ivi is unavailable; using @py instead: %s", error)
+        return '@py', pyvisa.ResourceManager('@py')
+
 
 class PyVisaDevice:
     selection_window_title = "PyVisa Device Selection"
@@ -16,7 +39,7 @@ class PyVisaDevice:
     }
     
     def __init__(self, resource_id = None, resources_list = None):
-        rm = pyvisa.ResourceManager(self.connection_settings['pyvisa_backend'])
+        backend, rm = _open_resource_manager(self.connection_settings['pyvisa_backend'])
         
         self._last_command_time = time.perf_counter()
 
@@ -26,7 +49,7 @@ class PyVisaDevice:
                 resources = rm.list_resources()
             else:
                 #resources should be all the resources that have the same backend as this.
-                resources = [resource['resource'] for resource in resources_list if resource['backend'] == self.connection_settings['pyvisa_backend']]
+                resources = [resource['resource'] for resource in resources_list if resource['backend'] == backend]
 
             ################# IDN VERSION #################
             #Attempt to connect to each Visa Resource using the connection settings for this instrument and get the IDN response
@@ -100,11 +123,11 @@ class PyVisaDevice:
                 print("No Equipment Available. Connection attempt will exit with errors")
             elif(len(idns_dict.values()) == 1):
                 msg = "There is only 1 Visa Equipment available.\nWould you like to use it?\n{}".format(list(idns_dict.values())[0])
-                if(eg.ynbox(msg, self.selection_window_title)):
+                if _dialogs().ask_yes_no(msg, self.selection_window_title):
                     idn = list(idns_dict.values())[0]
             else:
                 msg = "Select the PyVisaDevice Resource:"
-                idn = eg.choicebox(msg, self.selection_window_title, idns_dict.values())
+                idn = _dialogs().ask_choice(msg, self.selection_window_title, list(idns_dict.values()))
             #Now we know which IDN we want to connect to
             #swap keys and values and then connect
             if idn != None:

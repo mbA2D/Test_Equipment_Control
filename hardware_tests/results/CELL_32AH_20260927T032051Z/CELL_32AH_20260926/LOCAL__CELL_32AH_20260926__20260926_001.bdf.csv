@@ -1,0 +1,2 @@
+Test Time / s,Voltage / V,Current / A,Unix Time / s,Cycle Count / 1,Step Count / 1,Step ID,Step Time / s,Step Type,Surface Temperature T1 / degC,Surface Temperature T2 / degC,Surface Temperature T3 / degC,Surface Temperature T4 / degC,Surface Temperature T5 / degC,Cycle Charging Capacity / Ah,Cycle Discharging Capacity / Ah,Cycle Charging Energy / Wh,Cycle Discharging Energy / Wh
+2.7470660000108182,0.0,0.0,1790479259.9240885,1,1,1,0.10030859999824315,CC_CHG,,,,,,0.0,0.0,0.0,0.0

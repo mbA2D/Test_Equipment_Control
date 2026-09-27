@@ -1,0 +1,1091 @@
+{
+  "run_date": "2026-09-27",
+  "cell_name": "CELL_32AH_20260926",
+  "reported_open_circuit_voltage_v": 3.7,
+  "profile": {
+    "cycle_type": "step",
+    "cycle_display": "CC charge 1 A for 30 s",
+    "drive_style": "current_a",
+    "drive_value": 1.0,
+    "drive_value_other": 4.2,
+    "end_style": "time_s",
+    "end_condition": "greater",
+    "end_value": 30.0,
+    "meas_log_int_s": 1.0,
+    "safety_min_voltage_v": 2.8,
+    "safety_max_voltage_v": 4.2,
+    "safety_min_current_a": -10.0,
+    "safety_max_current_a": 8.0,
+    "safety_max_time_s": 40.0
+  },
+  "profile_id": "profile-bd28297e-9c58-4104-a0f6-82fe4218519f",
+  "profile_version": "sha256:7eaf3f192ca013b506fed080f2d9cb2bc0629584be161768008403d04c72ef7f",
+  "remote_sense": false,
+  "started": true,
+  "events": [
+    {
+      "kind": "event",
+      "message": "Cycle 1 started",
+      "payload": "{'message': 'Cycle 1 started', 'color': '#18794e'}"
+    },
+    {
+      "kind": "status",
+      "message": "Entered CC charge 1 A for 30 s; next: Idle",
+      "payload": "('CC charge 1 A for 30 s', 'Idle')"
+    },
+    {
+      "kind": "measurement",
+      "message": null,
+      "measurement": {
+        "Voltage": 3.9,
+        "Current": 1.0,
+        "Step ID": 1,
+        "Data_Timestamp": 428049.5228767,
+        "Unix_Timestamp": 1790479626.434138
+      }
+    },
+    {
+      "kind": "measurement",
+      "message": null,
+      "measurement": {
+        "Voltage": 3.9,
+        "Current": 1.0,
+        "Step ID": 1,
+        "Data_Timestamp": 428049.5849129,
+        "Unix_Timestamp": 1790479626.4961665
+      }
+    },
+    {
+      "kind": "measurement",
+      "message": null,
+      "measurement": {
+        "Voltage": 3.9,
+        "Current": 1.0,
+        "Step ID": 1,
+        "Data_Timestamp": 428050.5828292,
+        "Unix_Timestamp": 1790479627.4940858
+      }
+    },
+    {
+      "kind": "measurement",
+      "message": null,
+      "measurement": {
+        "Voltage": 3.9,
+        "Current": 1.0,
+        "Step ID": 1,
+        "Data_Timestamp": 428050.6560867,
+        "Unix_Timestamp": 1790479627.5673382
+      }
+    },
+    {
+      "kind": "measurement",
+      "message": null,
+      "measurement": {
+        "Voltage": 3.9,
+        "Current": 1.0,
+        "Step ID": 1,
+        "Data_Timestamp": 428051.6434584,
+        "Unix_Timestamp": 1790479628.5547128
+      }
+    },
+    {
+      "kind": "measurement",
+      "message": null,
+      "measurement": {
+        "Voltage": 3.9,
+        "Current": 1.0,
+        "Step ID": 1,
+        "Data_Timestamp": 428051.7234517,
+        "Unix_Timestamp": 1790479628.6347058
+      }
+    },
+    {
+      "kind": "measurement",
+      "message": null,
+      "measurement": {
+        "Voltage": 3.9,
+        "Current": 1.0,
+        "Step ID": 1,
+        "Data_Timestamp": 428052.7131185,
+        "Unix_Timestamp": 1790479629.6243725
+      }
+    },
+    {
+      "kind": "measurement",
+      "message": null,
+      "measurement": {
+        "Voltage": 3.9,
+        "Current": 1.0,
+        "Step ID": 1,
+        "Data_Timestamp": 428052.7936936,
+        "Unix_Timestamp": 1790479629.7049453
+      }
+    },
+    {
+      "kind": "measurement",
+      "message": null,
+      "measurement": {
+        "Voltage": 3.901,
+        "Current": 1.0,
+        "Step ID": 1,
+        "Data_Timestamp": 428053.7788599,
+        "Unix_Timestamp": 1790479630.6901126
+      }
+    },
+    {
+      "kind": "measurement",
+      "message": null,
+      "measurement": {
+        "Voltage": 3.901,
+        "Current": 1.0,
+        "Step ID": 1,
+        "Data_Timestamp": 428053.8686165,
+        "Unix_Timestamp": 1790479630.7798684
+      }
+    },
+    {
+      "kind": "measurement",
+      "message": null,
+      "measurement": {
+        "Voltage": 3.901,
+        "Current": 1.0,
+        "Step ID": 1,
+        "Data_Timestamp": 428054.8439174,
+        "Unix_Timestamp": 1790479631.7551699
+      }
+    },
+    {
+      "kind": "measurement",
+      "message": null,
+      "measurement": {
+        "Voltage": 3.901,
+        "Current": 1.0,
+        "Step ID": 1,
+        "Data_Timestamp": 428054.9280028,
+        "Unix_Timestamp": 1790479631.839254
+      }
+    },
+    {
+      "kind": "measurement",
+      "message": null,
+      "measurement": {
+        "Voltage": 3.902,
+        "Current": 1.0,
+        "Step ID": 1,
+        "Data_Timestamp": 428055.9099683,
+        "Unix_Timestamp": 1790479632.8212214
+      }
+    },
+    {
+      "kind": "measurement",
+      "message": null,
+      "measurement": {
+        "Voltage": 3.902,
+        "Current": 1.0,
+        "Step ID": 1,
+        "Data_Timestamp": 428056.0006819,
+        "Unix_Timestamp": 1790479632.9119341
+      }
+    },
+    {
+      "kind": "measurement",
+      "message": null,
+      "measurement": {
+        "Voltage": 3.902,
+        "Current": 1.0,
+        "Step ID": 1,
+        "Data_Timestamp": 428056.9696557,
+        "Unix_Timestamp": 1790479633.8809223
+      }
+    },
+    {
+      "kind": "measurement",
+      "message": null,
+      "measurement": {
+        "Voltage": 3.902,
+        "Current": 1.0,
+        "Step ID": 1,
+        "Data_Timestamp": 428057.1354653,
+        "Unix_Timestamp": 1790479634.0467193
+      }
+    },
+    {
+      "kind": "measurement",
+      "message": null,
+      "measurement": {
+        "Voltage": 3.901,
+        "Current": 1.0,
+        "Step ID": 1,
+        "Data_Timestamp": 428058.039104,
+        "Unix_Timestamp": 1790479634.9503565
+      }
+    },
+    {
+      "kind": "measurement",
+      "message": null,
+      "measurement": {
+        "Voltage": 3.901,
+        "Current": 1.0,
+        "Step ID": 1,
+        "Data_Timestamp": 428058.195915,
+        "Unix_Timestamp": 1790479635.1071675
+      }
+    },
+    {
+      "kind": "measurement",
+      "message": null,
+      "measurement": {
+        "Voltage": 3.901,
+        "Current": 1.0,
+        "Step ID": 1,
+        "Data_Timestamp": 428059.1645637,
+        "Unix_Timestamp": 1790479636.0758176
+      }
+    },
+    {
+      "kind": "measurement",
+      "message": null,
+      "measurement": {
+        "Voltage": 3.901,
+        "Current": 1.0,
+        "Step ID": 1,
+        "Data_Timestamp": 428059.2578212,
+        "Unix_Timestamp": 1790479636.1690745
+      }
+    },
+    {
+      "kind": "measurement",
+      "message": null,
+      "measurement": {
+        "Voltage": 3.9,
+        "Current": 1.0,
+        "Step ID": 1,
+        "Data_Timestamp": 428060.2244718,
+        "Unix_Timestamp": 1790479637.1357257
+      }
+    },
+    {
+      "kind": "measurement",
+      "message": null,
+      "measurement": {
+        "Voltage": 3.9,
+        "Current": 1.0,
+        "Step ID": 1,
+        "Data_Timestamp": 428060.3188758,
+        "Unix_Timestamp": 1790479637.2301302
+      }
+    },
+    {
+      "kind": "measurement",
+      "message": null,
+      "measurement": {
+        "Voltage": 3.9,
+        "Current": 1.0,
+        "Step ID": 1,
+        "Data_Timestamp": 428061.2863187,
+        "Unix_Timestamp": 1790479638.197573
+      }
+    },
+    {
+      "kind": "measurement",
+      "message": null,
+      "measurement": {
+        "Voltage": 3.9,
+        "Current": 1.0,
+        "Step ID": 1,
+        "Data_Timestamp": 428061.3816717,
+        "Unix_Timestamp": 1790479638.292927
+      }
+    },
+    {
+      "kind": "measurement",
+      "message": null,
+      "measurement": {
+        "Voltage": 3.901,
+        "Current": 1.0,
+        "Step ID": 1,
+        "Data_Timestamp": 428062.3521166,
+        "Unix_Timestamp": 1790479639.2633705
+      }
+    },
+    {
+      "kind": "measurement",
+      "message": null,
+      "measurement": {
+        "Voltage": 3.901,
+        "Current": 1.0,
+        "Step ID": 1,
+        "Data_Timestamp": 428062.4515507,
+        "Unix_Timestamp": 1790479639.3628023
+      }
+    },
+    {
+      "kind": "measurement",
+      "message": null,
+      "measurement": {
+        "Voltage": 3.901,
+        "Current": 1.0,
+        "Step ID": 1,
+        "Data_Timestamp": 428063.4219267,
+        "Unix_Timestamp": 1790479640.3331828
+      }
+    },
+    {
+      "kind": "measurement",
+      "message": null,
+      "measurement": {
+        "Voltage": 3.901,
+        "Current": 1.0,
+        "Step ID": 1,
+        "Data_Timestamp": 428063.5124065,
+        "Unix_Timestamp": 1790479640.4236732
+      }
+    },
+    {
+      "kind": "measurement",
+      "message": null,
+      "measurement": {
+        "Voltage": 3.901,
+        "Current": 1.0,
+        "Step ID": 1,
+        "Data_Timestamp": 428064.4887394,
+        "Unix_Timestamp": 1790479641.3999941
+      }
+    },
+    {
+      "kind": "measurement",
+      "message": null,
+      "measurement": {
+        "Voltage": 3.902,
+        "Current": 1.0,
+        "Step ID": 1,
+        "Data_Timestamp": 428064.5746971,
+        "Unix_Timestamp": 1790479641.4859521
+      }
+    },
+    {
+      "kind": "measurement",
+      "message": null,
+      "measurement": {
+        "Voltage": 3.903,
+        "Current": 1.0,
+        "Step ID": 1,
+        "Data_Timestamp": 428065.5618744,
+        "Unix_Timestamp": 1790479642.4731252
+      }
+    },
+    {
+      "kind": "measurement",
+      "message": null,
+      "measurement": {
+        "Voltage": 3.903,
+        "Current": 1.0,
+        "Step ID": 1,
+        "Data_Timestamp": 428065.6422552,
+        "Unix_Timestamp": 1790479642.5535173
+      }
+    },
+    {
+      "kind": "measurement",
+      "message": null,
+      "measurement": {
+        "Voltage": 3.903,
+        "Current": 1.0,
+        "Step ID": 1,
+        "Data_Timestamp": 428066.6265073,
+        "Unix_Timestamp": 1790479643.5377734
+      }
+    },
+    {
+      "kind": "measurement",
+      "message": null,
+      "measurement": {
+        "Voltage": 3.903,
+        "Current": 1.0,
+        "Step ID": 1,
+        "Data_Timestamp": 428066.7031292,
+        "Unix_Timestamp": 1790479643.6143818
+      }
+    },
+    {
+      "kind": "measurement",
+      "message": null,
+      "measurement": {
+        "Voltage": 3.903,
+        "Current": 1.0,
+        "Step ID": 1,
+        "Data_Timestamp": 428067.6974764,
+        "Unix_Timestamp": 1790479644.60873
+      }
+    },
+    {
+      "kind": "measurement",
+      "message": null,
+      "measurement": {
+        "Voltage": 3.903,
+        "Current": 1.0,
+        "Step ID": 1,
+        "Data_Timestamp": 428067.7748837,
+        "Unix_Timestamp": 1790479644.686139
+      }
+    },
+    {
+      "kind": "measurement",
+      "message": null,
+      "measurement": {
+        "Voltage": 3.904,
+        "Current": 1.0,
+        "Step ID": 1,
+        "Data_Timestamp": 428068.75801,
+        "Unix_Timestamp": 1790479645.6692634
+      }
+    },
+    {
+      "kind": "measurement",
+      "message": null,
+      "measurement": {
+        "Voltage": 3.904,
+        "Current": 1.0,
+        "Step ID": 1,
+        "Data_Timestamp": 428068.8344463,
+        "Unix_Timestamp": 1790479645.745699
+      }
+    },
+    {
+      "kind": "measurement",
+      "message": null,
+      "measurement": {
+        "Voltage": 3.904,
+        "Current": 1.0,
+        "Step ID": 1,
+        "Data_Timestamp": 428069.8272132,
+        "Unix_Timestamp": 1790479646.7384658
+      }
+    },
+    {
+      "kind": "measurement",
+      "message": null,
+      "measurement": {
+        "Voltage": 3.904,
+        "Current": 1.0,
+        "Step ID": 1,
+        "Data_Timestamp": 428069.8948529,
+        "Unix_Timestamp": 1790479646.8061051
+      }
+    },
+    {
+      "kind": "measurement",
+      "message": null,
+      "measurement": {
+        "Voltage": 3.904,
+        "Current": 1.0,
+        "Step ID": 1,
+        "Data_Timestamp": 428070.8942865,
+        "Unix_Timestamp": 1790479647.8055408
+      }
+    },
+    {
+      "kind": "measurement",
+      "message": null,
+      "measurement": {
+        "Voltage": 3.904,
+        "Current": 1.0,
+        "Step ID": 1,
+        "Data_Timestamp": 428070.9551976,
+        "Unix_Timestamp": 1790479647.8664477
+      }
+    },
+    {
+      "kind": "measurement",
+      "message": null,
+      "measurement": {
+        "Voltage": 3.905,
+        "Current": 1.0,
+        "Step ID": 1,
+        "Data_Timestamp": 428071.9553655,
+        "Unix_Timestamp": 1790479648.86662
+      }
+    },
+    {
+      "kind": "measurement",
+      "message": null,
+      "measurement": {
+        "Voltage": 3.905,
+        "Current": 1.0,
+        "Step ID": 1,
+        "Data_Timestamp": 428072.0165499,
+        "Unix_Timestamp": 1790479648.927799
+      }
+    },
+    {
+      "kind": "measurement",
+      "message": null,
+      "measurement": {
+        "Voltage": 3.905,
+        "Current": 1.0,
+        "Step ID": 1,
+        "Data_Timestamp": 428073.0166686,
+        "Unix_Timestamp": 1790479649.9279222
+      }
+    },
+    {
+      "kind": "measurement",
+      "message": null,
+      "measurement": {
+        "Voltage": 3.905,
+        "Current": 1.0,
+        "Step ID": 1,
+        "Data_Timestamp": 428073.0893806,
+        "Unix_Timestamp": 1790479650.0006304
+      }
+    },
+    {
+      "kind": "measurement",
+      "message": null,
+      "measurement": {
+        "Voltage": 3.905,
+        "Current": 1.0,
+        "Step ID": 1,
+        "Data_Timestamp": 428074.089467,
+        "Unix_Timestamp": 1790479651.0007215
+      }
+    },
+    {
+      "kind": "measurement",
+      "message": null,
+      "measurement": {
+        "Voltage": 3.905,
+        "Current": 1.0,
+        "Step ID": 1,
+        "Data_Timestamp": 428074.2338741,
+        "Unix_Timestamp": 1790479651.1451283
+      }
+    },
+    {
+      "kind": "measurement",
+      "message": null,
+      "measurement": {
+        "Voltage": 3.905,
+        "Current": 1.0,
+        "Step ID": 1,
+        "Data_Timestamp": 428075.1534066,
+        "Unix_Timestamp": 1790479652.0646594
+      }
+    },
+    {
+      "kind": "measurement",
+      "message": null,
+      "measurement": {
+        "Voltage": 3.905,
+        "Current": 1.0,
+        "Step ID": 1,
+        "Data_Timestamp": 428075.3031433,
+        "Unix_Timestamp": 1790479652.2143958
+      }
+    },
+    {
+      "kind": "measurement",
+      "message": null,
+      "measurement": {
+        "Voltage": 3.905,
+        "Current": 1.0,
+        "Step ID": 1,
+        "Data_Timestamp": 428076.2880324,
+        "Unix_Timestamp": 1790479653.1992846
+      }
+    },
+    {
+      "kind": "measurement",
+      "message": null,
+      "measurement": {
+        "Voltage": 3.905,
+        "Current": 1.0,
+        "Step ID": 1,
+        "Data_Timestamp": 428076.3790048,
+        "Unix_Timestamp": 1790479653.2902558
+      }
+    },
+    {
+      "kind": "measurement",
+      "message": null,
+      "measurement": {
+        "Voltage": 3.905,
+        "Current": 1.0,
+        "Step ID": 1,
+        "Data_Timestamp": 428077.3528879,
+        "Unix_Timestamp": 1790479654.2641408
+      }
+    },
+    {
+      "kind": "measurement",
+      "message": null,
+      "measurement": {
+        "Voltage": 3.905,
+        "Current": 1.0,
+        "Step ID": 1,
+        "Data_Timestamp": 428077.443214,
+        "Unix_Timestamp": 1790479654.354465
+      }
+    },
+    {
+      "kind": "measurement",
+      "message": null,
+      "measurement": {
+        "Voltage": 3.905,
+        "Current": 1.0,
+        "Step ID": 1,
+        "Data_Timestamp": 428078.4139723,
+        "Unix_Timestamp": 1790479655.3252254
+      }
+    },
+    {
+      "kind": "event",
+      "message": "All cycles completed",
+      "payload": "{'message': 'All cycles completed', 'color': '#18794e'}"
+    }
+  ],
+  "measurements": [
+    {
+      "Voltage": 3.9,
+      "Current": 1.0,
+      "Step ID": 1,
+      "Data_Timestamp": 428049.5228767,
+      "Unix_Timestamp": 1790479626.434138
+    },
+    {
+      "Voltage": 3.9,
+      "Current": 1.0,
+      "Step ID": 1,
+      "Data_Timestamp": 428049.5849129,
+      "Unix_Timestamp": 1790479626.4961665
+    },
+    {
+      "Voltage": 3.9,
+      "Current": 1.0,
+      "Step ID": 1,
+      "Data_Timestamp": 428050.5828292,
+      "Unix_Timestamp": 1790479627.4940858
+    },
+    {
+      "Voltage": 3.9,
+      "Current": 1.0,
+      "Step ID": 1,
+      "Data_Timestamp": 428050.6560867,
+      "Unix_Timestamp": 1790479627.5673382
+    },
+    {
+      "Voltage": 3.9,
+      "Current": 1.0,
+      "Step ID": 1,
+      "Data_Timestamp": 428051.6434584,
+      "Unix_Timestamp": 1790479628.5547128
+    },
+    {
+      "Voltage": 3.9,
+      "Current": 1.0,
+      "Step ID": 1,
+      "Data_Timestamp": 428051.7234517,
+      "Unix_Timestamp": 1790479628.6347058
+    },
+    {
+      "Voltage": 3.9,
+      "Current": 1.0,
+      "Step ID": 1,
+      "Data_Timestamp": 428052.7131185,
+      "Unix_Timestamp": 1790479629.6243725
+    },
+    {
+      "Voltage": 3.9,
+      "Current": 1.0,
+      "Step ID": 1,
+      "Data_Timestamp": 428052.7936936,
+      "Unix_Timestamp": 1790479629.7049453
+    },
+    {
+      "Voltage": 3.901,
+      "Current": 1.0,
+      "Step ID": 1,
+      "Data_Timestamp": 428053.7788599,
+      "Unix_Timestamp": 1790479630.6901126
+    },
+    {
+      "Voltage": 3.901,
+      "Current": 1.0,
+      "Step ID": 1,
+      "Data_Timestamp": 428053.8686165,
+      "Unix_Timestamp": 1790479630.7798684
+    },
+    {
+      "Voltage": 3.901,
+      "Current": 1.0,
+      "Step ID": 1,
+      "Data_Timestamp": 428054.8439174,
+      "Unix_Timestamp": 1790479631.7551699
+    },
+    {
+      "Voltage": 3.901,
+      "Current": 1.0,
+      "Step ID": 1,
+      "Data_Timestamp": 428054.9280028,
+      "Unix_Timestamp": 1790479631.839254
+    },
+    {
+      "Voltage": 3.902,
+      "Current": 1.0,
+      "Step ID": 1,
+      "Data_Timestamp": 428055.9099683,
+      "Unix_Timestamp": 1790479632.8212214
+    },
+    {
+      "Voltage": 3.902,
+      "Current": 1.0,
+      "Step ID": 1,
+      "Data_Timestamp": 428056.0006819,
+      "Unix_Timestamp": 1790479632.9119341
+    },
+    {
+      "Voltage": 3.902,
+      "Current": 1.0,
+      "Step ID": 1,
+      "Data_Timestamp": 428056.9696557,
+      "Unix_Timestamp": 1790479633.8809223
+    },
+    {
+      "Voltage": 3.902,
+      "Current": 1.0,
+      "Step ID": 1,
+      "Data_Timestamp": 428057.1354653,
+      "Unix_Timestamp": 1790479634.0467193
+    },
+    {
+      "Voltage": 3.901,
+      "Current": 1.0,
+      "Step ID": 1,
+      "Data_Timestamp": 428058.039104,
+      "Unix_Timestamp": 1790479634.9503565
+    },
+    {
+      "Voltage": 3.901,
+      "Current": 1.0,
+      "Step ID": 1,
+      "Data_Timestamp": 428058.195915,
+      "Unix_Timestamp": 1790479635.1071675
+    },
+    {
+      "Voltage": 3.901,
+      "Current": 1.0,
+      "Step ID": 1,
+      "Data_Timestamp": 428059.1645637,
+      "Unix_Timestamp": 1790479636.0758176
+    },
+    {
+      "Voltage": 3.901,
+      "Current": 1.0,
+      "Step ID": 1,
+      "Data_Timestamp": 428059.2578212,
+      "Unix_Timestamp": 1790479636.1690745
+    },
+    {
+      "Voltage": 3.9,
+      "Current": 1.0,
+      "Step ID": 1,
+      "Data_Timestamp": 428060.2244718,
+      "Unix_Timestamp": 1790479637.1357257
+    },
+    {
+      "Voltage": 3.9,
+      "Current": 1.0,
+      "Step ID": 1,
+      "Data_Timestamp": 428060.3188758,
+      "Unix_Timestamp": 1790479637.2301302
+    },
+    {
+      "Voltage": 3.9,
+      "Current": 1.0,
+      "Step ID": 1,
+      "Data_Timestamp": 428061.2863187,
+      "Unix_Timestamp": 1790479638.197573
+    },
+    {
+      "Voltage": 3.9,
+      "Current": 1.0,
+      "Step ID": 1,
+      "Data_Timestamp": 428061.3816717,
+      "Unix_Timestamp": 1790479638.292927
+    },
+    {
+      "Voltage": 3.901,
+      "Current": 1.0,
+      "Step ID": 1,
+      "Data_Timestamp": 428062.3521166,
+      "Unix_Timestamp": 1790479639.2633705
+    },
+    {
+      "Voltage": 3.901,
+      "Current": 1.0,
+      "Step ID": 1,
+      "Data_Timestamp": 428062.4515507,
+      "Unix_Timestamp": 1790479639.3628023
+    },
+    {
+      "Voltage": 3.901,
+      "Current": 1.0,
+      "Step ID": 1,
+      "Data_Timestamp": 428063.4219267,
+      "Unix_Timestamp": 1790479640.3331828
+    },
+    {
+      "Voltage": 3.901,
+      "Current": 1.0,
+      "Step ID": 1,
+      "Data_Timestamp": 428063.5124065,
+      "Unix_Timestamp": 1790479640.4236732
+    },
+    {
+      "Voltage": 3.901,
+      "Current": 1.0,
+      "Step ID": 1,
+      "Data_Timestamp": 428064.4887394,
+      "Unix_Timestamp": 1790479641.3999941
+    },
+    {
+      "Voltage": 3.902,
+      "Current": 1.0,
+      "Step ID": 1,
+      "Data_Timestamp": 428064.5746971,
+      "Unix_Timestamp": 1790479641.4859521
+    },
+    {
+      "Voltage": 3.903,
+      "Current": 1.0,
+      "Step ID": 1,
+      "Data_Timestamp": 428065.5618744,
+      "Unix_Timestamp": 1790479642.4731252
+    },
+    {
+      "Voltage": 3.903,
+      "Current": 1.0,
+      "Step ID": 1,
+      "Data_Timestamp": 428065.6422552,
+      "Unix_Timestamp": 1790479642.5535173
+    },
+    {
+      "Voltage": 3.903,
+      "Current": 1.0,
+      "Step ID": 1,
+      "Data_Timestamp": 428066.6265073,
+      "Unix_Timestamp": 1790479643.5377734
+    },
+    {
+      "Voltage": 3.903,
+      "Current": 1.0,
+      "Step ID": 1,
+      "Data_Timestamp": 428066.7031292,
+      "Unix_Timestamp": 1790479643.6143818
+    },
+    {
+      "Voltage": 3.903,
+      "Current": 1.0,
+      "Step ID": 1,
+      "Data_Timestamp": 428067.6974764,
+      "Unix_Timestamp": 1790479644.60873
+    },
+    {
+      "Voltage": 3.903,
+      "Current": 1.0,
+      "Step ID": 1,
+      "Data_Timestamp": 428067.7748837,
+      "Unix_Timestamp": 1790479644.686139
+    },
+    {
+      "Voltage": 3.904,
+      "Current": 1.0,
+      "Step ID": 1,
+      "Data_Timestamp": 428068.75801,
+      "Unix_Timestamp": 1790479645.6692634
+    },
+    {
+      "Voltage": 3.904,
+      "Current": 1.0,
+      "Step ID": 1,
+      "Data_Timestamp": 428068.8344463,
+      "Unix_Timestamp": 1790479645.745699
+    },
+    {
+      "Voltage": 3.904,
+      "Current": 1.0,
+      "Step ID": 1,
+      "Data_Timestamp": 428069.8272132,
+      "Unix_Timestamp": 1790479646.7384658
+    },
+    {
+      "Voltage": 3.904,
+      "Current": 1.0,
+      "Step ID": 1,
+      "Data_Timestamp": 428069.8948529,
+      "Unix_Timestamp": 1790479646.8061051
+    },
+    {
+      "Voltage": 3.904,
+      "Current": 1.0,
+      "Step ID": 1,
+      "Data_Timestamp": 428070.8942865,
+      "Unix_Timestamp": 1790479647.8055408
+    },
+    {
+      "Voltage": 3.904,
+      "Current": 1.0,
+      "Step ID": 1,
+      "Data_Timestamp": 428070.9551976,
+      "Unix_Timestamp": 1790479647.8664477
+    },
+    {
+      "Voltage": 3.905,
+      "Current": 1.0,
+      "Step ID": 1,
+      "Data_Timestamp": 428071.9553655,
+      "Unix_Timestamp": 1790479648.86662
+    },
+    {
+      "Voltage": 3.905,
+      "Current": 1.0,
+      "Step ID": 1,
+      "Data_Timestamp": 428072.0165499,
+      "Unix_Timestamp": 1790479648.927799
+    },
+    {
+      "Voltage": 3.905,
+      "Current": 1.0,
+      "Step ID": 1,
+      "Data_Timestamp": 428073.0166686,
+      "Unix_Timestamp": 1790479649.9279222
+    },
+    {
+      "Voltage": 3.905,
+      "Current": 1.0,
+      "Step ID": 1,
+      "Data_Timestamp": 428073.0893806,
+      "Unix_Timestamp": 1790479650.0006304
+    },
+    {
+      "Voltage": 3.905,
+      "Current": 1.0,
+      "Step ID": 1,
+      "Data_Timestamp": 428074.089467,
+      "Unix_Timestamp": 1790479651.0007215
+    },
+    {
+      "Voltage": 3.905,
+      "Current": 1.0,
+      "Step ID": 1,
+      "Data_Timestamp": 428074.2338741,
+      "Unix_Timestamp": 1790479651.1451283
+    },
+    {
+      "Voltage": 3.905,
+      "Current": 1.0,
+      "Step ID": 1,
+      "Data_Timestamp": 428075.1534066,
+      "Unix_Timestamp": 1790479652.0646594
+    },
+    {
+      "Voltage": 3.905,
+      "Current": 1.0,
+      "Step ID": 1,
+      "Data_Timestamp": 428075.3031433,
+      "Unix_Timestamp": 1790479652.2143958
+    },
+    {
+      "Voltage": 3.905,
+      "Current": 1.0,
+      "Step ID": 1,
+      "Data_Timestamp": 428076.2880324,
+      "Unix_Timestamp": 1790479653.1992846
+    },
+    {
+      "Voltage": 3.905,
+      "Current": 1.0,
+      "Step ID": 1,
+      "Data_Timestamp": 428076.3790048,
+      "Unix_Timestamp": 1790479653.2902558
+    },
+    {
+      "Voltage": 3.905,
+      "Current": 1.0,
+      "Step ID": 1,
+      "Data_Timestamp": 428077.3528879,
+      "Unix_Timestamp": 1790479654.2641408
+    },
+    {
+      "Voltage": 3.905,
+      "Current": 1.0,
+      "Step ID": 1,
+      "Data_Timestamp": 428077.443214,
+      "Unix_Timestamp": 1790479654.354465
+    },
+    {
+      "Voltage": 3.905,
+      "Current": 1.0,
+      "Step ID": 1,
+      "Data_Timestamp": 428078.4139723,
+      "Unix_Timestamp": 1790479655.3252254
+    }
+  ],
+  "sample_count": 56,
+  "first_sample": {
+    "Test Time / s": "3.1542655999655835",
+    "Voltage / V": "3.9",
+    "Current / A": "1.0",
+    "Unix Time / s": "1790479625.434136",
+    "Cycle Count / 1": "1",
+    "Step Count / 1": "1",
+    "Step ID": "1",
+    "Step Time / s": "0.5003618000191636",
+    "Step Type": "CC_CHG",
+    "Surface Temperature T1 / degC": "",
+    "Surface Temperature T2 / degC": "",
+    "Surface Temperature T3 / degC": "",
+    "Surface Temperature T4 / degC": "",
+    "Surface Temperature T5 / degC": "",
+    "Cycle Charging Capacity / Ah": "0.0",
+    "Cycle Discharging Capacity / Ah": "0.0",
+    "Cycle Charging Energy / Wh": "0.0",
+    "Cycle Discharging Energy / Wh": "0.0"
+  },
+  "last_sample": {
+    "Test Time / s": "33.04536699998425",
+    "Voltage / V": "3.905",
+    "Current / A": "1.0",
+    "Unix Time / s": "1790479655.3252254",
+    "Cycle Count / 1": "1",
+    "Step Count / 1": "1",
+    "Step ID": "1",
+    "Step Time / s": "30.391463200037833",
+    "Step Type": "CC_CHG",
+    "Surface Temperature T1 / degC": "",
+    "Surface Temperature T2 / degC": "",
+    "Surface Temperature T3 / degC": "",
+    "Surface Temperature T4 / degC": "",
+    "Surface Temperature T5 / degC": "",
+    "Cycle Charging Capacity / Ah": "0.008303083722227409",
+    "Cycle Discharging Capacity / Ah": "0.0",
+    "Cycle Charging Energy / Wh": "0.03240190603393692",
+    "Cycle Discharging Energy / Wh": "0.0"
+  },
+  "data_files": [
+    "D:\\Documents\\GitHub\\Test_Equipment_Control\\hardware_tests\\results\\CELL_32AH_20260927T032656Z\\CELL_32AH_20260926\\LOCAL__CELL_32AH_20260926__20260926_001.bdf.csv"
+  ],
+  "final_status": "idle",
+  "safety_fault": false,
+  "final_supply": {
+    "idn": "Siglent Technologies,SPD1168X,SPD1XEAX4R0095,2.1.1.9R1,V1.0",
+    "output": false,
+    "remote_sense": false,
+    "voltage_setpoint_v": 0.0,
+    "current_setpoint_a": 0.0,
+    "error": "+0, No error"
+  },
+  "post_run_setpoints_reset": true,
+  "run_error": null,
+  "outcome": "completed"
+}

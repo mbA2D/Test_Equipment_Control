@@ -20,28 +20,43 @@ class A2D_4CH_Isolated_ADC(DMMDevice):
     
     def reset(self):
         self.inst.write('*RST')
+
+    def select_channel(self, channel):
+        """Select canonical channel ``1..4`` (the hardware uses the same numbering)."""
+        if not isinstance(channel, int) or isinstance(channel, bool) or not 1 <= channel <= self.num_channels:
+            raise ValueError(f"Channel must be between 1 and {self.num_channels}")
+        self._selected_channel = channel
+
+    def _channel(self, channel):
+        return getattr(self, '_selected_channel', 1) if channel is None else channel
     
-    def reset_calibration(self, channel = 1):
+    def reset_calibration(self, channel=None):
+        channel = self._channel(channel)
         self.inst.write(f'CAL:RESET {channel}')
         
-    def save_calibration(self, channel = 1):
+    def save_calibration(self, channel=None):
+        channel = self._channel(channel)
         self.inst.write(f'CAL:SAVE {channel}')
         
-    def get_calibration(self, channel = 1):
+    def get_calibration(self, channel=None):
+        channel = self._channel(channel)
         #returns a list with offset,gain for each channel.
         return [float(val) for val in self.inst.query_ascii_values(f'CAL {channel}?')]
     
-    def calibrate_voltage(self, v1a, v1m, v2a, v2m, channel = 1): #2 points, actual (a - dmm) and measured (m - dut)
+    def calibrate_voltage(self, v1a, v1m, v2a, v2m, channel=None): #2 points, actual (a) (dmm) and measured (m) (dut)
+        channel = self._channel(channel)
         self.inst.write(f'CAL:VOLT {channel},{v1a},{v1m},{v2a},{v2m}')
     
-    def measure_voltage(self, channel = 1):
+    def measure_voltage(self, channel=None):
+        channel = self._channel(channel)
         if channel == 0:
             #return a list with all 4 values.
             return [float(val) for val in self.inst.query_ascii_values(f'MEAS:VOLT {channel}?')]
         else:
             return float(self.inst.query(f'MEAS:VOLT {channel}?'))
         
-    def measure_voltage_at_adc(self, channel = 1):
+    def measure_voltage_at_adc(self, channel=None):
+        channel = self._channel(channel)
         if channel == 0:
             #return a list with all 4 values.
             return [float(val) for val in self.inst.query_ascii_values(f'MEAS:VOLT:ADC {channel}?')]

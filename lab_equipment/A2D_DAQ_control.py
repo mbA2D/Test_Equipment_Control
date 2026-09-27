@@ -1,7 +1,6 @@
 #python library for controlling the A2D DAQ
 
 import pyvisa
-import easygui as eg
 import voltage_to_temp as V2T
 from . import A2D_DAQ_config
 from .PyVisaDeviceTemplate import PyVisaDevice
@@ -27,12 +26,16 @@ class A2D_DAQ(PyVisaDevice):
         self.pullup_voltage = 3.3
         self.pull_up_cal_ch = 63
         self.config_dict = {}
-        
-    def __del__(self):
-        try:
-            self.inst.close()
-        except AttributeError:
-            pass
+        self._selected_channel = 0
+
+    def select_channel(self, channel):
+        """Select canonical channel ``1..64`` and translate it to the hardware's ``0..63``."""
+        if not isinstance(channel, int) or isinstance(channel, bool) or not 1 <= channel <= self.num_channels:
+            raise ValueError(f"Channel must be between 1 and {self.num_channels}")
+        self._selected_channel = channel - 1
+
+    def _channel(self, channel):
+        return self._selected_channel if channel is None else channel
     
     def configure_from_dict(self):
         #Go through each channel and set it up according to the dict
@@ -75,7 +78,8 @@ class A2D_DAQ(PyVisaDevice):
             
             self.pullup_voltage = float(self.measure_voltage(channel = cal_ch))
     
-    def get_analog_mv(self, channel = 0):
+    def get_analog_mv(self, channel=None):
+        channel = self._channel(channel)
         scaling = 1
         
         #print(f"Measuring channel {channel}")
@@ -89,13 +93,14 @@ class A2D_DAQ(PyVisaDevice):
         #print(f"Query return value: {return_value}")
         return return_value
     
-    def get_analog_v(self, channel = 0):
+    def get_analog_v(self, channel=None):
         return float(self.get_analog_mv(channel))/1000.0
     
-    def measure_voltage(self, channel = 0):
+    def measure_voltage(self, channel=None):
         return float(self.get_analog_v(channel))
     
-    def measure_temperature(self, channel = 0):
+    def measure_temperature(self, channel=None):
+        channel = self._channel(channel)
         sh_consts = {'SH_A': self.config_dict[channel]['Temp_A'],
                      'SH_B': self.config_dict[channel]['Temp_B'],
                      'SH_C': self.config_dict[channel]['Temp_C']}

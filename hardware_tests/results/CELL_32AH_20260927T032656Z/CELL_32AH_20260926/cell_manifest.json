@@ -1,0 +1,15 @@
+{
+  "cell_name": "CELL_32AH_20260926",
+  "continued_from_test_id": null,
+  "current_cycle": null,
+  "institution_code": "LOCAL",
+  "last_cycle_number": 1,
+  "last_session_id": "session-8e777406-a1ee-4561-86d8-6df281849cd9",
+  "last_step_count": 1,
+  "profile_id": "profile-bd28297e-9c58-4104-a0f6-82fe4218519f",
+  "profile_version": "sha256:7eaf3f192ca013b506fed080f2d9cb2bc0629584be161768008403d04c72ef7f",
+  "schema_version": 1,
+  "status": "completed",
+  "test_id": "test-6a92c9cf-ef03-4943-a5b2-977d5eef6010",
+  "updated_at_utc": "2026-09-27T03:27:35.557697+00:00"
+}

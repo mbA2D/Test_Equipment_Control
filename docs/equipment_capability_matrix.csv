@@ -1,0 +1,26 @@
+device_key,registry_label,implementation_class,can_source_voltage,can_source_current,can_sink_current,can_measure_voltage,can_measure_current,can_measure_temperature,can_isolate_output,notes
+SPD1000,SPD1000,PSU_SPD1000,TRUE,TRUE,FALSE,TRUE,TRUE,FALSE,FALSE,Commercial PSU
+DP800,DP800,PSU_DP800,TRUE,TRUE,FALSE,TRUE,TRUE,FALSE,FALSE,Commercial PSU
+KWR10X or MP71025X,KWR10X or MP71025X,PSU_MP71025X,TRUE,TRUE,FALSE,TRUE,TRUE,FALSE,FALSE,KORAD KWR102/KWR103 or Multicomp Pro equivalent
+BK9100,BK9100,PSU_BK9100,TRUE,TRUE,FALSE,TRUE,TRUE,FALSE,FALSE,B&K Precision 9100 family
+N8700,N8700,PSU_N8700,TRUE,TRUE,FALSE,TRUE,TRUE,FALSE,FALSE,Keysight N8700 family
+KAXXXXP,KAXXXXP,PSU_KAXXXXP,TRUE,TRUE,FALSE,TRUE,TRUE,FALSE,FALSE,KORAD KA programmable supply family
+E3631A,E3631A,PSU_E3631A,TRUE,TRUE,FALSE,TRUE,TRUE,FALSE,FALSE,Keysight E3631A
+HP6632B,HP6632B,PSU_HP6632B,TRUE,TRUE,TRUE,TRUE,TRUE,FALSE,TRUE,Bidirectional operation; Option 760 relay isolation
+Fake Test PSU,Fake Test PSU,PSU_Fake,TRUE,TRUE,FALSE,TRUE,TRUE,FALSE,FALSE,Test double
+BK8600,BK8600,Eload_BK8600,FALSE,FALSE,TRUE,TRUE,TRUE,FALSE,FALSE,Electronic load
+DL3000,DL3000,Eload_DL3000,FALSE,FALSE,TRUE,TRUE,TRUE,FALSE,FALSE,Electronic load
+KEL10X,KEL10X,Eload_KEL10X,FALSE,FALSE,TRUE,TRUE,TRUE,FALSE,FALSE,Electronic load
+IT8500,IT8500,Eload_IT8500,FALSE,FALSE,TRUE,TRUE,TRUE,FALSE,FALSE,Electronic load
+A2D_Eload,A2D_Eload,Eload_A2D_Eload,FALSE,FALSE,TRUE,FALSE,FALSE,FALSE,FALSE,Custom A2D electronic load; confirm measurement and source behavior
+Parallel Eloads,Parallel Eloads,Eload_PARALLEL,FALSE,FALSE,TRUE,TRUE,TRUE,FALSE,FALSE,Software composition of multiple loads. Capability may depend on the specific loads connected.
+Fake Test Eload,Fake Test Eload,Eload_Fake,FALSE,FALSE,TRUE,TRUE,TRUE,FALSE,FALSE,Test double
+DM3000,DM3000,DMM_DM3000,FALSE,FALSE,FALSE,TRUE,FALSE,FALSE,FALSE,Digital multimeter. Voltage only for now.
+SDM3065X,SDM3065X,DMM_SDM3065X,FALSE,FALSE,FALSE,TRUE,FALSE,FALSE,FALSE,Digital multimeter. Voltage only for now.
+A2D_DAQ_CH,A2D_DAQ_CH,A2D_DAQ,FALSE,FALSE,FALSE,FALSE,FALSE,TRUE,FALSE,Custom A2D DAQ for measuring temperature
+A2D_SENSE_BOARD,A2D_SENSE_BOARD,A2D_SENSE_BOARD,FALSE,FALSE,FALSE,TRUE,TRUE,TRUE,FALSE,Custom A2D sense board
+A2D_4CH_Isolated_ADC_Channel,A2D_4CH_Isolated_ADC_Channel,DMM_A2D_4CH_Isolated_ADC,FALSE,FALSE,FALSE,TRUE,FALSE,FALSE,FALSE,"Custom isolated ADC, measures voltage on single cells, 0-4.5V"
+A2D_POWER_BOARD,A2D_POWER_BOARD,PSU_A2D_POWER_BOARD,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,FALSE,Custom source and sink power supply; voltage/current/temperature measurement
+Fake Test DMM,Fake Test DMM,DMM_Fake,FALSE,FALSE,FALSE,TRUE,FALSE,FALSE,FALSE,Test double
+A2D Relay Board,A2D Relay Board,OTHER_A2D_Relay_Board,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,TRUE,Custom relay hardware; not itself a measurement or source device. Can be used to isolate output of other devices.
+Arduino IO Module,Arduino IO Module,OTHER_Arduino_IO_Module,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,Custom I/O module; not typically used in the battery testing workflow.

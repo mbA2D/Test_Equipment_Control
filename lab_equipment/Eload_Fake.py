@@ -1,6 +1,7 @@
-#python implementation for a fake power supply to test programs - has all functions and returns some values
+"""Simulated electronic load backed exclusively by ``FakeBatteryLink``."""
 
-# E-Load
+from battery_app.simulation import require_simulation_link
+
 class Fake_Eload:
     
     has_remote_sense = False
@@ -9,32 +10,32 @@ class Fake_Eload:
         self.max_power = 10000
         self.max_current = 1000
         self.mode = "CURR"
-        self.current_a = 0
-        self.voltage_v = 4
+        self.battery_link = None
         
         self.inst_idn = "Fake Eload"
         
-    # To Set E-Load in Amps 
     def set_current(self, current_setpoint_A):
-        self.current_a = current_setpoint_A
+        require_simulation_link(self.battery_link, "Fake Eload").set_eload_current(
+            current_setpoint_A
+        )
         if self.mode != "CURR":
             print("ERROR - E-load not in correct mode")
 
     def set_mode_current(self):
-        self.current_a = 0
+        require_simulation_link(self.battery_link, "Fake Eload")
         self.mode = "CURR"
     
     def set_mode_voltage(self):
-        self.voltage_v = 0
+        require_simulation_link(self.battery_link, "Fake Eload")
         self.mode = "VOLT"
         
     def set_cv_voltage(self, voltage_setpoint_V):
-        self.voltage_v = voltage_setpoint_V
+        require_simulation_link(self.battery_link, "Fake Eload")
         if self.mode != "VOLT":
             print("ERROR - E-load not in correct mode")
     
     def toggle_output(self, state):
-        pass
+        require_simulation_link(self.battery_link, "Fake Eload").set_eload_output(state)
     
     def remote_sense(self, state):
         pass
@@ -43,7 +44,10 @@ class Fake_Eload:
         pass
     
     def measure_voltage(self):
-        return self.voltage_v
+        return require_simulation_link(self.battery_link, "Fake Eload").measure_voltage()
 
     def measure_current(self):
-        return self.current_a
+        return require_simulation_link(self.battery_link, "Fake Eload").measure_current()
+
+    def attach_battery_link(self, battery_link):
+        self.battery_link = battery_link

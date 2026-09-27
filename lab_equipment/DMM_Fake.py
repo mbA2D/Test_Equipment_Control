@@ -1,13 +1,21 @@
-#python implementation for a fake power supply to test programs - has all functions and returns some values
+"""Simulated DMM backed exclusively by ``FakeBatteryLink``."""
 
-#DMM
+from battery_app.simulation import require_simulation_link
+
 class Fake_DMM:
     
     def __init__(self, resource_id = None, resources_list = None):
         self.inst_idn = 'Fake_DMM'
+        self.battery_link = None
         
     def measure_voltage(self, nplc = None, volt_range = None):
-        return 4.15
+        return require_simulation_link(self.battery_link, "Fake DMM").measure_voltage()
+
+    def measure_current(self):
+        return require_simulation_link(self.battery_link, "Fake DMM").measure_current()
+
+    def measure_temperature(self):
+        return require_simulation_link(self.battery_link, "Fake DMM").measure_temperature()
     
     def set_mode(self, mode = "DCV"):
         pass
@@ -20,3 +28,6 @@ class Fake_DMM:
     
     def set_nplc(self, nplc = None):
         pass
+
+    def attach_battery_link(self, battery_link):
+        self.battery_link = battery_link

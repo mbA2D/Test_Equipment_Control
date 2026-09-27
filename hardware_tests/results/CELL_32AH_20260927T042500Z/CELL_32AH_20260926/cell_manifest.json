@@ -1,0 +1,20 @@
+{
+  "cell_name": "CELL_32AH_20260926",
+  "continued_from_test_id": null,
+  "current_cycle": {
+    "cycle_number": 1,
+    "file": "LOCAL__CELL_32AH_20260926__20260927_001.bdf.csv",
+    "interruption_reason": "keyboard_interrupt",
+    "status": "interrupted"
+  },
+  "institution_code": "LOCAL",
+  "last_cycle_number": 1,
+  "last_session_id": "session-37b155ad-f0d2-4f02-a60f-ed4035a20049",
+  "last_step_count": 0,
+  "profile_id": "profile-01ddd7e6-80d6-4c20-8d25-cbacd17bd79f",
+  "profile_version": "sha256:7eaf3f192ca013b506fed080f2d9cb2bc0629584be161768008403d04c72ef7f",
+  "schema_version": 1,
+  "status": "interrupted",
+  "test_id": "test-5e8a457d-2199-4806-b616-09a45faa56fa",
+  "updated_at_utc": "2026-09-27T04:25:07.095432+00:00"
+}

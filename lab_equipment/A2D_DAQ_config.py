@@ -4,7 +4,6 @@
 #Input, output, drive high, drive low
 
 import pandas as  pd
-import easygui as eg
 from os import path
 
 #CSV File Format - needs these column headers
@@ -16,7 +15,12 @@ def get_config_dict(default = False):
         filepath = path.join(path.dirname(__file__), filename)
     else:
         #Choose CSV to load from
-        filepath = eg.fileopenbox(title = "Choose the CSV to load config for A2D_64CH_DAQ from", filetypes = [['*.csv', 'CSV Files']])
+        from battery_gui import dialogs
+
+        filepath = dialogs.choose_file(
+            "Choose the CSV to load config for A2D_64CH_DAQ from",
+            "CSV files (*.csv)",
+        )
 
     #Load dict from CSV
     df = pd.read_csv(filepath)

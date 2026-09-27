@@ -1,0 +1,100 @@
+{
+  "run_date": "2026-09-27",
+  "cell_name": "CELL_32AH_20260926",
+  "reported_open_circuit_voltage_v": 3.7,
+  "profile": {
+    "cycle_type": "step",
+    "cycle_display": "CC charge 1 A for 30 s",
+    "drive_style": "current_a",
+    "drive_value": 1.0,
+    "drive_value_other": 4.2,
+    "end_style": "time_s",
+    "end_condition": "greater",
+    "end_value": 30.0,
+    "meas_log_int_s": 1.0,
+    "safety_min_voltage_v": 2.8,
+    "safety_max_voltage_v": 4.2,
+    "safety_min_current_a": -10.0,
+    "safety_max_current_a": 8.0,
+    "safety_max_time_s": 40.0
+  },
+  "profile_id": "profile-d8b66f4c-f385-4ca6-98a8-4831bc6da203",
+  "profile_version": "sha256:7eaf3f192ca013b506fed080f2d9cb2bc0629584be161768008403d04c72ef7f",
+  "remote_sense": false,
+  "started": true,
+  "events": [
+    {
+      "kind": "event",
+      "message": "Cycle 1 started",
+      "payload": "{'message': 'Cycle 1 started', 'color': '#18794e'}"
+    },
+    {
+      "kind": "status",
+      "message": "Entered CC charge 1 A for 30 s; next: Idle",
+      "payload": "('CC charge 1 A for 30 s', 'Idle')"
+    },
+    {
+      "kind": "safety_fault",
+      "message": "Safety error - test stopped",
+      "payload": "{'type': 'end_condition', 'data': 'safety_condition'}"
+    }
+  ],
+  "measurements": [],
+  "sample_count": 1,
+  "first_sample": {
+    "Test Time / s": "2.7470660000108182",
+    "Voltage / V": "0.0",
+    "Current / A": "0.0",
+    "Unix Time / s": "1790479259.9240885",
+    "Cycle Count / 1": "1",
+    "Step Count / 1": "1",
+    "Step ID": "1",
+    "Step Time / s": "0.10030859999824315",
+    "Step Type": "CC_CHG",
+    "Surface Temperature T1 / degC": "",
+    "Surface Temperature T2 / degC": "",
+    "Surface Temperature T3 / degC": "",
+    "Surface Temperature T4 / degC": "",
+    "Surface Temperature T5 / degC": "",
+    "Cycle Charging Capacity / Ah": "0.0",
+    "Cycle Discharging Capacity / Ah": "0.0",
+    "Cycle Charging Energy / Wh": "0.0",
+    "Cycle Discharging Energy / Wh": "0.0"
+  },
+  "last_sample": {
+    "Test Time / s": "2.7470660000108182",
+    "Voltage / V": "0.0",
+    "Current / A": "0.0",
+    "Unix Time / s": "1790479259.9240885",
+    "Cycle Count / 1": "1",
+    "Step Count / 1": "1",
+    "Step ID": "1",
+    "Step Time / s": "0.10030859999824315",
+    "Step Type": "CC_CHG",
+    "Surface Temperature T1 / degC": "",
+    "Surface Temperature T2 / degC": "",
+    "Surface Temperature T3 / degC": "",
+    "Surface Temperature T4 / degC": "",
+    "Surface Temperature T5 / degC": "",
+    "Cycle Charging Capacity / Ah": "0.0",
+    "Cycle Discharging Capacity / Ah": "0.0",
+    "Cycle Charging Energy / Wh": "0.0",
+    "Cycle Discharging Energy / Wh": "0.0"
+  },
+  "data_files": [
+    "D:\\Documents\\GitHub\\Test_Equipment_Control\\hardware_tests\\results\\CELL_32AH_20260927T032051Z\\CELL_32AH_20260926\\LOCAL__CELL_32AH_20260926__20260926_001.bdf.csv"
+  ],
+  "final_status": "stopping",
+  "safety_fault": true,
+  "final_supply": {
+    "idn": "Siglent Technologies,SPD1168X,SPD1XEAX4R0095,2.1.1.9R1,V1.0",
+    "output": false,
+    "remote_sense": false,
+    "voltage_setpoint_v": 0.0,
+    "current_setpoint_a": 0.0,
+    "error": "+0, No error"
+  },
+  "post_run_setpoints_reset": true,
+  "run_error": "RuntimeError: safety_fault: Safety error - test stopped",
+  "outcome": "incomplete_or_faulted"
+}

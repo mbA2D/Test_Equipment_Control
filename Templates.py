@@ -1,9 +1,6 @@
 #class to hold the templates for input/outputs settings
 
-import easygui as eg
 import jsonIO
-import json
-import os
 
 
 ######################  Statistics to gather for each cycle  ###############

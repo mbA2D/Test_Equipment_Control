@@ -2,7 +2,6 @@
 
 import pyvisa
 import time
-import easygui as eg
 import equipment as eq
 
 # E-Load

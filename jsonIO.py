@@ -1,8 +1,14 @@
 #importing and exporting settings to json files
-import easygui as eg
 from os import path
 import json
 import pandas as pd
+
+
+def _dialogs():
+    """Load GUI dialogs only for legacy interactive profile editing."""
+    from battery_gui import dialogs
+
+    return dialogs
 
 ##################### Checking User Input ##############
 def check_user_entry(keys, entries, valid_strings):
@@ -77,8 +83,10 @@ def export_cycle_settings(settings, cycle_name = "", file_name = None):
     if file_name == None:
         write_mode = "w"
         #get the file to export to
-        file_name = eg.filesavebox(msg = "Choose a File to export {}settings to".format(cycle_name),
-                                title = "Settings", filetypes = ['*.json', 'JSON files'])
+        file_name = _dialogs().save_file(
+            "Choose a File to export {}settings to".format(cycle_name),
+            "JSON files (*.json)",
+        )
                                 
     if file_name == None:
         return None
@@ -93,8 +101,7 @@ def export_cycle_settings(settings, cycle_name = "", file_name = None):
     return file_name
 
 def import_multi_step_from_csv():
-    file_name = eg.fileopenbox(msg = "Choose a File to import step settings from",
-                                title = "Settings", filetypes = ['*.csv', 'CSV files'])
+    file_name = _dialogs().choose_file("Choose a File to import step settings from", "CSV files (*.csv)")
     
     if file_name == None:
         return None
@@ -109,8 +116,10 @@ def import_cycle_settings(cycle_name = "", queue = None, ch_num = None):
         cycle_name += " "
     
     #get the file to import from
-    file_name = eg.fileopenbox(msg = "Choose a File to import {}settings from".format(cycle_name),
-                                title = "Settings", filetypes = [['*.json', 'JSON files'],['*.csv', 'CSV files']])
+    file_name = _dialogs().choose_file(
+        "Choose a File to import {}settings from".format(cycle_name),
+        "Settings (*.json *.csv)",
+    )
     
     if file_name == None:
         return None
@@ -139,16 +148,23 @@ def get_cycle_settings(settings, valid_strings = None, cycle_name = ""):
     if(cycle_name != ""):
         cycle_name += " "
     
-    response = eg.buttonbox(msg = "Would you like to import settings for {}cycle or create new settings?".format(cycle_name),
-                                    title = "Settings for {}cycle".format(cycle_name), choices = ("New Settings", "Import Settings"))
+    response = _dialogs().ask_buttons(
+        "Would you like to import settings for {}cycle or create new settings?".format(cycle_name),
+        "Settings for {}cycle".format(cycle_name),
+        ("New Settings", "Import Settings"),
+    )
     if response == None:
         return None
     
     elif response == "New Settings":
         valid_entries = False
         while not valid_entries:
-            response_list = eg.multenterbox(msg = "Enter Info for {}cycle".format(cycle_name), title = response,
-                                            fields = list(settings.keys()), values = list(settings.values()))
+            response_list = _dialogs().ask_multiple(
+                "Enter Info for {}cycle".format(cycle_name),
+                response,
+                list(settings.keys()),
+                [str(value) for value in settings.values()],
+            )
             if response_list == None:
                 return None
             valid_entries = check_user_entry(list(settings.keys()), response_list, valid_strings)
@@ -156,7 +172,7 @@ def get_cycle_settings(settings, valid_strings = None, cycle_name = ""):
         #update dict entries with the response - can't use the dict.update since we only have a list here.
         settings = update_settings(settings, response_list)
         
-        if (eg.ynbox(msg = "Would you like to save these settings for future use?", title = "Save Settings")):
+        if _dialogs().ask_yes_no("Would you like to save these settings for future use?", "Save Settings"):
             export_cycle_settings(settings, cycle_name)
     elif response == "Import Settings":
         settings = import_cycle_settings(cycle_name)
