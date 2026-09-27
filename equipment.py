@@ -54,6 +54,7 @@ from lab_equipment import DMM_Fake
 #Other Equipment
 from lab_equipment import OTHER_A2D_Relay_Board
 from lab_equipment import OTHER_Arduino_IO_Module
+from lab_equipment.PyVisaDeviceTemplate import PyVisaDevice
 
 #Virtual Equipment Management
 from lab_equipment.correlated_device import (
@@ -112,6 +113,24 @@ def get_capability_choices(capabilities, fallback_choices):
     """Use capability selection when registered; retain legacy fallback otherwise."""
     choices = get_capable_equipment(*capabilities)
     return choices if choices else list(fallback_choices)
+
+
+def _create_selected_instrument(driver_class, resource_id, resources_list, probe_only):
+    """Construct a driver without device initialization during identity probes."""
+    if probe_only and issubclass(driver_class, PyVisaDevice):
+        return driver_class(
+            resource_id=resource_id,
+            resources_list=resources_list,
+            initialize=False,
+        )
+    return driver_class(resource_id=resource_id, resources_list=resources_list)
+
+
+def _finish_instrument_setup(instrument, setup_dict, interactive, probe_only):
+    """Keep probe settings for the owner process without applying them here."""
+    if probe_only:
+        return setup_instrument(instrument, setup_dict, interactive=False, apply=False)
+    return setup_instrument(instrument, setup_dict, interactive=interactive)
 
 
 # Explicit operation registry. Adding an instrument operation requires adding
@@ -199,6 +218,7 @@ def virtual_device_management_process(
                 new_eq_res_id_dict['class_name'],
                 new_eq_res_id_dict['res_id'],
                 new_eq_res_id_dict['setup_dict'],
+                interactive=False,
             )
             if device is None:
                 raise ConnectionError("Equipment driver did not return a connected device")
@@ -325,7 +345,7 @@ def get_resources_list():
     return resources_list
     #How do we know which device settings to use to communicate with it? Try all the settings until we get a legible response from IDN that we can use?
 
-def setup_instrument(instrument, setup_dict, interactive=True):
+def setup_instrument(instrument, setup_dict, interactive=True, apply=True):
     if setup_dict == None:
         setup_dict = {}
     
@@ -341,12 +361,9 @@ def setup_instrument(instrument, setup_dict, interactive=True):
             use_remote_sense = _dialogs().ask_yes_no(msg, title) if interactive else False
             setup_dict['remote_sense'] = use_remote_sense
             
-        time.sleep(0.5) #delay to allow the instrument to process commands after re-booting.
-                        #Ran into an issue with the DL3000 where it would display 'sense' on the screen, but
-                        #the sensing relay would not be on. Adding a delay here seems to have fixed it.
-                        #The sense line relay did not have time to toggle between a quick on-off-on sequence
-        
-        instrument.remote_sense(setup_dict['remote_sense'])
+        if apply:
+            time.sleep(0.5) #Allow the instrument to process commands after initialization.
+            instrument.remote_sense(setup_dict['remote_sense'])
     
     #A2D Relay Board Special Setup
     if isinstance(instrument, OTHER_A2D_Relay_Board.A2D_Relay_Board):
@@ -379,8 +396,9 @@ def setup_instrument(instrument, setup_dict, interactive=True):
                 return None
             setup_dict['i2c_expander_addr'] = int(response, 16)
             
-        instrument.equipment_type_connected = setup_dict['equipment_type_connected']
-        instrument.set_i2c_expander_addr(setup_dict['i2c_expander_addr'])
+        if apply:
+            instrument.equipment_type_connected = setup_dict['equipment_type_connected']
+            instrument.set_i2c_expander_addr(setup_dict['i2c_expander_addr'])
     
     #A2D Sense Board Special Setup
     if isinstance(instrument, DMM_A2D_SENSE_BOARD.A2D_SENSE_BOARD):
@@ -393,7 +411,8 @@ def setup_instrument(instrument, setup_dict, interactive=True):
                 return None
             setup_dict['i2c_adc_addr'] = int(response, 16)
             
-        instrument.set_i2c_adc_addr(setup_dict['i2c_adc_addr'])
+        if apply:
+            instrument.set_i2c_adc_addr(setup_dict['i2c_adc_addr'])
     
     #A2D Power Board Special Setup
     if isinstance(instrument, PSU_A2D_POWER_BOARD.A2D_POWER_BOARD):
@@ -406,7 +425,8 @@ def setup_instrument(instrument, setup_dict, interactive=True):
                 return None
             setup_dict['i2c_adc_addr'] = int(response, 16)
             
-        instrument.set_i2c_adc_addr(setup_dict['i2c_adc_addr'])
+        if apply:
+            instrument.set_i2c_adc_addr(setup_dict['i2c_adc_addr'])
             
         if 'i2c_dac_addr' not in setup_dict.keys():
             title = "A2D Power Board Setup - I2C DAC"
@@ -416,7 +436,8 @@ def setup_instrument(instrument, setup_dict, interactive=True):
                 return None
             setup_dict['i2c_dac_addr'] = int(response, 16)
             
-        instrument.set_i2c_dac_addr(setup_dict['i2c_dac_addr'])
+        if apply:
+            instrument.set_i2c_dac_addr(setup_dict['i2c_dac_addr'])
     
     #A2D 64 CH DAQ special setup
     if isinstance(instrument, A2D_DAQ_control.A2D_DAQ):
@@ -426,12 +447,13 @@ def setup_instrument(instrument, setup_dict, interactive=True):
         setup_dict['config_dict'] = {
             int(key): value for key, value in setup_dict.get('config_dict', {}).items()
         }
-        instrument.config_dict = setup_dict['config_dict']
-        instrument.configure_from_dict()
+        if apply:
+            instrument.config_dict = setup_dict['config_dict']
+            instrument.configure_from_dict()
     
     return setup_dict
 
-def connect_to_eq(key, class_name, res_id, setup_dict = None):
+def connect_to_eq(key, class_name, res_id, setup_dict = None, interactive=True):
     #Key should be 'eload', 'psu', 'dmm', 'relay_board'
     #'dmm' with any following characters will be considered a dmm
     instrument = None
@@ -440,15 +462,15 @@ def connect_to_eq(key, class_name, res_id, setup_dict = None):
     
     #return the actual equipment object instead of the equipment dictionary
     if key == 'eload':
-        instrument = eLoads.choose_eload(class_name, res_id, setup_dict)[1]
+        instrument = eLoads.choose_eload(class_name, res_id, setup_dict, interactive=interactive)[1]
     elif key == 'psu':
-        instrument = powerSupplies.choose_psu(class_name, res_id, setup_dict)[1]
+        instrument = powerSupplies.choose_psu(class_name, res_id, setup_dict, interactive=interactive)[1]
     elif 'dmm' in key: #for dmm_i and dmm_v and dmm_t keys
-        instrument = dmms.choose_dmm(class_name, resource_id = res_id, setup_dict = setup_dict)[1]
+        instrument = dmms.choose_dmm(class_name, resource_id = res_id, setup_dict = setup_dict, interactive=interactive)[1]
     elif key == 'relay_board' or key == 'other':
-        instrument = otherEquipment.choose_equipment(class_name, res_id, setup_dict)[1]
+        instrument = otherEquipment.choose_equipment(class_name, res_id, setup_dict, interactive=interactive)[1]
     elif key == 'smu':
-        instrument = smus.choose_smu(class_name, res_id, setup_dict)[1]
+        instrument = smus.choose_smu(class_name, res_id, setup_dict, interactive=interactive)[1]
     time.sleep(0.1)
     return instrument
 
@@ -468,12 +490,24 @@ def connect_to_virtual_eq(virtual_res_id_dict):
     eq_ch = virtual_res_id_dict.get('eq_ch')
     if not isinstance(eq_ch, int) or isinstance(eq_ch, bool) or eq_ch < 0:
         raise ValueError("Virtual equipment requires a non-negative integer eq_ch")
-    return proxy_type(
+    proxy = proxy_type(
         virtual_res_id_dict['queue_in'],
         virtual_res_id_dict['response_queue'],
         eq_ch,
         client_id=client_id,
     )
+    # Preserve owner-verified identity on the channel proxy for BDF provenance.
+    proxy.eq_idn = virtual_res_id_dict.get('eq_idn')
+    idn_parts = [part.strip() for part in proxy.eq_idn.split(',')] if isinstance(proxy.eq_idn, str) else []
+    proxy.manufacturer = idn_parts[0] if len(idn_parts) >= 3 else None
+    proxy.model_number = idn_parts[1] if len(idn_parts) >= 3 else None
+    proxy.serial_number = idn_parts[2] if len(idn_parts) >= 3 else None
+    proxy.firmware_version = idn_parts[3] if len(idn_parts) >= 4 else None
+    proxy.equipment_id = virtual_res_id_dict.get('equipment_id')
+    proxy.class_name = virtual_res_id_dict.get('class_name')
+    proxy.resource_id = virtual_res_id_dict.get('resource_id')
+    proxy.instrument_channel = eq_ch
+    return proxy
 
 #used in battery_test.py when connecting to a new piece of equipment
 #equipment_list comes from the choose_eload, choose_dmm, etc. functions in equipment.py
@@ -664,7 +698,7 @@ class otherEquipment:
     }
         
     @classmethod
-    def choose_equipment(self, class_name = None, resource_id = None, setup_dict = None, resources_list = None, interactive=True):
+    def choose_equipment(self, class_name = None, resource_id = None, setup_dict = None, resources_list = None, interactive=True, probe_only=False):
         if class_name == None:
             msg = "What type of equipment?"
             title = "Equipment Series Selection"
@@ -675,11 +709,11 @@ class otherEquipment:
             return			
         
         if class_name == 'A2D Relay Board':
-            instrument = OTHER_A2D_Relay_Board.A2D_Relay_Board(resource_id = resource_id, resources_list = resources_list)
+            instrument = _create_selected_instrument(OTHER_A2D_Relay_Board.A2D_Relay_Board, resource_id, resources_list, probe_only)
         elif class_name == 'Arduino IO Module':
-            instrument = OTHER_Arduino_IO_Module.Arduino_IO(resource_id = resource_id, resources_list = resources_list)
+            instrument = _create_selected_instrument(OTHER_Arduino_IO_Module.Arduino_IO, resource_id, resources_list, probe_only)
             
-        setup_dict = setup_instrument(instrument, setup_dict, interactive=interactive)
+        setup_dict = _finish_instrument_setup(instrument, setup_dict, interactive, probe_only)
         if setup_dict == None:
             logger.error("Equipment setup failed")
             return
@@ -698,7 +732,7 @@ class eLoads:
     }
         
     @classmethod
-    def choose_eload(self, class_name = None, resource_id = None, setup_dict = None, resources_list = None, interactive=True):
+    def choose_eload(self, class_name = None, resource_id = None, setup_dict = None, resources_list = None, interactive=True, probe_only=False):
         if class_name == None:
             msg = "In which series is the E-Load?"
             title = "E-Load Series Selection"
@@ -712,18 +746,20 @@ class eLoads:
             print("Failed to select the equipment.")
             return			
         
+        if class_name == 'Parallel Eloads' and probe_only:
+            raise ValueError("Parallel Eloads do not support non-mutating identity probes")
         if class_name == 'BK8600':
-            eload = Eload_BK8600.BK8600(resource_id = resource_id, resources_list = resources_list)
+            eload = _create_selected_instrument(Eload_BK8600.BK8600, resource_id, resources_list, probe_only)
         elif class_name == 'DL3000':
-            eload = Eload_DL3000.DL3000(resource_id = resource_id, resources_list = resources_list)
+            eload = _create_selected_instrument(Eload_DL3000.DL3000, resource_id, resources_list, probe_only)
         elif class_name == 'KEL10X':
-            eload = Eload_KEL10X.KEL10X(resource_id = resource_id, resources_list = resources_list)
+            eload = _create_selected_instrument(Eload_KEL10X.KEL10X, resource_id, resources_list, probe_only)
         elif class_name == 'IT8500':
-            eload = Eload_IT8500.IT8500(resource_id = resource_id, resources_list = resources_list)
+            eload = _create_selected_instrument(Eload_IT8500.IT8500, resource_id, resources_list, probe_only)
         elif class_name == 'A2D_POWER_BOARD':
-            eload = PSU_A2D_POWER_BOARD.A2D_POWER_BOARD(resource_id = resource_id, resources_list = resources_list)
+            eload = _create_selected_instrument(PSU_A2D_POWER_BOARD.A2D_POWER_BOARD, resource_id, resources_list, probe_only)
         elif class_name == 'A2D_Eload':
-            eload = Eload_A2D_Eload.A2D_Eload(resource_id = resource_id, resources_list = resources_list)
+            eload = _create_selected_instrument(Eload_A2D_Eload.A2D_Eload, resource_id, resources_list, probe_only)
         elif class_name == 'Parallel Eloads':
             eload = Eload_PARALLEL.PARALLEL(resource_id = resource_id, resources_list = resources_list)
         elif class_name == 'Fake Test Eload':
@@ -731,7 +767,7 @@ class eLoads:
         elif class_name == 'HP6632B':
             eload = PSU_HP6632B.HP6632B(resource_id = resource_id, resources_list = resources_list)
             
-        setup_dict = setup_instrument(eload, setup_dict, interactive=interactive)
+        setup_dict = _finish_instrument_setup(eload, setup_dict, interactive, probe_only)
         if setup_dict == None:
             print("Equipment Setup Failed")
             return
@@ -754,7 +790,7 @@ class powerSupplies:
     }
     
     @classmethod
-    def choose_psu(self, class_name = None, resource_id = None, setup_dict = None, resources_list = None, interactive=True):
+    def choose_psu(self, class_name = None, resource_id = None, setup_dict = None, resources_list = None, interactive=True, probe_only=False):
         if class_name == None:
             msg = "In which series is the PSU?"
             title = "PSU Series Selection"
@@ -772,27 +808,27 @@ class powerSupplies:
             return
         
         if class_name == 'SPD1000':
-            psu = PSU_SPD1000.SPD1000(resource_id = resource_id, resources_list = resources_list)
+            psu = _create_selected_instrument(PSU_SPD1000.SPD1000, resource_id, resources_list, probe_only)
         elif class_name == 'DP800':
-            psu = PSU_DP800.DP800(resource_id = resource_id, resources_list = resources_list)
+            psu = _create_selected_instrument(PSU_DP800.DP800, resource_id, resources_list, probe_only)
         elif class_name == 'KWR10X or MP71025X':
-            psu = PSU_MP71025X.MP71025X(resource_id = resource_id, resources_list = resources_list)
+            psu = _create_selected_instrument(PSU_MP71025X.MP71025X, resource_id, resources_list, probe_only)
         elif class_name == 'BK9100':
-            psu = PSU_BK9100.BK9100(resource_id = resource_id, resources_list = resources_list)
+            psu = _create_selected_instrument(PSU_BK9100.BK9100, resource_id, resources_list, probe_only)
         elif class_name == 'N8700':
-            psu = PSU_N8700.N8700(resource_id = resource_id, resources_list = resources_list)
+            psu = _create_selected_instrument(PSU_N8700.N8700, resource_id, resources_list, probe_only)
         elif class_name == 'KAXXXXP':
-            psu = PSU_KAXXXXP.KAXXXXP(resource_id = resource_id, resources_list = resources_list)
+            psu = _create_selected_instrument(PSU_KAXXXXP.KAXXXXP, resource_id, resources_list, probe_only)
         elif class_name == 'E3631A':
-            psu = PSU_E3631A.E3631A(resource_id = resource_id, resources_list = resources_list)
+            psu = _create_selected_instrument(PSU_E3631A.E3631A, resource_id, resources_list, probe_only)
         elif class_name == 'HP6632B':
-            psu = PSU_HP6632B.HP6632B(resource_id = resource_id, resources_list = resources_list)
+            psu = _create_selected_instrument(PSU_HP6632B.HP6632B, resource_id, resources_list, probe_only)
         elif class_name == 'A2D_POWER_BOARD':
-            psu = PSU_A2D_POWER_BOARD.A2D_POWER_BOARD(resource_id = resource_id, resources_list = resources_list)
+            psu = _create_selected_instrument(PSU_A2D_POWER_BOARD.A2D_POWER_BOARD, resource_id, resources_list, probe_only)
         elif class_name == 'Fake Test PSU':
             psu = PSU_Fake.Fake_PSU(resource_id = resource_id, resources_list = resources_list)
             
-        setup_dict = setup_instrument(psu, setup_dict, interactive=interactive)
+        setup_dict = _finish_instrument_setup(psu, setup_dict, interactive, probe_only)
         if setup_dict == None:
             print("Equipment Setup Failed")
             return
@@ -838,7 +874,7 @@ class dmms:
     }
     
     @classmethod
-    def choose_dmm(self, class_name = None, resource_id = None, multi_ch_event_and_queue_dict = None, setup_dict = None, resources_list = None, interactive=True):
+    def choose_dmm(self, class_name = None, resource_id = None, multi_ch_event_and_queue_dict = None, setup_dict = None, resources_list = None, interactive=True, probe_only=False):
         if class_name == None:
             msg = "In which series is the DMM?"
             title = "DMM Series Selection"
@@ -853,22 +889,22 @@ class dmms:
             return			
         
         if class_name == 'DM3000':
-            dmm = DMM_DM3000.DM3000(resource_id = resource_id, resources_list = resources_list)
+            dmm = _create_selected_instrument(DMM_DM3000.DM3000, resource_id, resources_list, probe_only)
         elif class_name == 'SDM3065X':
-            dmm = DMM_SDM3065X.SDM3065X(resource_id = resource_id, resources_list = resources_list)
+            dmm = _create_selected_instrument(DMM_SDM3065X.SDM3065X, resource_id, resources_list, probe_only)
         elif class_name == 'Fake Test DMM':
             dmm = DMM_Fake.Fake_DMM(resource_id = resource_id, resources_list = resources_list)
         elif class_name == 'A2D_SENSE_BOARD':
-            dmm = DMM_A2D_SENSE_BOARD.A2D_SENSE_BOARD(resource_id = resource_id, resources_list = resources_list)
+            dmm = _create_selected_instrument(DMM_A2D_SENSE_BOARD.A2D_SENSE_BOARD, resource_id, resources_list, probe_only)
         elif class_name == 'A2D_POWER_BOARD':
-            dmm = PSU_A2D_POWER_BOARD.A2D_POWER_BOARD(resource_id = resource_id, resources_list = resources_list)
+            dmm = _create_selected_instrument(PSU_A2D_POWER_BOARD.A2D_POWER_BOARD, resource_id, resources_list, probe_only)
         elif class_name == 'A2D_DAQ_CH':
-            dmm = A2D_DAQ_control.A2D_DAQ(resource_id = resource_id, resources_list = resources_list)
+            dmm = _create_selected_instrument(A2D_DAQ_control.A2D_DAQ, resource_id, resources_list, probe_only)
         elif class_name == 'A2D_4CH_Isolated_ADC_Channel':
-            dmm = DMM_A2D_4CH_Isolated_ADC.A2D_4CH_Isolated_ADC(resource_id = resource_id, resources_list = resources_list)
+            dmm = _create_selected_instrument(DMM_A2D_4CH_Isolated_ADC.A2D_4CH_Isolated_ADC, resource_id, resources_list, probe_only)
         elif class_name == 'HP6632B':
-            dmm = PSU_HP6632B.HP6632B(resource_id = resource_id, resources_list = resources_list)
-        setup_dict = setup_instrument(dmm, setup_dict, interactive=interactive)
+            dmm = _create_selected_instrument(PSU_HP6632B.HP6632B, resource_id, resources_list, probe_only)
+        setup_dict = _finish_instrument_setup(dmm, setup_dict, interactive, probe_only)
         if setup_dict == None:
             print("Equipment Setup Failed")
             return

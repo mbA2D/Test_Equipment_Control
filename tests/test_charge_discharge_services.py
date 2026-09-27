@@ -42,6 +42,85 @@ def test_end_condition_service_is_pure_and_returns_reason():
     assert evaluate_end_condition(_step(), {**data, "Voltage": 2.0}) is StopReason.SAFETY
 
 
+@pytest.mark.parametrize(
+    ("end_style", "field", "below", "at", "above"),
+    [
+        ("time_s", "Data_Timestamp_From_Step_Start", 9.9, 10.0, 10.1),
+        ("voltage_v", "Voltage", 3.9, 4.0, 4.1),
+        ("current_a", "Current", 0.9, 1.0, 1.1),
+    ],
+)
+def test_greater_end_condition_uses_configured_measurement_and_strict_boundary(
+    end_style, field, below, at, above
+):
+    threshold = {
+        "Current": 1.0,
+        "Voltage": 4.0,
+        "Data_Timestamp_From_Step_Start": 10.0,
+    }[field]
+    step = _step(end_style=end_style, end_value=threshold)
+    data = {
+        "Voltage": 3.7,
+        "Current": 0.5,
+        "Data_Timestamp_From_Step_Start": 5.0,
+    }
+    assert evaluate_end_condition(step, {**data, field: below}) is StopReason.NONE
+    assert evaluate_end_condition(step, {**data, field: threshold}) is StopReason.NONE
+    assert evaluate_end_condition(step, {**data, field: above}) is StopReason.END_CONDITION
+
+
+@pytest.mark.parametrize(
+    ("end_style", "field", "at", "below", "above"),
+    [
+        ("time_s", "Data_Timestamp_From_Step_Start", 10.0, 9.9, 10.1),
+        ("voltage_v", "Voltage", 3.0, 2.9, 3.1),
+        ("current_a", "Current", 0.5, 0.4, 0.6),
+    ],
+)
+def test_lesser_end_condition_uses_configured_measurement_and_strict_boundary(
+    end_style, field, at, below, above
+):
+    step = _step(end_style=end_style, end_condition="lesser", end_value=at)
+    data = {
+        "Voltage": 3.7,
+        "Current": 0.8,
+        "Data_Timestamp_From_Step_Start": 5.0,
+    }
+
+    assert evaluate_end_condition(step, {**data, field: above}) is StopReason.NONE
+    assert evaluate_end_condition(step, {**data, field: at}) is StopReason.NONE
+    assert evaluate_end_condition(step, {**data, field: below}) is StopReason.END_CONDITION
+
+
+def test_cycle_end_time_waits_until_threshold_and_includes_equality():
+    step = _step(cycle_end_time_s=20.0, end_value=30.0)
+    data = {
+        "Voltage": 3.7,
+        "Current": 1.0,
+        "Data_Timestamp_From_Step_Start": 0.0,
+    }
+
+    assert evaluate_end_condition(step, data) is StopReason.NONE
+    assert evaluate_end_condition(
+        step, {**data, "Data_Timestamp_From_Step_Start": 19.9}
+    ) is StopReason.NONE
+    assert evaluate_end_condition(
+        step, {**data, "Data_Timestamp_From_Step_Start": 20.0}
+    ) is StopReason.CYCLE_END
+
+
+def test_cycle_end_voltage_includes_cutoff_equality():
+    step = _step(cycle_end_voltage_v=3.0)
+    data = {
+        "Voltage": 3.1,
+        "Current": 1.0,
+        "Data_Timestamp_From_Step_Start": 0.0,
+    }
+
+    assert evaluate_end_condition(step, data) is StopReason.NONE
+    assert evaluate_end_condition(step, {**data, "Voltage": 3.0}) is StopReason.CYCLE_END
+
+
 def test_equipment_requirements_are_calculated_for_nested_plan():
     charge = _step(drive_value=1.0)
     discharge = _step(drive_value=-1.0)

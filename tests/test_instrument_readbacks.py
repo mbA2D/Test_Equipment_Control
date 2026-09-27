@@ -66,6 +66,35 @@ def test_bk8601_status_checks_output_mode_and_protection():
     device.inst = None
 
 
+@pytest.mark.parametrize(("reported_mode", "normalized_mode"), [
+    ("CURRENT", "CURR"),
+    ("VOLTAGE", "VOLT"),
+    ("RESISTANCE", "RES"),
+    ("POWER", "POW"),
+])
+def test_bk8600_normalizes_long_form_mode_readbacks(reported_mode, normalized_mode):
+    device = object.__new__(BK8600)
+    device.inst = StubInstrument({"FUNC?": reported_mode})
+
+    assert device.get_mode() == normalized_mode
+
+    device.inst = None
+
+
+@pytest.mark.parametrize(("enabled", "command", "readback"), [
+    (True, "INP ON", "1"),
+    (False, "INP OFF", "0"),
+])
+def test_bk8600_waits_for_input_state_before_readback(enabled, command, readback):
+    device = object.__new__(BK8600)
+    device.inst = StubInstrument({"INP?": readback})
+
+    device.toggle_output(enabled)
+
+    assert device.inst.writes == [command, "*WAI"]
+    device.inst = None
+
+
 def test_spd1168x_status_reports_regulation_and_checks_output_and_errors():
     device = object.__new__(SPD1000)
     device.inst = StubInstrument({

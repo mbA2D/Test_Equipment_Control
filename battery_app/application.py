@@ -79,6 +79,7 @@ def _probe_equipment_worker(eq_type, class_name, resource_id, setup_dict, resour
             setup_dict=setup_dict,
             resources_list=resources_list,
             interactive=False,
+            probe_only=True,
         )
         if selected is None:
             result_queue.put(("equipment_probe", False, "No equipment was selected"))
@@ -335,6 +336,9 @@ class BatteryApplication:
 
             resource.update({
                 "equipment_id": connected["equipment_id"],
+                "eq_idn": connected.get("eq_idn"),
+                "class_name": connected.get("class_name"),
+                "resource_id": connected.get("res_id"),
                 "local_id": local_id,
                 "queue_in": queue_in,
                 "client_id": client_id,

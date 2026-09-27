@@ -31,6 +31,7 @@ class SPD1000(PowerSupplyDevice):
     }
     
     def initialize(self):
+        self.split_standard_idn()
         self.rated_limits = None
         self.setpoint_readback_tolerances = None
         if "SPD1168X" in self.inst_idn.upper():

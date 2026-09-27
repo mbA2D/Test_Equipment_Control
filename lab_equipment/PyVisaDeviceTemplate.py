@@ -38,7 +38,7 @@ class PyVisaDevice:
         'timeout':                  1000
     }
     
-    def __init__(self, resource_id = None, resources_list = None):
+    def __init__(self, resource_id = None, resources_list = None, initialize=True):
         backend, rm = _open_resource_manager(self.connection_settings['pyvisa_backend'])
         
         self._last_command_time = time.perf_counter()
@@ -181,10 +181,27 @@ class PyVisaDevice:
         else:
             self.inst_idn = resource_id
         
-        self.initialize() #Specific initialization for each device
+        if initialize:
+            self.initialize() #Specific initialization for each device
     
     def initialize(self):
         pass
+
+    def split_standard_idn(self):
+        """Expose the four comma-separated IEEE 488.2 IDN fields.
+
+        Missing fields remain ``None`` so unusual or shortened responses do
+        not prevent instrument initialization.
+        """
+        parts = [part.strip() for part in str(self.inst_idn).strip().split(",")]
+        parts = (parts + [None] * 4)[:4]
+        (
+            self.manufacturer,
+            self.model_number,
+            self.serial_number,
+            self.firmware_version,
+        ) = parts
+        return parts
     
             
 class PowerSupplyDevice(PyVisaDevice):

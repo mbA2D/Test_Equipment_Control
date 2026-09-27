@@ -247,21 +247,22 @@ resource also retains its backend identifier.
    - E-load
    - DMM
    - Other equipment
-3. The application/equipment service starts `connect_selected_equipment_process()` with the explicit type, model, and resource.
+3. The application starts a managed, non-mutating equipment probe with the explicit type, model, resource, and setup choices.
 4. The selected equipment class calls the matching `equipment.py` chooser:
    - `powerSupplies.choose_psu()`
    - `eLoads.choose_eload()`
    - `dmms.choose_dmm()`
    - `otherEquipment.choose_equipment()`
-5. The chooser instantiates a driver from `lab_equipment/`.
-6. The driver opens and identifies the instrument through PyVISA.
-7. `equipment.get_res_id_dict_and_disconnect()`:
+5. The chooser opens the selected resource and queries its identity without calling driver `initialize()` or applying setup commands. Setup defaults and explicit choices are retained in the returned descriptor.
+6. `equipment.get_res_id_dict_and_disconnect()`:
    - Extracts the PyVISA resource ID.
    - Extracts setup state.
    - Closes the physical resource.
    - Returns a serializable equipment descriptor.
 
-This create-close-reconnect pattern lets the GUI store only descriptors while a dedicated process later owns the actual resource.
+7. A dedicated owner process reopens the resource, calls driver `initialize()`, applies the saved setup choices once, and only then reports readiness.
+
+This read-only-probe, close, and owner-reconnect pattern lets the GUI store only descriptors while avoiding instrument resets or setup changes during identification. Composite Parallel E-load probes are rejected until they have a non-mutating probe implementation.
 
 #### Owner startup and deferred rediscovery
 
@@ -810,7 +811,7 @@ Recommendation:
 
 ### 8.7 Connect-close-reconnect pattern
 
-Equipment selection opens a resource, closes it, and another process later reopens it.
+Equipment selection opens a resource for an identity query, closes it, and another process later reopens it for initialization and ownership.
 
 This is central to the current process-ownership model, but it can fail if:
 
@@ -818,10 +819,10 @@ This is central to the current process-ownership model, but it can fail if:
 - Another process claims the resource.
 - The instrument requires a recovery delay.
 
-Recommendation:
-
-- Keep the process-ownership model, but make the reconnect logic explicit and testable.
-- Consider keeping a lightweight probe object separate from the full driver.
+Direct PyVISA drivers now skip driver initialization and setup commands during
+the probe. The owner process remains responsible for initialization and applies
+the saved setup dictionary once. Composite Parallel E-loads still need a
+read-only probe implementation and are rejected by the probe path.
 
 ### 8.8 Outdated pandas operation
 

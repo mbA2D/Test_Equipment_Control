@@ -16,8 +16,8 @@ class BK8600(EloadDevice):
     }
 
     def initialize(self):
-        idn_split = self.inst_idn.split(',')
-        model_number = idn_split[1]
+        self.split_standard_idn()
+        model_number = self.model_number or ""
         self.rated_limits = None
         self.setpoint_readback_tolerances = None
         
@@ -97,7 +97,15 @@ class BK8600(EloadDevice):
         self.mode = "CURR"
 
     def get_mode(self):
-        return self.inst.query("FUNC?").strip().upper()
+        mode = self.inst.query("FUNC?").strip().upper()
+        # The 8601 reports long-form SCPI mode names (CURRENT/VOLTAGE), while
+        # other BK 8600 firmware revisions report the abbreviated names.
+        return {
+            "CURRENT": "CURR",
+            "VOLTAGE": "VOLT",
+            "RESISTANCE": "RES",
+            "POWER": "POW",
+        }.get(mode, mode)
     
     ##COMMANDS FOR CV MODE
     def set_mode_voltage(self):
@@ -124,6 +132,9 @@ class BK8600(EloadDevice):
             self.inst.write("INP ON")
         else:
             self.inst.write("INP OFF")
+        # Input-state commands are overlapped on the 8600 series.  Wait for
+        # the operation to finish before checking its readback.
+        self.inst.write("*WAI")
         if self.get_output() is not bool(state):
             raise RuntimeError(f"B&K 8600 input did not turn {'on' if state else 'off'}")
 

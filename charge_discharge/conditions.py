@@ -46,7 +46,7 @@ def evaluate_end_condition(
         return StopReason.CYCLE_END
 
     cycle_end_time = step.get("cycle_end_time_s")
-    if cycle_end_time is not None and elapsed <= cycle_end_time:
+    if cycle_end_time is not None and elapsed >= cycle_end_time:
         return StopReason.CYCLE_END
 
     comparator_name = {

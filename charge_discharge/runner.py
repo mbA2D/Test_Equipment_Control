@@ -1,5 +1,6 @@
 """Battery charge/discharge execution engine."""
 
+import math
 import queue
 import time
 
@@ -36,6 +37,7 @@ class CyclingControl():
         self._readback_checked_roles = set()
         self._last_instrument_health_check = 0.0
         self._instrument_health_check_interval_s = 1.0
+        self.last_step_sampling_summary = None
 
     def _configure_instrument_readbacks(self, assignment):
         """Limit model-specific health queries to the audited first-test models."""
@@ -366,7 +368,17 @@ class CyclingControl():
             step_count=1,
             step_id=1,
     ):
-        
+        measurement_interval_s = float(step_settings["meas_log_int_s"])
+        sampling_summary = {
+            "target_interval_s": measurement_interval_s,
+            "sample_count": 0,
+            "overrun_count": 0,
+            "max_overrun_s": 0.0,
+            "max_acquisition_duration_s": 0.0,
+            "max_sample_processing_duration_s": 0.0,
+        }
+        self.last_step_sampling_summary = sampling_summary
+
         if self.start_step(step_settings):
             logger.info("Start step successful")
             step_start_time_perf = time.perf_counter()
@@ -381,7 +393,6 @@ class CyclingControl():
             )
             first_sample_delay_s = 0.0
             if output_enabled:
-                measurement_interval_s = float(step_settings["meas_log_int_s"])
                 first_sample_delay_s = 0.5
                 safety_timeout_s = float(step_settings["safety_max_time_s"])
                 if safety_timeout_s > 0:
@@ -398,62 +409,56 @@ class CyclingControl():
                         ),
                     )
             first_sample_deadline = step_start_time_perf + first_sample_delay_s
-            while time.perf_counter() < first_sample_deadline:
+            now = time.perf_counter()
+            while now < first_sample_deadline:
                 self._check_instrument_health(step_settings)
-                time.sleep(0.001)
+                remaining_s = first_sample_deadline - time.perf_counter()
+                if remaining_s > 0:
+                    time.sleep(min(0.001, remaining_s))
+                now = time.perf_counter()
 
-            perf_counter_start = time.perf_counter()
-            
-            data = dict()
-            data.update(
-                self.measure_battery(
+            def record_sample(*, initial_sample=False):
+                """Read, timestamp, evaluate, and persist one complete sample set."""
+                sample_started = time.perf_counter()
+                data = self.measure_battery(
                     step_index=step_index,
-                    current_time=perf_counter_start,
+                    current_time=sample_started,
                 )
-            )
-            self.add_cycle_measurements(data)
-            data["Data_Timestamp_From_Step_Start"] = (
-                data["Data_Timestamp"] - step_start_time_perf
-            )
-            self.write_bdf_measurement(
-                data,
-                cycle_count=cycle_count,
-                step_count=step_count,
-                step_id=step_id,
-                step_start_time_perf=step_start_time_perf,
-                step_type=step_settings.get("cycle_display"),
-            )
-            
-            #If we are charging to the end of a CC cycle, then we need to not exit immediately.
-            condition_data = data
-            if (step_settings["drive_style"] == "voltage_v" and
-                step_settings["end_style"] == "current_a" and
-                step_settings["end_condition"] == "lesser"):
+                acquisition_finished = time.perf_counter()
+                acquisition_duration = acquisition_finished - sample_started
+                sampling_summary["sample_count"] += 1
+                sampling_summary["max_acquisition_duration_s"] = max(
+                    sampling_summary["max_acquisition_duration_s"],
+                    acquisition_duration,
+                )
 
-                # Use the configured current only for end-condition evaluation;
-                # retain the measured current in the BDF row.
-                condition_data = dict(data)
-                condition_data["Current"] = step_settings["drive_value_other"]
-            
-            end_condition = self.evaluate_end_condition(step_settings, condition_data, data_in_queue)
-            logger.info("End condition before measurement loop: %s", end_condition)
-            
-            #Do the measurements and check the end conditions at every logging interval
-            while end_condition == 'none':
-                perf_counter_end = perf_counter_start + step_settings["meas_log_int_s"]
-                perf_counter_start = time.perf_counter()
-                
-                perf_counter_delay = perf_counter_start
-                while perf_counter_delay < perf_counter_end:
-                    time.sleep(0.001) #1ms
-                    perf_counter_delay = time.perf_counter()
-                    self._check_instrument_health(step_settings)
-                
-                data.update(self.measure_battery(data_out_queue = data_out_queue, step_index = step_index, current_time = perf_counter_delay))
                 self.add_cycle_measurements(data)
-                data["Data_Timestamp_From_Step_Start"] = (data["Data_Timestamp"] - step_start_time_perf)
+                data["Data_Timestamp_From_Step_Start"] = (
+                    data["Data_Timestamp"] - step_start_time_perf
+                )
                 self._check_instrument_health(step_settings)
-                end_condition = self.evaluate_end_condition(step_settings, data, data_in_queue)
+
+                # Keep the BDF timestamp at the start of the set, and use its
+                # completion time for time-based safety and end conditions.
+                condition_data = dict(data)
+                condition_data["Data_Timestamp_From_Step_Start"] = (
+                    acquisition_finished - step_start_time_perf
+                )
+                if (
+                    initial_sample
+                    and step_settings["drive_style"] == "voltage_v"
+                    and step_settings["end_style"] == "current_a"
+                    and step_settings["end_condition"] == "lesser"
+                ):
+                    # Use the configured current only for this CV end check;
+                    # retain the measured current in the BDF row.
+                    condition_data["Current"] = step_settings["drive_value_other"]
+
+                end_reason = self.evaluate_end_condition(
+                    step_settings,
+                    condition_data,
+                    data_in_queue,
+                )
                 self.write_bdf_measurement(
                     data,
                     cycle_count=cycle_count,
@@ -462,6 +467,41 @@ class CyclingControl():
                     step_start_time_perf=step_start_time_perf,
                     step_type=step_settings.get("cycle_display"),
                 )
+                sample_ready = time.perf_counter()
+                sampling_summary["max_sample_processing_duration_s"] = max(
+                    sampling_summary["max_sample_processing_duration_s"],
+                    sample_ready - sample_started,
+                )
+                return end_reason, sample_started
+
+            end_condition, sample_started = record_sample(initial_sample=True)
+            logger.info("End condition before measurement loop: %s", end_condition)
+
+            # Keep sample starts on an interval-based schedule. Work completed
+            # before each deadline reduces the wait; expired slots are skipped
+            # instead of triggering immediate catch-up samples.
+            next_sample_deadline = sample_started + measurement_interval_s
+            while end_condition == 'none':
+                now = time.perf_counter()
+                if now > next_sample_deadline:
+                    overrun_s = now - next_sample_deadline
+                    missed_intervals = math.floor(overrun_s / measurement_interval_s) + 1
+                    sampling_summary["overrun_count"] += missed_intervals
+                    sampling_summary["max_overrun_s"] = max(
+                        sampling_summary["max_overrun_s"],
+                        overrun_s,
+                    )
+                    next_sample_deadline += missed_intervals * measurement_interval_s
+
+                while now < next_sample_deadline:
+                    self._check_instrument_health(step_settings)
+                    remaining_s = next_sample_deadline - time.perf_counter()
+                    if remaining_s > 0:
+                        time.sleep(min(0.001, remaining_s))
+                    now = time.perf_counter()
+
+                end_condition, sample_started = record_sample()
+                next_sample_deadline = sample_started + measurement_interval_s
             
             #if the end condition is due to safety settings, then we want to end all future steps as well so return the exit reason
             return end_condition
@@ -501,6 +541,7 @@ class CyclingControl():
             step_count=1,
             step_id=1,
     ):
+        self.last_step_sampling_summary = None
 
         #if we don't have separate voltage measurement equipment, then choose what to use:
         if self.eq_dict['dmm_v'] == None or self.eq_dict['dmm_v'] == self.eq_dict['eload'] or self.eq_dict['dmm_v'] == self.eq_dict['psu']:

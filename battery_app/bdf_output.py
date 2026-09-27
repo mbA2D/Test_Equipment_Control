@@ -246,8 +246,30 @@ def build_cycle_metadata(
     equipment_metadata = {}
     for role, device in equipment.items():
         if device is not None:
+            identification = getattr(device, "eq_idn", None) or getattr(device, "inst_idn", None)
+            parts = [part.strip() for part in identification.split(",")] if isinstance(identification, str) else []
+            manufacturer = getattr(device, "manufacturer", None)
+            model = getattr(device, "model_number", None) or getattr(device, "model", None)
+            serial = getattr(device, "serial_number", None)
+            firmware = getattr(device, "firmware_version", None)
+            if len(parts) >= 3:
+                manufacturer = manufacturer or parts[0]
+                model = model or parts[1]
+                serial = serial or parts[2]
+            if len(parts) >= 4:
+                firmware = firmware or parts[3]
             equipment_metadata[role] = {
                 "driver": type(device).__name__,
+                "class_name": getattr(device, "class_name", None),
+                "manufacturer": manufacturer,
+                "instrument_model": model,
+                "serial_number": serial,
+                "firmware_version": firmware,
+                "identification": identification,
+                "equipment_id": getattr(device, "equipment_id", None),
+                "resource_id": getattr(device, "resource_id", None)
+                or getattr(getattr(device, "inst", None), "resource_name", None),
+                "instrument_channel": getattr(device, "instrument_channel", None),
             }
 
     return {

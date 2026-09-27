@@ -155,16 +155,54 @@ class CycleExecutor:
                         # Step Count is global across the test and advances
                         # only for steps that produce measurement rows.
                         step_count += 1
-                        end_condition = self.control.single_step_cycle(
-                            step_settings,
-                            data_out_queue=self.data_out_queue,
-                            data_in_queue=self.data_in_queue,
-                            ch_num=self.ch_num,
-                            step_index=step_num,
-                            cycle_count=cycle_count,
-                            step_count=step_count,
-                            step_id=step_num + 1,
-                        )
+                        try:
+                            end_condition = self.control.single_step_cycle(
+                                step_settings,
+                                data_out_queue=self.data_out_queue,
+                                data_in_queue=self.data_in_queue,
+                                ch_num=self.ch_num,
+                                step_index=step_num,
+                                cycle_count=cycle_count,
+                                step_count=step_count,
+                                step_id=step_num + 1,
+                            )
+                        finally:
+                            sampling_summary = getattr(
+                                self.control,
+                                "last_step_sampling_summary",
+                                None,
+                            )
+                            if isinstance(sampling_summary, dict):
+                                cycle_metadata["test"]["steps"][step_num]["sampling"] = dict(
+                                    sampling_summary
+                                )
+                                FileIO.write_bdf_metadata(
+                                    self.control.csv_filepath,
+                                    cycle_metadata,
+                                )
+                                overrun_count = sampling_summary.get("overrun_count", 0)
+                                if overrun_count:
+                                    message = (
+                                        f"CH{self.ch_num} - Step {step_num + 1}: "
+                                        f"{overrun_count} sampling interval(s) missed; "
+                                        f"maximum overrun "
+                                        f"{sampling_summary.get('max_overrun_s', 0.0):.3f} s"
+                                    )
+                                    logger.warning(message)
+                                    if self.data_out_queue is not None:
+                                        try:
+                                            self.data_out_queue.put_nowait({
+                                                "type": "event",
+                                                "data": {
+                                                    "message": message,
+                                                    "color": "#b54708",
+                                                },
+                                            })
+                                        except Exception:
+                                            logger.exception(
+                                                "CH%s - Could not report sampling overrun",
+                                                self.ch_num,
+                                            )
 
                     logger.info(
                         "CH%s - Cycle %s step %s ending; reason: %s",
