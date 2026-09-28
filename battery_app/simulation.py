@@ -53,13 +53,19 @@ class FakeBatteryLink:
     """Share one battery model between a channel's fake instruments.
 
     The link advances on measurement calls using wall-clock time during normal
-    execution.  Tests can advance it deterministically with ``advance(dt_s)``.
-    Positive model current charges the cell; a fake electronic load always
-    contributes negative current.
+    execution. Tests can advance it deterministically with ``advance(dt_s)``.
+    The simulated cell starts at 50% SoC by default. Positive PSU current is
+    limited by both its current setting and voltage headroom above cell OCV; a
+    fake electronic load always contributes negative current.
     """
 
-    def __init__(self, model: BatteryCellWorldModel | None = None) -> None:
-        self.model = model or BatteryCellWorldModel()
+    def __init__(
+        self,
+        model: BatteryCellWorldModel | None = None,
+        *,
+        initial_soc: float = 0.5,
+    ) -> None:
+        self.model = model or BatteryCellWorldModel(initial_soc=initial_soc)
         self.psu_output_enabled = False
         self.psu_current_limit_a = 0.0
         self.psu_voltage_setpoint_v = 0.0
@@ -70,7 +76,16 @@ class FakeBatteryLink:
     @property
     def current_a(self) -> float:
         if self.psu_output_enabled:
-            return max(0.0, self.psu_current_limit_a)
+            current_limit_a = max(0.0, self.psu_current_limit_a)
+            voltage_headroom_v = (
+                self.psu_voltage_setpoint_v - self.model.open_circuit_voltage_v
+            )
+            if voltage_headroom_v <= 0.0:
+                return 0.0
+            resistance_ohm = self.model.internal_resistance_ohm
+            if resistance_ohm <= 0.0:
+                return current_limit_a
+            return min(current_limit_a, voltage_headroom_v / resistance_ohm)
         if self.eload_output_enabled:
             return -abs(self.eload_current_a)
         return 0.0

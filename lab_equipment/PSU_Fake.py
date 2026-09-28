@@ -9,7 +9,7 @@ class Fake_PSU:
     def __init__(self, resource_id = None, resources_list = None):
         self.battery_link = None
         
-        self.inst_idn = "Fake PSU"
+        self.inst_idn = "TestEquipmentControl,SIMULATED_PSU,SIM-PSU-0001,0.1"
         
     def set_current(self, current_setpoint_A):		
         require_simulation_link(self.battery_link, "Fake PSU").set_psu_current(

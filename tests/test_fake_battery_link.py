@@ -3,13 +3,14 @@ import pandas as pd
 import json
 import time
 from multiprocessing import Queue as ProcessQueue
-from queue import Queue
+from queue import Empty, Queue
 
 import equipment
 from battery_app.equipment_manager import EquipmentManager
 from battery_app.identity import new_profile_id, profile_version
 from battery_app.process_manager import ProcessManager
 from battery_app.battery_model_simple import BatteryCellWorldModel
+from battery_app.bdf_output import build_cycle_metadata
 from battery_app.simulation import (
     FakeBatteryLink,
     is_simulated_cell_name,
@@ -36,6 +37,7 @@ def test_fake_equipment_share_one_model_and_advance_it():
         device.attach_battery_link(link)
 
     psu.set_current(1.0)
+    psu.set_voltage(4.2)
     psu.toggle_output(True)
     link.advance(dt_s=60.0)
 
@@ -62,11 +64,16 @@ def _proxy_backed_fake_assignment():
         ("dmm_t", "dmm", "Fake Test DMM"),
     )
     assignment = {}
+    fake_idn = {
+        "Fake Test PSU": Fake_PSU().inst_idn,
+        "Fake Test Eload": Fake_Eload().inst_idn,
+        "Fake Test DMM": Fake_DMM().inst_idn,
+    }
     for local_id, (role, eq_type, class_name) in enumerate(role_and_type):
         descriptor = {
             "local_id": local_id,
             "eq_type": eq_type,
-            "eq_idn": class_name,
+            "eq_idn": fake_idn[class_name],
             "class_name": class_name,
             "res_id": "Fake",
             "setup_dict": {},
@@ -79,6 +86,10 @@ def _proxy_backed_fake_assignment():
             "class_name": class_name,
             "setup_dict": {},
             "res_id": {
+                "equipment_id": connected["equipment_id"],
+                "eq_idn": connected["eq_idn"],
+                "class_name": connected["class_name"],
+                "resource_id": connected["res_id"],
                 "local_id": local_id,
                 "queue_in": connected["queue_in"],
                 "client_id": client_id,
@@ -95,9 +106,27 @@ def test_simulated_instruments_keep_the_owner_process_and_proxy_path():
     try:
         control._validate_simulated_equipment_assignment(assignment)
         control.eq_dict = equipment.get_equipment_dict(assignment)
+        metadata = build_cycle_metadata(
+            data_path="simulated.bdf.csv",
+            institution_code="TEST",
+            cell_name="SIMULATED_LG_MJ1",
+            cycle_count=1,
+            cycle_settings=[],
+            equipment=control.eq_dict,
+            temperature_sources={},
+            start_time_utc="2026-09-27T00:00:00+00:00",
+        )["equipment"]
+        assert metadata["psu"]["manufacturer"] == "TestEquipmentControl"
+        assert metadata["psu"]["instrument_model"] == "SIMULATED_PSU"
+        assert metadata["psu"]["serial_number"] == "SIM-PSU-0001"
+        assert metadata["eload"]["instrument_model"] == "SIMULATED_ELOAD"
+        assert metadata["eload"]["serial_number"] == "SIM-ELOAD-0001"
+        assert metadata["dmm_v"]["instrument_model"] == "SIMULATED_DMM"
+        assert metadata["dmm_v"]["serial_number"] == "SIM-DMM-0001"
         control._connect_simulated_battery()
 
         control.eq_dict["psu"].set_current(1.0)
+        control.eq_dict["psu"].set_voltage(4.2)
         control.eq_dict["psu"].toggle_output(True)
 
         assert control.eq_dict["dmm_i"].measure_current() == pytest.approx(1.0)
@@ -189,8 +218,11 @@ def test_gui_style_runner_drives_simulated_battery_and_logs_measurements(
         record_stage("initial_owner_cleanup", stage_started)
 
     messages = []
-    while not measurements.empty():
-        messages.append(measurements.get())
+    while True:
+        try:
+            messages.append(measurements.get(timeout=0.2))
+        except Empty:
+            break
     measurement_data = [message["data"] for message in messages if message["type"] == "measurement"]
 
     assert len(measurement_data) >= 2
@@ -295,6 +327,7 @@ def test_gui_style_runner_writes_charge_and_rest_bdf_step_types(tmp_path):
         "drive_style": "current_a",
         "drive_value": 1.0,
         "drive_value_other": 4.2,
+        "end_value": 0.8,
     }
     rest_step = {
         **step_base,
@@ -340,4 +373,105 @@ def test_gui_style_runner_writes_charge_and_rest_bdf_step_types(tmp_path):
     assert charge_rows["Current / A"].gt(0).all()
     assert charge_rows["Cycle Charging Capacity / Ah"].iloc[-1] > 0
     assert rest_rows["Current / A"].eq(0).all()
+
+
+def test_headless_simulated_charge_rest_discharge_rest_writes_bdf_and_identity(tmp_path):
+    manager, assignment = _proxy_backed_fake_assignment()
+    step_base = {
+        "cycle_type": "step",
+        "drive_value_other": 0.0,
+        "end_style": "time_s",
+        "end_condition": "greater",
+        "end_value": 0.2,
+        "meas_log_int_s": 0.01,
+        "safety_min_voltage_v": 2.0,
+        "safety_max_voltage_v": 4.3,
+        "safety_min_current_a": -10.0,
+        "safety_max_current_a": 10.0,
+        "safety_max_time_s": 1.0,
+    }
+    steps = [
+        {
+            **step_base,
+            "cycle_display": "Charge",
+            "drive_style": "current_a",
+            "drive_value": 1.0,
+            "drive_value_other": 4.2,
+            "end_value": 0.8,
+        },
+        {
+            **step_base,
+            "cycle_display": "Rest",
+            "drive_style": "none",
+            "drive_value": 0.0,
+        },
+        {
+            **step_base,
+            "cycle_display": "Discharge",
+            "drive_style": "current_a",
+            "drive_value": -1.0,
+            "end_value": 0.8,
+        },
+        {
+            **step_base,
+            "cycle_display": "Rest",
+            "drive_style": "none",
+            "drive_value": 0.0,
+        },
+    ]
+    configuration = {
+        "profile_schema_version": 1,
+        "profile_id": new_profile_id(),
+        "cell_name": "SIMULATED_LG_MJ1",
+        "directory": str(tmp_path),
+        "institution_code": "TEST",
+        "cycle_type": "Charge, rest, discharge, rest",
+        "eq_req_dict": {"psu": True, "eload": True},
+        "settings_cycle_list_step_list": [steps],
+    }
+    configuration["profile_version"] = profile_version(configuration)
+    process_manager = ProcessManager(join_timeout_s=2)
+    process = None
+    try:
+        process = process_manager.start(
+            run_charge_discharge_control,
+            (assignment, ProcessQueue(), ProcessQueue(), configuration, 0),
+        )
+        process.join(10)
+        assert process.exitcode == 0, (
+            "Headless simulated cycle did not exit successfully within 10 seconds "
+            f"(exitcode={process.exitcode}, pid={process.pid})."
+        )
+    finally:
+        if process is not None:
+            process_manager.stop(process)
+        manager.close()
+
+    csv_files = sorted(tmp_path.rglob("*.bdf.csv"))
+    assert len(csv_files) == 1
+    dataframe = pd.read_csv(csv_files[0])
+    assert set(dataframe["Step Type"]) == {"CC_CHG", "REST", "CC_DCH"}
+    charge_rows = dataframe[dataframe["Step Type"] == "CC_CHG"]
+    discharge_rows = dataframe[dataframe["Step Type"] == "CC_DCH"]
+    rest_rows = dataframe[dataframe["Step Type"] == "REST"]
+    assert not charge_rows.empty and not discharge_rows.empty and len(rest_rows) >= 2
+    assert charge_rows["Current / A"].gt(0).all()
+    assert discharge_rows["Current / A"].lt(0).all()
+    assert rest_rows["Current / A"].eq(0).all()
+    assert charge_rows["Cycle Charging Capacity / Ah"].iloc[-1] > 0
+    assert discharge_rows["Cycle Discharging Capacity / Ah"].iloc[-1] > 0
+
+    metadata_path = csv_files[0].with_suffix(".meta.jsonld")
+    assert metadata_path.exists()
+    metadata = json.loads(metadata_path.read_text(encoding="utf-8"))["testEquipmentControl"]
+    assert metadata["test"]["status"] == "completed"
+    assert [step["display_name"] for step in metadata["test"]["steps"]] == [
+        "Charge",
+        "Rest",
+        "Discharge",
+        "Rest",
+    ]
+    assert metadata["equipment"]["psu"]["serial_number"] == "SIM-PSU-0001"
+    assert metadata["equipment"]["eload"]["serial_number"] == "SIM-ELOAD-0001"
+    assert metadata["equipment"]["dmm_v"]["serial_number"] == "SIM-DMM-0001"
 

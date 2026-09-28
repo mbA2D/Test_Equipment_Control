@@ -5,7 +5,7 @@ from battery_app.simulation import require_simulation_link
 class Fake_DMM:
     
     def __init__(self, resource_id = None, resources_list = None):
-        self.inst_idn = 'Fake_DMM'
+        self.inst_idn = "TestEquipmentControl,SIMULATED_DMM,SIM-DMM-0001,0.1"
         self.battery_link = None
         
     def measure_voltage(self, nplc = None, volt_range = None):

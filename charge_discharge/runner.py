@@ -421,6 +421,7 @@ class CyclingControl():
                 """Read, timestamp, evaluate, and persist one complete sample set."""
                 sample_started = time.perf_counter()
                 data = self.measure_battery(
+                    data_out_queue=data_out_queue,
                     step_index=step_index,
                     current_time=sample_started,
                 )

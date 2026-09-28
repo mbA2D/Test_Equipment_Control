@@ -12,7 +12,7 @@ class Fake_Eload:
         self.mode = "CURR"
         self.battery_link = None
         
-        self.inst_idn = "Fake Eload"
+        self.inst_idn = "TestEquipmentControl,SIMULATED_ELOAD,SIM-ELOAD-0001,0.1"
         
     def set_current(self, current_setpoint_A):
         require_simulation_link(self.battery_link, "Fake Eload").set_eload_current(
