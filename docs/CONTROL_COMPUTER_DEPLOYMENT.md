@@ -131,9 +131,8 @@ and simulated instrument model and serial numbers. The output is under
 `/home/a2dbatterylab/battery_test_runs/CLI_SIM_BOTTOM_EDITABLE_20260930/output/`.
 
 The two rack checkouts received commit `c826287` through a local Git bundle.
-As of 2026-09-30, the GitHub `python-3.14` branch remained at `744eb70`
-because the saved HTTPS credential was rejected during the push. Confirm that
-the published branch includes `c826287` before provisioning a fresh computer.
+The `python-3.14` branch was published with that fix on 2026-09-30, so a fresh
+clone includes the corrected package configuration.
 
 ## Operational boundary
 
