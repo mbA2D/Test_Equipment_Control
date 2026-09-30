@@ -66,6 +66,7 @@ permission is identified.
 ```bash
 .venv/bin/python --version
 uv pip check --python .venv/bin/python
+.venv/bin/battery-cycle --help
 ```
 
 The project interpreter should report Python 3.14.7. Debian's `/usr/bin/python3`
@@ -86,12 +87,11 @@ was created with the `hardware` and `analysis` extras. The environment
 contains 66 packages and `uv pip check` reports no dependency conflicts.
 Debian's system Python remains 3.13.5. Git and wget are available on the host.
 
-The `battery-cycle` CLI help was verified with
-`PYTHONPATH=. .venv/bin/battery-cycle --help`. Running the generated
-`.venv/bin/battery-cycle` entry point without `PYTHONPATH=.` currently fails to
-import the top-level `Templates` module from the editable install. Fix the
-project's setuptools module packaging before relying on the entry point in a
-service.
+At initial commissioning, the `battery-cycle` entry point needed
+`PYTHONPATH=.` because the editable install omitted standalone modules such as
+`Templates`. Commit `c826287` added those runtime modules to the setuptools
+package configuration. After reinstalling that revision, the CLI works
+without `PYTHONPATH`, including when started outside the source checkout.
 
 On 2026-09-29 local time, a full CLI simulation completed with exit code 0. It
 ran charge, rest, discharge, and rest steps using only the built-in fake PSU,
@@ -120,6 +120,20 @@ metadata records the fake equipment model and serial numbers. The 10 ms sample
 interval produced one 2.8 ms overrun. As on the top computer, the CLI was run
 with `PYTHONPATH=.`. Linux instrument discovery and supervised physical
 hardware validation have not been performed.
+
+On 2026-09-30, both computers were advanced to commit `c826287` and their
+project environments were reinstalled in editable mode. `uv pip check` passed
+on both. From `/tmp` with `PYTHONPATH` unset, each installation's
+`battery-cycle --help` worked. The bottom computer also completed a four-step fake
+equipment run through the editable install with exit code 0. Its BDF metadata
+reports `completed`, the expected `CC_CHG`, `REST`, `CC_DCH`, and `REST` labels,
+and simulated instrument model and serial numbers. The output is under
+`/home/a2dbatterylab/battery_test_runs/CLI_SIM_BOTTOM_EDITABLE_20260930/output/`.
+
+The two rack checkouts received commit `c826287` through a local Git bundle.
+As of 2026-09-30, the GitHub `python-3.14` branch remained at `744eb70`
+because the saved HTTPS credential was rejected during the push. Confirm that
+the published branch includes `c826287` before provisioning a fresh computer.
 
 ## Operational boundary
 
