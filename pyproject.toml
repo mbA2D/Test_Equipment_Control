@@ -48,6 +48,7 @@ dev = [
 
 [tool.setuptools]
 packages = ["battery_app", "battery_gui", "charge_discharge", "lab_equipment"]
+py-modules = ["FileIO", "Templates", "equipment", "jsonIO", "voltage_to_temp"]
 
 [tool.setuptools.package-data]
 lab_equipment = ["A2D_DAQ_Config_*.csv"]
