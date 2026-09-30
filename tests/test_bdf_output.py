@@ -9,24 +9,43 @@ from battery_app.bdf_output import (
     build_bdf_row,
     build_cycle_metadata,
     metadata_path,
-    step_type_label,
     validate_bdf_dataframe,
     write_metadata,
 )
 
 
 @pytest.mark.parametrize(
-    ("cycle_display", "expected_label"),
+    ("cycle_display", "bdf_step_type"),
     [
         ("Charge", "CC_CHG"),
         ("Discharge", "CC_DCH"),
         ("Rest", "REST"),
+        ("Rest after charge", "REST"),
+        ("Rest after discharge", "REST"),
     ],
 )
-def test_step_type_label_maps_charge_discharge_and_rest(
-    cycle_display, expected_label
+def test_cycle_metadata_uses_explicit_bdf_step_type(
+    tmp_path, cycle_display, bdf_step_type
 ):
-    assert step_type_label(cycle_display) == expected_label
+    filepath = tmp_path / "LOCAL__cell__20260924_001.bdf.csv"
+    metadata = build_cycle_metadata(
+        data_path=filepath,
+        institution_code="LOCAL",
+        cell_name="cell",
+        cycle_count=1,
+        cycle_settings=[{
+            "cycle_type": "step",
+            "cycle_display": cycle_display,
+            "bdf_step_type": bdf_step_type,
+        }],
+        equipment={},
+        temperature_sources={},
+        start_time_utc="2026-09-24T00:00:00+00:00",
+    )
+
+    step = metadata["testEquipmentControl"]["test"]["steps"][0]
+    assert step["step_type"] == bdf_step_type
+    assert step["display_name"] == cycle_display
 
 
 def _row():
@@ -93,7 +112,11 @@ def test_metadata_sidecar_uses_jsonld_and_records_temperature_placement(tmp_path
         institution_code="LOCAL",
         cell_name="cell",
         cycle_count=1,
-        cycle_settings=[{"cycle_display": "Charge", "cycle_type": "step"}],
+        cycle_settings=[{
+            "cycle_display": "Charge",
+            "bdf_step_type": "CC_CHG",
+            "cycle_type": "step",
+        }],
         equipment={"dmm_t": object()},
         temperature_sources={"Surface Temperature T1 / degC": "Temperature"},
         start_time_utc="2026-09-24T00:00:00+00:00",

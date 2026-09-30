@@ -209,6 +209,13 @@ class PowerSupplyDevice(PyVisaDevice):
     
 class EloadDevice(PyVisaDevice):
     selection_window_title = "Eload Selection"
+
+    def set_undervoltage_cutoff(self, voltage_v):
+        """Set the local CC-mode discharge cutoff, if the driver supports it."""
+        raise NotImplementedError(
+            f"{type(self).__name__} does not support an instrument-side "
+            "undervoltage cutoff"
+        )
     
 class SourceMeasureDevice(PyVisaDevice):
     selection_window_title = "Source Measure Selection"

@@ -46,7 +46,11 @@ def test_load_bdf_file_uses_metadata_for_graphiv(tmp_path):
         institution_code='LOCAL',
         cell_name='cell_1',
         cycle_count=1,
-        cycle_settings=[{'cycle_display': 'Charge', 'cycle_type': 'step'}],
+        cycle_settings=[{
+            'cycle_display': 'Charge',
+            'bdf_step_type': 'CC_CHG',
+            'cycle_type': 'step',
+        }],
         equipment={},
         temperature_sources={},
         start_time_utc='2026-09-24T00:00:00+00:00',

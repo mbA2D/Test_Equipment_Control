@@ -1,6 +1,7 @@
 """Connections between the simple battery model and fake instruments."""
 
 from multiprocessing.managers import BaseManager
+from math import isfinite
 from time import monotonic
 
 from .battery_model_simple import BatteryCellWorldModel
@@ -71,6 +72,8 @@ class FakeBatteryLink:
         self.psu_voltage_setpoint_v = 0.0
         self.eload_output_enabled = False
         self.eload_current_a = 0.0
+        self.eload_undervoltage_cutoff_v: float | None = None
+        self.eload_undervoltage_cutoff_tripped = False
         self._last_update = monotonic()
 
     @property
@@ -87,6 +90,14 @@ class FakeBatteryLink:
                 return current_limit_a
             return min(current_limit_a, voltage_headroom_v / resistance_ohm)
         if self.eload_output_enabled:
+            if self.eload_undervoltage_cutoff_tripped:
+                return 0.0
+            if (
+                self.eload_undervoltage_cutoff_v is not None
+                and self.model.state.terminal_voltage_v <= self.eload_undervoltage_cutoff_v
+            ):
+                self.eload_undervoltage_cutoff_tripped = True
+                return 0.0
             return -abs(self.eload_current_a)
         return 0.0
 
@@ -109,6 +120,15 @@ class FakeBatteryLink:
     def set_eload_output(self, enabled: bool) -> None:
         self.advance()
         self.eload_output_enabled = enabled
+        if not enabled:
+            self.eload_undervoltage_cutoff_tripped = False
+
+    def set_eload_undervoltage_cutoff(self, voltage_v: float) -> None:
+        self.advance()
+        voltage_v = float(voltage_v)
+        if not isfinite(voltage_v) or voltage_v < 0.0:
+            raise ValueError("Undervoltage cutoff must be a finite non-negative voltage")
+        self.eload_undervoltage_cutoff_v = voltage_v
 
     def advance(self, dt_s: float | None = None) -> None:
         """Advance the model by explicit seconds or elapsed wall-clock time."""

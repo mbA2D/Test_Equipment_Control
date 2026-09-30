@@ -1,6 +1,6 @@
 # Battery Profile JSON Contract
 
-Status: version 1
+Status: version 2
 
 This file defines the portable profile format for advanced battery-test
 programs. It is independent of Qt widgets, equipment assignments, and the
@@ -14,7 +14,7 @@ The persisted file uses the existing configuration envelope:
 {
   "schema_version": 3,
   "test_configuration": {
-    "profile_schema_version": 1,
+    "profile_schema_version": 2,
     "profile_id": "profile-example-001",
     "profile_version": "sha256:...",
     "profile_name": "Charge-rest-discharge",
@@ -22,6 +22,7 @@ The persisted file uses the existing configuration envelope:
       [
         {
           "cycle_type": "step",
+          "bdf_step_type": "CC_CHG",
           "cycle_display": "Charge",
           "drive_style": "voltage_v",
           "drive_value": 4.2,
@@ -46,7 +47,8 @@ The persisted file uses the existing configuration envelope:
 `3`. A profile file must contain only `schema_version` and
 `test_configuration` at its top level. The nested required
 `profile_schema_version` identifies this profile contract and must currently be
-`1`.
+`2`.
+Version 1 profiles are unsupported; the application does not migrate them.
 
 ## Identity and revision rules
 
@@ -135,6 +137,7 @@ profile definition and therefore changes `profile_version` when edited.
 ordered list of executable steps. A step must contain:
 
 - `cycle_type`: exactly `"step"`.
+- `bdf_step_type`: one of `"CC_CHG"`, `"CC_DCH"`, `"REST"`, or `"IR"`.
 - `cycle_display`: non-empty display text.
 - `drive_style`: `"current_a"`, `"voltage_v"`, or `"none"`.
 - `drive_value` and `drive_value_other`: numeric drive setpoints.
@@ -145,6 +148,10 @@ ordered list of executable steps. A step must contain:
 - Voltage and current safety minimums and maximums.
 - `safety_max_time_s`: finite numeric safety timeout; zero or a negative value
   disables that timeout according to the existing engine convention.
+
+`bdf_step_type` is the authoritative BDF classification. It is stored in the
+profile and copied to the BDF CSV and JSON-LD metadata; it is never inferred
+from `cycle_display`. `cycle_display` is presentation text only.
 
 The optional step fields are `cycle_end_voltage_v` and
 `cycle_end_time_s`. Advanced profiles express multi-step, repeated, and IR

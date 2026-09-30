@@ -21,10 +21,11 @@ RUN_ROOT = ROOT / 'hardware_tests' / 'results' / f'CELL_32AH_{RUN_ID}'
 REPORT = ROOT / 'hardware_tests' / 'results' / f'CELL_32AH_{RUN_ID}_run_summary.json'
 
 profile_definition = {
-    'profile_schema_version': 1,
+    'profile_schema_version': 2,
     'profile_name': 'CELL 32Ah low-current 30-second CC charge',
     'settings_cycle_list_step_list': [[{
         'cycle_type': 'step',
+        'bdf_step_type': 'CC_CHG',
         'cycle_display': 'CC charge 1 A for 30 s',
         'drive_style': 'current_a',
         'drive_value': 1.0,

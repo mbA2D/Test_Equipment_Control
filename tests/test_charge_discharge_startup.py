@@ -39,6 +39,7 @@ def test_driven_step_uses_a_short_bounded_startup_wait(monkeypatch):
     result = control.step_cell(
         {
             "cycle_display": "CC charge",
+            "bdf_step_type": "CC_CHG",
             "drive_style": "current_a",
             "drive_value": 1.0,
             "drive_value_other": 4.2,

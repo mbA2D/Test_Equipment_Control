@@ -30,6 +30,29 @@ def test_fake_eload_sets_and_measures_current_through_the_battery_link():
     assert dmm.measure_voltage() == pytest.approx(eload.measure_voltage())
 
 
+def test_fake_eload_undervoltage_cutoff_latches_off_below_configured_voltage():
+    model = BatteryCellWorldModel(initial_soc=0.5)
+    link = FakeBatteryLink(model)
+    eload = Fake_Eload()
+    eload.attach_battery_link(link)
+    cutoff_voltage_v = 3.62
+
+    eload.set_undervoltage_cutoff(cutoff_voltage_v)
+    eload.set_current(1.0)
+    eload.toggle_output(True)
+    assert eload.measure_current() == pytest.approx(-1.0)
+    assert eload.measure_voltage() > cutoff_voltage_v
+
+    link.advance(dt_s=1000.0)
+    assert eload.measure_current() == pytest.approx(0.0)
+    assert eload.measure_voltage() > cutoff_voltage_v  # voltage recovers unloaded
+
+    soc_after_cutoff = model.state.soc
+    link.advance(dt_s=60.0)
+    assert eload.measure_current() == pytest.approx(0.0)
+    assert model.state.soc == pytest.approx(soc_after_cutoff)
+
+
 def test_fake_psu_sets_and_measures_voltage_through_the_battery_link():
     link = FakeBatteryLink(BatteryCellWorldModel(initial_soc=0.5))
     psu = Fake_PSU()

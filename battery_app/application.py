@@ -227,6 +227,17 @@ class BatteryApplication:
         self.channel_controllers.clear()
         self.channel_states.clear()
 
+    def remove_channel(self, channel: int) -> bool:
+        """Stop one channel and release its equipment ownership."""
+
+        controller = self.channel_controllers.pop(channel, None)
+        if controller is None:
+            return False
+        controller.stop_all()
+        self.equipment_manager.release_channel_ownership(channel)
+        self.channel_states.pop(channel, None)
+        return True
+
     def connect_equipment(self, descriptor: dict[str, Any]) -> bool:
         """Register one descriptor and start its equipment-owner process."""
 
@@ -473,8 +484,11 @@ class BatteryApplication:
     def start_idle(self, channel: int) -> OperationResult:
         """Start idle measurement for one configured non-running channel."""
 
-        if channel not in self.channel_states:
+        state = self.channel_states.get(channel)
+        if state is None:
             return OperationResult(False, f"Unknown channel {channel}")
+        if state.safety_fault or state.status is ChannelStatus.SAFETY_FAULT:
+            return OperationResult(False, "Clear the safety fault before starting idle measurement")
         if self.channel_controllers[channel].start_idle():
             return OperationResult(True)
         return OperationResult(False, "Idle measurement could not be started")

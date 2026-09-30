@@ -78,7 +78,10 @@ def test_configuration_store_round_trips_test_configuration(tmp_path):
     store = ConfigurationStore()
     configuration = {
         "cell_name": "cell_1",
-        "settings_cycle_list_step_list": [[{"cycle_type": "step"}]],
+        "settings_cycle_list_step_list": [[{
+            "cycle_type": "step",
+            "bdf_step_type": "REST",
+        }]],
     }
     filename = tmp_path / "test.json"
 

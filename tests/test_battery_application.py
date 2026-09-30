@@ -67,11 +67,12 @@ class RecordingController:
 
 def _profile_definition() -> dict:
     return {
-        "profile_schema_version": 1,
+        "profile_schema_version": 2,
         "profile_name": "Short rest",
         "settings_cycle_list_step_list": [[{
             "cycle_type": "step",
             "cycle_display": "Rest",
+            "bdf_step_type": "REST",
             "drive_style": "none",
             "drive_value": 0,
             "drive_value_other": 0,
@@ -171,6 +172,7 @@ def test_application_blocks_start_when_profile_exceeds_assigned_equipment_limits
     charge_step = profile_definition["settings_cycle_list_step_list"][0][0]
     charge_step.update({
         "cycle_display": "Charge",
+        "bdf_step_type": "CC_CHG",
         "drive_style": "current_a",
         "drive_value": 2.0,
         "drive_value_other": 4.2,

@@ -168,6 +168,7 @@ def test_gui_style_runner_drives_simulated_battery_and_logs_measurements(
     step = {
         "cycle_type": "step",
         "cycle_display": "Discharge",
+        "bdf_step_type": "CC_DCH",
         "drive_style": "current_a",
         "drive_value": -10.0,
         "drive_value_other": 0.0,
@@ -182,7 +183,7 @@ def test_gui_style_runner_drives_simulated_battery_and_logs_measurements(
         "safety_max_time_s": 2.0,
     }
     configuration = {
-        "profile_schema_version": 1,
+        "profile_schema_version": 2,
         "profile_id": new_profile_id(),
         "cell_name": "SIMULATED_LG_MJ1",
         "directory": str(tmp_path),
@@ -324,6 +325,7 @@ def test_gui_style_runner_writes_charge_and_rest_bdf_step_types(tmp_path):
     charge_step = {
         **step_base,
         "cycle_display": "Charge",
+        "bdf_step_type": "CC_CHG",
         "drive_style": "current_a",
         "drive_value": 1.0,
         "drive_value_other": 4.2,
@@ -332,11 +334,12 @@ def test_gui_style_runner_writes_charge_and_rest_bdf_step_types(tmp_path):
     rest_step = {
         **step_base,
         "cycle_display": "Rest",
+        "bdf_step_type": "REST",
         "drive_style": "none",
         "drive_value": 0.0,
     }
     configuration = {
-        "profile_schema_version": 1,
+        "profile_schema_version": 2,
         "profile_id": new_profile_id(),
         "cell_name": "SIMULATED_LG_MJ1",
         "directory": str(tmp_path),
@@ -394,6 +397,7 @@ def test_headless_simulated_charge_rest_discharge_rest_writes_bdf_and_identity(t
         {
             **step_base,
             "cycle_display": "Charge",
+            "bdf_step_type": "CC_CHG",
             "drive_style": "current_a",
             "drive_value": 1.0,
             "drive_value_other": 4.2,
@@ -401,26 +405,29 @@ def test_headless_simulated_charge_rest_discharge_rest_writes_bdf_and_identity(t
         },
         {
             **step_base,
-            "cycle_display": "Rest",
+            "cycle_display": "Rest after charge",
+            "bdf_step_type": "REST",
             "drive_style": "none",
             "drive_value": 0.0,
         },
         {
             **step_base,
             "cycle_display": "Discharge",
+            "bdf_step_type": "CC_DCH",
             "drive_style": "current_a",
             "drive_value": -1.0,
             "end_value": 0.8,
         },
         {
             **step_base,
-            "cycle_display": "Rest",
+            "cycle_display": "Rest after discharge",
+            "bdf_step_type": "REST",
             "drive_style": "none",
             "drive_value": 0.0,
         },
     ]
     configuration = {
-        "profile_schema_version": 1,
+        "profile_schema_version": 2,
         "profile_id": new_profile_id(),
         "cell_name": "SIMULATED_LG_MJ1",
         "directory": str(tmp_path),

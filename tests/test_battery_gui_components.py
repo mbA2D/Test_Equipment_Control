@@ -153,6 +153,7 @@ def test_imported_profile_is_read_only_until_explicit_simple_profile_action(qtbo
         "settings_cycle_list_step_list": [[{
             "cycle_type": "step",
             "cycle_display": "Charge",
+            "bdf_step_type": "CC_CHG",
             "drive_style": "voltage_v",
             "drive_value": 4.2,
             "drive_value_other": 1.0,

@@ -75,6 +75,12 @@ Run `\.venv\Scripts\python.exe battery_test.py` from the project root.
 
 The setups and tests can be exported and imported (.json format) for easy reconfiguration when restarting the software.  
 
+### Running a battery test without the GUI
+
+The headless CLI supports test execution, equipment setup, channel management,
+and idle monitoring. See the [Headless CLI guide](HEADLESS_CLI.md) for
+requirements, commands, safety confirmations, and examples.
+
 See the results with ```GraphIV.py```. Graphs and stats (capacity_ah, capacity_wh, max temperature, etc.) for each cycle can be generated.  
 
 ### Battery data format and future storage

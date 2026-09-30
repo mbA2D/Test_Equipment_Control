@@ -206,6 +206,9 @@ class ElectronicLoadProxy(CorrelatedVirtualDevice):
     def set_current(self, current_a):
         return self._call("set_current", [current_a])
 
+    def set_undervoltage_cutoff(self, voltage_v):
+        return self._call("set_undervoltage_cutoff", [voltage_v])
+
     def set_mode_current(self):
         return self._call("set_mode_current")
 

@@ -31,23 +31,29 @@ from lab_equipment import DMM_A2D_4CH_Isolated_ADC
 from lab_equipment import Eload_A2D_Eload
 import equipment as eq
 import time
-import json
-from battery_app import ApplicationEvent, BatteryApplication, ChannelStatus
-from battery_app.equipment_manager import EquipmentManager
+from battery_app import ApplicationEvent, BatteryApplication, ChannelStatus, HeadlessRunner
 from battery_app.logging_config import configure_application_logging, get_logger
-from battery_app.profile_validation import profile_payload
 from battery_gui import ChannelWidget, ConnectedEquipmentWidget, EquipmentConnectionWidget
 
 
 logger = get_logger(__name__)
 
 class MainTestWindow(QMainWindow):
-    def __init__(self, application: BatteryApplication | None = None):
+    def __init__(
+        self,
+        application: BatteryApplication | None = None,
+        runner: HeadlessRunner | None = None,
+    ):
         super().__init__()
+
+        if application is not None and runner is not None:
+            raise ValueError("Provide either application or runner, not both")
 
         self.num_battery_channels = 0
         self.resources_list = None
-        self.application = application or BatteryApplication()
+        self.runner = runner or HeadlessRunner(application=application)
+        # Compatibility alias for callers that inspect the shared application facade.
+        self.application = self.runner.application
         # Public read-through for callers that inspect application channel state.
         self.channel_states = self.application.channel_states
         self.connected_equipment_list = self.application.connected_equipment
@@ -185,7 +191,7 @@ class MainTestWindow(QMainWindow):
     
     #Scan new equipment in a process so that we don't block the main window
     def scan_resources(self):
-        result = self.application.scan_resources()
+        result = self.runner.scan_resources()
         if not result.ok:
             logger.warning(result.message)
             self.connection_widget.status.setText(result.message or "Resource scan could not be started")
@@ -194,7 +200,7 @@ class MainTestWindow(QMainWindow):
         self.connection_widget.setFocus()
 
     def connect_selected_equipment(self, eq_type, class_name, resource_id, setup_dict=None):
-        result = self.application.probe_equipment(
+        result = self.runner.probe_equipment(
             eq_type,
             class_name,
             resource_id,
@@ -215,8 +221,9 @@ class MainTestWindow(QMainWindow):
                 elif child.layout() is not None:
                     self.clear_layout(child.layout())
     
-    def remove_all_channels(self):
-        self.application.remove_channels()
+    def remove_all_channels(self, *, remove_application_channels=True):
+        if remove_application_channels:
+            self.runner.remove_channels()
         self.channel_widgets.clear()
         while self.channel_stack.count():
             widget = self.channel_stack.widget(0)
@@ -225,8 +232,8 @@ class MainTestWindow(QMainWindow):
         self.channel_list.clear()
     
     
-    def setup_channels(self, num_ch = None):
-        self.remove_all_channels()
+    def setup_channels(self, num_ch=None, *, application_channels_ready=False):
+        self.remove_all_channels(remove_application_channels=not application_channels_ready)
         
         if num_ch == None:
             # Start with one workspace. Additional channels are added from
@@ -235,15 +242,16 @@ class MainTestWindow(QMainWindow):
         self.num_battery_channels = num_ch
         
         for ch_num in range(self.num_battery_channels):
-            self.setup_single_channel(ch_num)
+            self.setup_single_channel(ch_num, create_application_channel=not application_channels_ready)
     
     
-    def setup_single_channel(self, ch_num):
+    def setup_single_channel(self, ch_num, *, create_application_channel=True):
         """Create the single-window workspace for one channel."""
         widget = ChannelWidget(ch_num)
         self.channel_widgets[ch_num] = widget
-        self.application.add_channel(ch_num)
-        widget.set_run_configuration({"cell_name": self.application.channel_states[ch_num].cell_name})
+        if create_application_channel:
+            self.runner.add_channel(ch_num)
+        widget.set_run_configuration({"cell_name": self.runner.channel_states[ch_num].cell_name})
 
         widget.edit_cell_name_requested.connect(widget.focus_cell_name)
         widget.cell_name_changed.connect(partial(self._set_cell_name, ch_num))
@@ -256,7 +264,7 @@ class MainTestWindow(QMainWindow):
         widget.start_test_requested.connect(partial(self.start_test, ch_num))
         widget.equipment_assignment_applied.connect(partial(self.apply_equipment_assignment, ch_num))
         widget.test_configuration_applied.connect(partial(self.apply_test_configuration, ch_num))
-        widget.set_equipment_options(self.application.connected_equipment)
+        widget.set_equipment_options(self.runner.connected_equipment)
 
         self.channel_stack.addWidget(widget)
         self.channel_list.addItem(f"CH {ch_num}  |  Idle")
@@ -269,7 +277,7 @@ class MainTestWindow(QMainWindow):
 
     def _set_cell_name(self, channel: int, cell_name: str) -> None:
         """Send edited run context directly to the application facade."""
-        result = self.application.set_cell_name(channel, cell_name)
+        result = self.runner.set_cell_name(channel, cell_name)
         if not result.ok:
             logger.warning("CH%s: %s", channel, result.message)
 
@@ -279,7 +287,7 @@ class MainTestWindow(QMainWindow):
 
     def _refresh_channel_indicator(self, ch_num):
         """Reflect safety > worker error > running > idle in navigation."""
-        state = self.application.channel_states[ch_num]
+        state = self.runner.channel_states[ch_num]
         item = self.channel_list.item(ch_num)
         if item is None:
             return
@@ -315,40 +323,32 @@ class MainTestWindow(QMainWindow):
         if not any(value is not None for value in assignment.values()):
             logger.warning("CH%s - No equipment assigned", ch_num)
             return
-        result = self.application.apply_equipment_assignment(ch_num, assignment)
+        result = self.runner.apply_equipment_assignment(ch_num, assignment)
         if result.ok:
             self._log_important("Equipment assignment updated", ch_num)
             self._refresh_channel_indicator(ch_num)
-            self.connected_equipment_widget.set_equipment(self.application.connected_equipment)
+            self.connected_equipment_widget.set_equipment(self.runner.connected_equipment)
         else:
             logger.warning("CH%s: %s", ch_num, result.message)
 
     @staticmethod
     def _resolve_connected_equipment(assignment, connected_equipment):
         """Resolve a role descriptor by required stable equipment identity."""
-        return BatteryApplication.resolve_connected_equipment(assignment, connected_equipment)
+        return HeadlessRunner.resolve_connected_equipment(assignment, connected_equipment)
 
     @staticmethod
     def _physical_resource_ids(res_id):
         """Return physical resource identifiers represented by a descriptor."""
-        return EquipmentManager.physical_resource_ids(res_id)
+        return HeadlessRunner.physical_resource_ids(res_id)
 
     @staticmethod
     def is_equipment_already_connected(eq_res_id_dict, connected_equipment_list):
         """Check for a duplicate physical resource across equipment roles."""
-        new_resource_ids = MainTestWindow._physical_resource_ids(
-            eq_res_id_dict.get("res_id")
-        )
-        return bool(new_resource_ids) and any(
-            new_resource_ids & MainTestWindow._physical_resource_ids(
-                equipment.get("res_id")
-            )
-            for equipment in connected_equipment_list
-        )
+        return HeadlessRunner.is_equipment_already_connected(eq_res_id_dict, connected_equipment_list)
 
     def apply_test_configuration(self, ch_num, configuration, source="simple"):
         """Validate and store an executable profile without spawning a dialog."""
-        profile_configuration = self.application.apply_profile(ch_num, configuration)
+        profile_configuration = self.runner.apply_profile(ch_num, configuration)
         widget = self.channel_widgets[ch_num]
         run_context = widget.run_configuration()
         self._set_cell_name(ch_num, run_context["cell_name"])
@@ -379,7 +379,7 @@ class MainTestWindow(QMainWindow):
         runtime_context = dict(run_context)
         runtime_context["directory"] = self._data_directory()
         runtime_context["institution_code"] = self.institution_code_edit.text()
-        return self.application.build_execution_configuration(configuration, runtime_context)
+        return self.runner.build_execution_configuration(configuration, runtime_context)
 
     def _render_application_event(self, event: ApplicationEvent):
         """Render one non-Qt application event in the active channel workspace."""
@@ -393,7 +393,7 @@ class MainTestWindow(QMainWindow):
                 self.connection_widget.status.setText("Equipment connected")
                 logger.info("New equipment connected")
             else:
-                message = self.application.equipment_manager.last_connection_error
+                message = self.runner.last_equipment_error
                 self.connection_widget.status.setText(
                     f"Equipment could not be connected: {message}"
                     if message else "Equipment could not be connected"
@@ -422,18 +422,18 @@ class MainTestWindow(QMainWindow):
         
         
     def update_loop(self):
-        for event in self.application.poll():
+        for event in self.runner.poll():
             self._render_application_event(event)
     
     def create_new_equipment(self, eq_res_id_dict):
         """Register a connected instrument through the equipment manager."""
-        if not self.application.connect_equipment(eq_res_id_dict):
-            message = self.application.equipment_manager.last_connection_error
+        if not self.runner.connect_equipment(eq_res_id_dict):
+            message = self.runner.last_equipment_error
             logger.warning("Equipment could not be connected: %s", message or "connection was rejected")
             return False
         for widget in self.channel_widgets.values():
-            widget.set_equipment_options(self.application.connected_equipment)
-        self.connected_equipment_widget.set_equipment(self.application.connected_equipment)
+            widget.set_equipment_options(self.runner.connected_equipment)
+        self.connected_equipment_widget.set_equipment(self.runner.connected_equipment)
         return True
 
     def export_equipment_assignment(self):
@@ -444,17 +444,10 @@ class MainTestWindow(QMainWindow):
             "JSON files (*.json)",
         )
         if filename:
-            self.application.configuration_store.save_equipment_assignment(
-                self.application.connected_equipment,
-                {
-                    ch_num: state.equipment_assignment
-                    for ch_num, state in self.application.channel_states.items()
-                },
-                filename,
-            )
+            self.runner.save_equipment_configuration(filename)
 
     def import_equipment_assignment(self):
-        if any(state.is_running for state in self.application.channel_states.values()):
+        if any(state.is_running for state in self.runner.channel_states.values()):
             logger.warning("Stop tests on all channels before importing equipment assignment")
             return
         filename, _filter = QFileDialog.getOpenFileName(
@@ -466,33 +459,30 @@ class MainTestWindow(QMainWindow):
         if not filename:
             return
         try:
-            imported = self.application.configuration_store.load_equipment_assignment(filename)
-        except (OSError, ValueError, KeyError) as error:
+            restored = self.runner.restore_equipment_configuration(filename)
+        except (OSError, ValueError, KeyError, RuntimeError) as error:
             logger.exception("Could not import equipment assignment: %s", error)
+            self._log_important(f"Equipment import failed: {error}", color="#b42318")
+            if not self.runner.channel_states:
+                channel_count = max(1, self.num_battery_channels)
+                self.runner.reset_channels(range(channel_count))
+                self.setup_channels(channel_count, application_channels_ready=True)
+                self.connected_equipment_widget.set_equipment(self.runner.connected_equipment)
+                for widget in self.channel_widgets.values():
+                    widget.set_equipment_options(self.runner.connected_equipment)
             return
 
-        self.application.restart_idle_processes = False
-        try:
-            self.application.disconnect_all_equipment()
-            for local_id in sorted(imported["connected_equipment_dict"]):
-                self.create_new_equipment(imported["connected_equipment_dict"][local_id])
-
-            assignments = imported["res_ids_dict"]
-            self.setup_channels(len(assignments))
-            for ch_num, assignment in assignments.items():
-                if assignment is not None:
-                    result = self.application.apply_equipment_assignment(ch_num, assignment)
-                    if not result.ok:
-                        self._log_important(f"Imported assignment failed: {result.message}", ch_num, "#b42318")
-        finally:
-            self.application.restart_idle_processes = True
+        self.setup_channels(len(restored), application_channels_ready=True)
+        self.connected_equipment_widget.set_equipment(self.runner.connected_equipment)
+        for widget in self.channel_widgets.values():
+            widget.set_equipment_options(self.runner.connected_equipment)
 
     def disconnect_all_equipment(self):
-        self.application.disconnect_all_equipment()
+        self.runner.disconnect_all_equipment()
         
     
     def export_test_configuration_process(self, ch_num):
-        configuration = self.application.channel_states[ch_num].test_configuration
+        configuration = self.runner.channel_states[ch_num].test_configuration
         if configuration is None:
             logger.warning("CH%s - No test configuration to export", ch_num)
             return
@@ -503,10 +493,7 @@ class MainTestWindow(QMainWindow):
             "JSON files (*.json)",
         )
         if filename:
-            self.application.configuration_store.save_test_configuration(
-                profile_payload(configuration),
-                filename,
-            )
+            self.runner.save_profile(ch_num, filename)
 
     def import_test_configuration_process(self, ch_num):
         filename, _filter = QFileDialog.getOpenFileName(
@@ -518,14 +505,14 @@ class MainTestWindow(QMainWindow):
         if not filename:
             return
         try:
-            configuration = self.application.configuration_store.load_test_configuration(filename)
+            configuration = self.runner.load_profile(filename)
             self.apply_test_configuration(ch_num, configuration, source="imported")
         except (OSError, ValueError, KeyError) as error:
             logger.exception("CH%s - Could not import test configuration: %s", ch_num, error)
             self._log_important(f"Profile import failed: {error}", ch_num, "#b42318")
 
     def clear_safety_error(self, ch_num):
-        self.application.clear_safety_fault(ch_num)
+        self.runner.clear_safety_fault(ch_num)
         self.channel_widgets[ch_num].set_safety_fault(False)
         self._log_important("Safety cleared", ch_num)
         self._refresh_channel_indicator(ch_num)
@@ -536,7 +523,7 @@ class MainTestWindow(QMainWindow):
             run_context = self.channel_widgets[ch_num].run_configuration()
             run_context["directory"] = self._data_directory()
             run_context["institution_code"] = self.institution_code_edit.text()
-            result = self.application.start_test(ch_num, run_context)
+            result = self.runner.start_test(ch_num, run_context)
             if result.ok:
                 self._log_important("Test started", ch_num, "#18794e")
                 self._refresh_channel_indicator(ch_num)
@@ -548,24 +535,24 @@ class MainTestWindow(QMainWindow):
     
     def start_idle_process(self, ch_num):
         try:
-            if self.application.start_idle(ch_num).ok:
+            if self.runner.start_idle(ch_num).ok:
                 return
         except Exception:
             logger.exception("Idle process start failed for channel %s", ch_num)
     
     def stop_idle_process(self, ch_num):
         #print("CH{} - Stopping Idle Process".format(ch_num))
-        self.application.stop_idle(ch_num)
+        self.runner.stop_idle(ch_num)
         
     def stop_test(self, ch_num):
-        if self.application.stop_test(ch_num).ok:
+        if self.runner.stop_test(ch_num).ok:
             self._log_important("Test stopped", ch_num)
             self._refresh_channel_indicator(ch_num)
     
     def clean_up(self):
         #Close all worker processes before the application exits.
         logger.info("Exiting; cleaning up processes")
-        self.application.shutdown()
+        self.runner.shutdown()
             
     
 

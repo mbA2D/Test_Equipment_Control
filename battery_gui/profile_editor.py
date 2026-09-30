@@ -88,6 +88,11 @@ class ProfileEditorWidget(QWidget):
         step = Templates.StepSettings().settings.copy()
         step["cycle_type"] = "step"
         step["cycle_display"] = profile
+        step["bdf_step_type"] = {
+            "Charge": "CC_CHG",
+            "Discharge": "CC_DCH",
+            "Rest": "REST",
+        }[profile]
         step["safety_max_time_s"] = self.safety_max_time.value()
 
         if profile == "Charge":
@@ -117,7 +122,7 @@ class ProfileEditorWidget(QWidget):
             })
 
         definition = {
-            "profile_schema_version": 1,
+            "profile_schema_version": 2,
             "profile_name": profile,
             "settings_cycle_list_step_list": [[step]],
         }

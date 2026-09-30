@@ -139,7 +139,7 @@ def test_institution_code_is_shared_runtime_setting(qtbot):
     window.data_directory_edit.setText("D:/shared-test-data")
 
     profile = {
-        "settings_cycle_list_step_list": [[{"cycle_display": "Charge"}]],
+        "settings_cycle_list_step_list": [[{"cycle_display": "Charge", "bdf_step_type": "CC_CHG"}]],
     }
     assert "institution_code" not in profile
     assert "directory" not in profile
@@ -154,12 +154,13 @@ def test_gui_loads_cli_created_advanced_profile_read_only(qtbot, tmp_path):
     from battery_test import MainTestWindow
 
     draft = {
-        "profile_schema_version": 1,
+        "profile_schema_version": 2,
         "profile_name": "Advanced charge-rest-discharge",
         "settings_cycle_list_step_list": [
             [{
                 "cycle_type": "step",
                 "cycle_display": "Charge",
+                "bdf_step_type": "CC_CHG",
                 "drive_style": "voltage_v",
                 "drive_value": 4.2,
                 "drive_value_other": 1.0,
@@ -175,6 +176,7 @@ def test_gui_loads_cli_created_advanced_profile_read_only(qtbot, tmp_path):
             }, {
                 "cycle_type": "step",
                 "cycle_display": "Rest",
+                "bdf_step_type": "REST",
                 "drive_style": "none",
                 "drive_value": 0,
                 "drive_value_other": 0,
@@ -191,6 +193,7 @@ def test_gui_loads_cli_created_advanced_profile_read_only(qtbot, tmp_path):
             [{
                 "cycle_type": "step",
                 "cycle_display": "Discharge",
+                "bdf_step_type": "CC_DCH",
                 "drive_style": "current_a",
                 "drive_value": -1.5,
                 "drive_value_other": 0,

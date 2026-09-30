@@ -1,5 +1,6 @@
 #python pyvisa commands for controlling BK8600 series eloads
 
+import math
 import pyvisa
 import time
 from decimal import Decimal
@@ -9,6 +10,10 @@ from .PyVisaDeviceTemplate import EloadDevice
 class BK8600(EloadDevice):
     
     has_remote_sense = True
+    capabilities = frozenset({
+        'can_sink_current', 'can_measure_voltage', 'can_measure_current',
+        'can_set_undervoltage_cutoff',
+    })
     connection_settings = {
         'pyvisa_backend':       '@ivi',
         'time_wait_after_open': 0,
@@ -89,6 +94,30 @@ class BK8600(EloadDevice):
 
     def get_current(self):
         return float(self.inst.query("CURR?"))
+
+    def set_undervoltage_cutoff(self, voltage_v):
+        """Arm B&K Von so CC input turns off below the requested voltage."""
+        voltage_v = float(voltage_v)
+        if not math.isfinite(voltage_v) or voltage_v < 0:
+            raise ValueError("Undervoltage cutoff must be a finite non-negative voltage")
+
+        # On the 8600 series, Von Latch ON stops sinking and turns the input
+        # off below Von. OFF would keep sinking below the threshold.
+        self.inst.write("VOLT:LATC ON")
+        self.inst.write(f"VOLT:ON {voltage_v:.9g}")
+        actual_latch = self.inst.query("VOLT:LATC?").strip()
+        actual_voltage = float(self.inst.query("VOLT:ON?"))
+        try:
+            latch_enabled = int(float(actual_latch)) == 1 or actual_latch.upper() == "ON"
+        except ValueError:
+            latch_enabled = actual_latch.upper() == "ON"
+        if not latch_enabled:
+            raise RuntimeError("B&K e-load did not enable Von Latch cutoff behavior")
+        if not math.isfinite(actual_voltage) or actual_voltage < voltage_v:
+            raise RuntimeError(
+                f"B&K e-load Von readback {actual_voltage:g} V is below the "
+                f"requested safety cutoff {voltage_v:g} V"
+            )
     
     def set_mode_current(self):
         self.inst.write("FUNC CURR")

@@ -8,6 +8,7 @@ class CyclingSettings:
 
     def convert_rest_settings_to_steps(self, rest_settings, model_step_settings=None):
         step = model_step_settings or Templates.StepSettings()
+        step.settings["bdf_step_type"] = "REST"
         step.settings["cycle_display"] = rest_settings["cycle_display"]
         step.settings["drive_style"] = "none"
         step.settings["end_style"] = "time_s"
@@ -22,6 +23,7 @@ class CyclingSettings:
 
     def convert_charge_settings_to_steps(self, charge_settings, model_step_settings=None):
         step = model_step_settings or Templates.StepSettings()
+        step.settings["bdf_step_type"] = "CC_CHG"
         step.settings["cycle_display"] = charge_settings["cycle_display"]
         step.settings["drive_style"] = "voltage_v"
         step.settings["drive_value"] = charge_settings["charge_end_v"]
@@ -38,6 +40,7 @@ class CyclingSettings:
 
     def convert_discharge_settings_to_steps(self, discharge_settings, model_step_settings=None):
         step = model_step_settings or Templates.StepSettings()
+        step.settings["bdf_step_type"] = "CC_DCH"
         step.settings["cycle_display"] = discharge_settings["cycle_display"]
         step.settings["drive_style"] = "current_a"
         step.settings["drive_value"] = discharge_settings["discharge_a"]
@@ -53,6 +56,7 @@ class CyclingSettings:
 
     def convert_single_ir_settings_to_steps(self, ir_settings, model_step_settings=None):
         step = model_step_settings or Templates.StepSettings()
+        step.settings["bdf_step_type"] = "IR"
         step.settings["cycle_display"] = ir_settings["cycle_display"]
         step.settings["drive_style"] = "current_a"
         step.settings["drive_value_other"] = ir_settings["psu_voltage_if_pos_i"]
@@ -74,6 +78,7 @@ class CyclingSettings:
 
     def convert_repeated_ir_settings_to_steps(self, test_settings):
         step = Templates.StepSettings()
+        step.settings["bdf_step_type"] = "IR"
         max_time = max(test_settings["time_1_s"], test_settings["time_2_s"])
         step.settings["cycle_display"] = test_settings["cycle_display"]
         step.settings["drive_style"] = "current_a"

@@ -17,6 +17,7 @@ from battery_app.identity import profile_version
 
 REQUIRED_STEP_FIELDS = frozenset({
     "cycle_type",
+    "bdf_step_type",
     "cycle_display",
     "drive_style",
     "drive_value",
@@ -47,9 +48,10 @@ PROFILE_FIELDS = frozenset({
 })
 
 _DRIVE_STYLES = frozenset({"current_a", "voltage_v", "none"})
+_BDF_STEP_TYPES = frozenset({"CC_CHG", "CC_DCH", "REST", "IR"})
 _END_STYLES = frozenset({"time_s", "current_a", "voltage_v"})
 _END_CONDITIONS = frozenset({"greater", "lesser"})
-PROFILE_SCHEMA_VERSION = 1
+PROFILE_SCHEMA_VERSION = 2
 RUN_CONTEXT_FIELDS = frozenset({"cell_name", "directory", "institution_code"})
 
 
@@ -188,6 +190,11 @@ def _validate_step(
             f"cycle {cycle_index}, step {step_index} must use cycle_type 'step'"
         )
     _require_non_empty_string(result, "cycle_display", cycle_index, step_index)
+    _require_non_empty_string(result, "bdf_step_type", cycle_index, step_index)
+    if result["bdf_step_type"] not in _BDF_STEP_TYPES:
+        raise ProfileValidationError(
+            f"cycle {cycle_index}, step {step_index} has an invalid bdf_step_type"
+        )
 
     if result["drive_style"] not in _DRIVE_STYLES:
         raise ProfileValidationError(
@@ -204,6 +211,7 @@ def _validate_step(
 
     numeric_fields = REQUIRED_STEP_FIELDS - {
         "cycle_type",
+        "bdf_step_type",
         "cycle_display",
         "drive_style",
         "end_style",
@@ -238,6 +246,36 @@ def _validate_step(
     if result["drive_style"] == "none" and result["drive_value"] != 0:
         raise ProfileValidationError(
             f"cycle {cycle_index}, step {step_index} must use drive_value 0 when undriven"
+        )
+    if result["bdf_step_type"] == "REST" and result["drive_style"] != "none":
+        raise ProfileValidationError(
+            f"cycle {cycle_index}, step {step_index} labels a driven step as REST"
+        )
+    if result["bdf_step_type"] == "CC_CHG":
+        is_positive_current = (
+            result["drive_style"] == "current_a" and result["drive_value"] > 0
+        )
+        is_positive_voltage = (
+            result["drive_style"] == "voltage_v"
+            and result["drive_value"] > 0
+            and result["drive_value_other"] > 0
+        )
+        if not (is_positive_current or is_positive_voltage):
+            raise ProfileValidationError(
+                f"cycle {cycle_index}, step {step_index} has a CC_CHG label "
+                "that conflicts with its drive settings"
+            )
+    if result["bdf_step_type"] == "CC_DCH" and not (
+        result["drive_style"] == "current_a" and result["drive_value"] < 0
+    ):
+        raise ProfileValidationError(
+            f"cycle {cycle_index}, step {step_index} has a CC_DCH label "
+            "that conflicts with its drive settings"
+        )
+    if result["bdf_step_type"] == "IR" and result["drive_style"] != "current_a":
+        raise ProfileValidationError(
+            f"cycle {cycle_index}, step {step_index} has an IR label "
+            "that requires current_a drive"
         )
     if result["drive_style"] == "voltage_v" and result["drive_value"] < 0:
         raise ProfileValidationError(

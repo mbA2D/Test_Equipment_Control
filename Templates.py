@@ -158,6 +158,7 @@ class StepSettings(CycleSettings):
     def __init__(self):
         self.settings = {
             "cycle_type":				'step',
+            "bdf_step_type":			'REST',
             "cycle_display":			'Step',
             "drive_style":				'none', #'current_a', 'voltage_v', 'none'
             "drive_value":				0,
@@ -174,6 +175,7 @@ class StepSettings(CycleSettings):
         }
         self.valid_strings = {
             "cycle_type":				('step',),
+            "bdf_step_type":			('CC_CHG', 'CC_DCH', 'REST', 'IR'),
             "cycle_display":            ('Step',),
             "drive_style":				('current_a', 'voltage_v', 'none'),
             "end_style":				('time_s', 'current_a', 'voltage_v'),

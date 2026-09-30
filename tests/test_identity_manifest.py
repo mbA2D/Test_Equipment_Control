@@ -18,16 +18,21 @@ from charge_discharge.cycle_executor import CycleExecutor
 
 def test_profile_identity_keeps_id_and_changes_version_when_settings_change():
     configuration = {
-        "profile_schema_version": 1,
+        "profile_schema_version": 2,
         "profile_id": new_profile_id(),
         "profile_name": "Current profile",
-        "settings_cycle_list_step_list": [[{"cycle_type": "step", "current_a": 1.0}]],
+        "settings_cycle_list_step_list": [[{
+            "cycle_type": "step",
+            "bdf_step_type": "CC_CHG",
+            "current_a": 1.0,
+        }]],
     }
 
     first = {**configuration, "profile_version": profile_version(configuration)}
     unchanged = dict(first)
     changed = {**first, "settings_cycle_list_step_list": [[{
         "cycle_type": "step",
+        "bdf_step_type": "CC_CHG",
         "current_a": 2.0,
     }]]}
     changed["profile_version"] = profile_version(changed)
@@ -42,9 +47,13 @@ def test_profile_identity_keeps_id_and_changes_version_when_settings_change():
 def test_profile_identity_service_revises_only_authored_profile_content():
     identity_service = ProfileIdentityService()
     definition = {
-        "profile_schema_version": 1,
+        "profile_schema_version": 2,
         "profile_name": "Current profile",
-        "settings_cycle_list_step_list": [[{"cycle_type": "step", "current_a": 1.5}]],
+        "settings_cycle_list_step_list": [[{
+            "cycle_type": "step",
+            "bdf_step_type": "CC_CHG",
+            "current_a": 1.5,
+        }]],
     }
 
     created = identity_service.create(definition)
@@ -53,7 +62,11 @@ def test_profile_identity_service_revises_only_authored_profile_content():
         created["profile_id"],
         {
             **created,
-            "settings_cycle_list_step_list": [[{"cycle_type": "step", "current_a": 1.1}]],
+            "settings_cycle_list_step_list": [[{
+                "cycle_type": "step",
+                "bdf_step_type": "CC_CHG",
+                "current_a": 1.1,
+            }]],
         },
     )
 
@@ -64,7 +77,7 @@ def test_profile_identity_service_revises_only_authored_profile_content():
 
 
 def test_profile_version_includes_repeated_cycles():
-    cycle = [{"cycle_type": "step", "current_a": 1.5}]
+    cycle = [{"cycle_type": "step", "bdf_step_type": "CC_CHG", "current_a": 1.5}]
     one_cycle = {"settings_cycle_list_step_list": [cycle]}
     repeated_cycle = {"settings_cycle_list_step_list": [cycle, cycle]}
 
@@ -74,11 +87,12 @@ def test_profile_version_includes_repeated_cycles():
 def test_profile_revision_cli_revises_manual_edit_to_a_new_file(tmp_path, capsys):
     identity_service = ProfileIdentityService()
     profile = identity_service.create({
-        "profile_schema_version": 1,
+        "profile_schema_version": 2,
         "profile_name": "Discharge profile",
         "settings_cycle_list_step_list": [[{
             "cycle_type": "step",
             "cycle_display": "Discharge",
+            "bdf_step_type": "CC_DCH",
             "drive_style": "current_a",
             "drive_value": -1.5,
             "drive_value_other": 0,
@@ -121,12 +135,13 @@ def test_profile_revision_cli_refuses_to_overwrite_new_output(tmp_path):
 
 def test_profile_identity_cli_creates_an_advanced_profile(tmp_path, capsys):
     draft = {
-        "profile_schema_version": 1,
+        "profile_schema_version": 2,
         "profile_name": "Charge-rest-discharge",
         "settings_cycle_list_step_list": [
             [{
                 "cycle_type": "step",
                 "cycle_display": "Charge",
+                "bdf_step_type": "CC_CHG",
                 "drive_style": "voltage_v",
                 "drive_value": 4.2,
                 "drive_value_other": 1.0,
@@ -142,6 +157,7 @@ def test_profile_identity_cli_creates_an_advanced_profile(tmp_path, capsys):
             }, {
                 "cycle_type": "step",
                 "cycle_display": "Rest",
+                "bdf_step_type": "REST",
                 "drive_style": "none",
                 "drive_value": 0,
                 "drive_value_other": 0,
@@ -158,6 +174,7 @@ def test_profile_identity_cli_creates_an_advanced_profile(tmp_path, capsys):
             [{
                 "cycle_type": "step",
                 "cycle_display": "Discharge",
+                "bdf_step_type": "CC_DCH",
                 "drive_style": "current_a",
                 "drive_value": -1.5,
                 "drive_value_other": 0,
@@ -208,7 +225,7 @@ def test_stale_running_cycle_is_recorded_as_interrupted(tmp_path):
             institution_code="LOCAL",
             cell_name="cell_1",
             cycle_count=1,
-            cycle_settings=[{"cycle_display": "Discharge"}],
+            cycle_settings=[{"cycle_display": "Discharge", "bdf_step_type": "CC_DCH"}],
             equipment={},
             temperature_sources={},
             start_time_utc="2026-09-25T00:00:00+00:00",

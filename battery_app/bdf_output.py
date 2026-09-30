@@ -76,20 +76,6 @@ def temperature_source_map(equipment: Mapping[str, Any]) -> dict[str, str]:
     }
 
 
-def step_type_label(cycle_display: str | None) -> str:
-    """Map the application's display name to a BDF step-type label."""
-    normalized = (cycle_display or "").strip().lower()
-    if "discharge" in normalized:
-        return "CC_DCH"
-    if "charge" in normalized:
-        return "CC_CHG"
-    if normalized == "rest" or "rest" in normalized:
-        return "REST"
-    if "ir" in normalized:
-        return "IR"
-    return cycle_display or "UNKNOWN"
-
-
 def build_bdf_row(
         measurement: Mapping[str, Any],
         *,
@@ -238,7 +224,7 @@ def build_cycle_metadata(
     for step_id, settings in enumerate(cycle_settings, start=1):
         steps.append({
             "step_id": step_id,
-            "step_type": step_type_label(settings.get("cycle_display")),
+            "step_type": settings["bdf_step_type"],
             "display_name": settings.get("cycle_display"),
             "settings": _json_safe(settings),
         })

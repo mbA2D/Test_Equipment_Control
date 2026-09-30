@@ -5,6 +5,10 @@ from battery_app.simulation import require_simulation_link
 class Fake_Eload:
     
     has_remote_sense = False
+    capabilities = frozenset({
+        'can_sink_current', 'can_measure_voltage', 'can_measure_current',
+        'can_set_undervoltage_cutoff',
+    })
 
     def __init__(self, resource_id = None, resources_list = None):
         self.max_power = 10000
@@ -20,6 +24,11 @@ class Fake_Eload:
         )
         if self.mode != "CURR":
             print("ERROR - E-load not in correct mode")
+
+    def set_undervoltage_cutoff(self, voltage_v):
+        require_simulation_link(self.battery_link, "Fake Eload").set_eload_undervoltage_cutoff(
+            voltage_v
+        )
 
     def set_mode_current(self):
         require_simulation_link(self.battery_link, "Fake Eload")

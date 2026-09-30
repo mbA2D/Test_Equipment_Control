@@ -6,7 +6,7 @@ import time
 
 import equipment as eq
 import FileIO
-from battery_app.bdf_output import build_bdf_row, step_type_label, temperature_source_map
+from battery_app.bdf_output import build_bdf_row, temperature_source_map
 from battery_app.logging_config import get_logger
 from battery_app.simulation import (
     SimulationLinkService,
@@ -117,7 +117,7 @@ class CyclingControl():
             step_count=step_count,
             step_id=step_id,
             step_time_s=max(data["Data_Timestamp"] - step_start_time_perf, 0.0),
-            step_type=step_type_label(step_type),
+            step_type=step_type,
             temperature_sources=self.temperature_sources,
         )
         FileIO.write_bdf_data(self.csv_filepath, bdf_row)
@@ -262,6 +262,10 @@ class CyclingControl():
                 if self.eq_dict['eload'] != None:
                     if 'eload' in self._readback_checked_roles:
                         self.eq_dict['eload'].set_mode_current()
+                    time.sleep(0.01)
+                    self.eq_dict['eload'].set_undervoltage_cutoff(
+                        step_settings["safety_min_voltage_v"]
+                    )
                     time.sleep(0.01)
                     self.eq_dict['eload'].set_current(step_settings["drive_value"])
                     time.sleep(0.01)
@@ -466,7 +470,7 @@ class CyclingControl():
                     step_count=step_count,
                     step_id=step_id,
                     step_start_time_perf=step_start_time_perf,
-                    step_type=step_settings.get("cycle_display"),
+                                    step_type=step_settings["bdf_step_type"],
                 )
                 sample_ready = time.perf_counter()
                 sampling_summary["max_sample_processing_duration_s"] = max(

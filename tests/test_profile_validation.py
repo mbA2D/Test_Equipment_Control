@@ -9,13 +9,14 @@ from battery_app.profile_validation import (
 
 def _configuration():
     configuration = {
-        "profile_schema_version": 1,
+        "profile_schema_version": 2,
         "profile_id": new_profile_id(),
         "profile_name": "Rest profile",
         "eq_req_dict": {"psu": False, "eload": False},
         "settings_cycle_list_step_list": [[{
             "cycle_type": "step",
             "cycle_display": "Rest",
+            "bdf_step_type": "REST",
             "drive_style": "none",
             "drive_value": 0,
             "drive_value_other": 0,
@@ -38,6 +39,7 @@ def test_validator_requires_identity_and_recalculates_requirements():
     configuration = _configuration()
     configuration["settings_cycle_list_step_list"][0][0].update({
         "cycle_display": "Charge",
+        "bdf_step_type": "CC_CHG",
         "drive_style": "voltage_v",
         "drive_value": 4.2,
         "drive_value_other": 1.0,

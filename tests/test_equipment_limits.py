@@ -10,6 +10,7 @@ def _step(**overrides):
     step = {
         "cycle_type": "step",
         "cycle_display": "Charge",
+        "bdf_step_type": "CC_CHG",
         "drive_style": "current_a",
         "drive_value": 2.0,
         "drive_value_other": 4.2,
@@ -68,6 +69,7 @@ def test_pre_run_limits_reject_safety_current_above_psu_rating():
 def test_pre_run_limits_reject_electronic_load_power_envelope():
     discharge = _step(
         cycle_display="Discharge",
+        bdf_step_type="CC_DCH",
         drive_value=-10.0,
         drive_value_other=0.0,
         safety_max_voltage_v=30.0,
